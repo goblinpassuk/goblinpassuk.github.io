@@ -484,8 +484,6 @@
         <p class="muted">When enabled, generated passwords are copied to the clipboard without being shown on screen.</p>
         <h3 class="settings-subtitle">Google Sign-In</h3>
         <p class="muted">Optional. Google Sign-In can identify the user for future encrypted vault sync/import/export convenience. It is not used for password generation unless Google Security Factor is enabled.</p>
-        <label for="googleClientId">Google Client ID</label>
-        <input id="googleClientId" type="text" placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com" autocomplete="off" spellcheck="false">
         <label class="setting-row">
           <input id="googleSecurityFactor" type="checkbox">
           Google Security Factor
@@ -497,8 +495,8 @@
           <button id="googleSignOut" type="button">Sign out</button>
         </div>
         <div id="googleSignInButton" class="google-button-area"></div>
-        <p id="googleSignInStatus" class="status-line">Google Sign-In: Not configured</p>
-        <p class="notice">Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
+        <p id="googleSignInStatus" class="status-line">Google Sign-In: Not signed in</p>
+        <p class="notice">Google Sign-In uses basic identity only. Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
       </section>
     </section>
   </main>
@@ -581,7 +579,7 @@ Install support depends on the mobile browser. The app includes a web manifest a
 - The full Security Key is required every time. This fork does not use partial or random character prompts for the Security Key.
 - Trusted Device Protection is optional. Save the Recovery Key offline before relying on it on another device.
 - If the Trusted Device Key is lost and no Recovery Key was saved, passwords generated with Trusted Device Protection cannot be recovered.
-- Optional Google Sign-In uses a frontend Client ID only. Do not add a client secret to this static site.
+- Optional Google Sign-In uses a hardcoded frontend Client ID only. It does not request Gmail, Drive, Calendar, or other sensitive scopes. Do not add a client secret to this static site.
 - Google Sign-In can be used for future sync/import/export convenience without changing passwords.
 - Google Security Factor is separate and optional. When enabled, it requires Google Sign-In and adds the stable Google account subject ID, not the email address, to password generation.
 - The Google Subject ID is kept in memory for generation and is not saved in plain text.
@@ -655,7 +653,7 @@ Powered by the GoblinPass Open Source Engine.
         <li>The full Security Key is required every time. This fork does not use partial or random character prompts.</li>
         <li>Trusted Device Protection is optional. Save the Recovery Key offline before relying on it on another device.</li>
         <li>If the Trusted Device Key is lost and no Recovery Key was saved, passwords generated with Trusted Device Protection cannot be recovered.</li>
-        <li>Optional Google Sign-In uses a frontend Client ID only. Do not add a client secret to this static site.</li>
+        <li>Optional Google Sign-In uses a hardcoded frontend Client ID only. It does not request Gmail, Drive, Calendar, or other sensitive scopes. Do not add a client secret to this static site.</li>
         <li>Google Sign-In can be used for future sync/import/export convenience without changing passwords.</li>
         <li>Google Security Factor is separate and optional. When enabled, it requires Google Sign-In and adds the stable Google account subject ID, not the email address, to password generation.</li>
         <li>The Google Subject ID is kept in memory for generation and is not saved in plain text.</li>
@@ -772,6 +770,7 @@ const THEME_KEY = "goblinpass_brand_theme_v1";
 const MODE_KEY = "goblinpass_interface_mode_v1";
 const SETTINGS_KEY = "goblinpass_mobile_settings_v1";
 const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
+const GOOGLE_CLIENT_ID = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
 const CHARSET_KEYS = ["lower", "upper", "nums", "symbols"];
 const SECURITY_INPUT_METHODS = ["normal", "desktop-shuffled", "mobile-combo"];
 const DEFAULT_THEME = {
@@ -809,7 +808,6 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
-      googleClientId: "",
       googleSecurityFactorEnabled: false,
       ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
     };
@@ -821,7 +819,6 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
-      googleClientId: "",
       googleSecurityFactorEnabled: false
     };
   }
@@ -835,7 +832,6 @@ function saveSettings(settings) {
     trustedDeviceEnabled: !!next.trustedDeviceEnabled,
     trustedDeviceBackedUp: !!next.trustedDeviceBackedUp,
     copyPasswordOnly: !!next.copyPasswordOnly,
-    googleClientId: String(next.googleClientId || "").trim(),
     googleSecurityFactorEnabled: !!next.googleSecurityFactorEnabled
   }));
 }
@@ -997,16 +993,8 @@ function loadGoogleIdentityScript() {
 }
 function updateGoogleStatus() {
   const settings = loadSettings();
-  const clientId = settings.googleClientId;
-  if ($("googleClientId")) $("googleClientId").value = clientId;
   if ($("googleSecurityFactor")) $("googleSecurityFactor").checked = !!settings.googleSecurityFactorEnabled;
   if (!$("googleSignInStatus")) return;
-  if (!clientId) {
-    $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
-      ? "Google Security Factor: Client ID required"
-      : "Google Sign-In: Not configured";
-    return;
-  }
   if (googleUser) {
     $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
       ? \`Google Security Factor: Ready as \${googleUser.email || googleUser.name || "signed in"}\`
@@ -1015,7 +1003,7 @@ function updateGoogleStatus() {
   }
   $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
     ? "Google Security Factor: Sign in required before generating"
-    : "Google Sign-In: Configured, not signed in";
+    : "Google Sign-In: Not signed in";
 }
 function isGoogleSecurityFactorEnabled() {
   return !!loadSettings().googleSecurityFactorEnabled;
@@ -1034,18 +1022,11 @@ function handleGoogleCredential(response) {
   updateGoogleStatus();
 }
 async function setupGoogleSignIn() {
-  const clientId = $("googleClientId").value.trim();
-  if (!clientId) {
-    saveSettings({ googleClientId: "" });
-    updateGoogleStatus();
-    return alert("Enter your Google Client ID first.");
-  }
-  saveSettings({ googleClientId: clientId });
   updateGoogleStatus();
   try {
     await loadGoogleIdentityScript();
     google.accounts.id.initialize({
-      client_id: clientId,
+      client_id: GOOGLE_CLIENT_ID,
       callback: handleGoogleCredential,
       auto_select: false
     });
@@ -1498,12 +1479,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
     saveSettings({ googleSecurityFactorEnabled: enabled });
-    updateGoogleStatus();
-  };
-  $("googleClientId").onchange = () => {
-    googleUser = null;
-    saveSettings({ googleClientId: $("googleClientId").value.trim() });
-    $("googleSignInButton").innerHTML = "";
     updateGoogleStatus();
   };
   ["themeSiteName", "themeTagline", "themePrimary", "themeSecondary", "themeText", "themeMuted"].forEach(id => {
