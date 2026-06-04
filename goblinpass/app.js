@@ -70,7 +70,7 @@ function canRevealFullLogin(e) { return !!(e.fullLogin || e.login); }
 
 function selectedCharsets() {
   const selected = CHARSETS.filter(set => $(set.key).checked);
-  return selected.length ? selected : CHARSETS.filter(set => set.key !== "symbols");
+  return selected.length ? selected : CHARSETS;
 }
 
 function loadSettings() {
@@ -471,24 +471,10 @@ function openSecurityInputMethod() {
   else openDesktopSecurityKeyboard();
 }
 
-function combinedCharset(sets) {
-  return sets.map(set => set.chars).join("");
-}
-
 async function charFromSet(seed, set, round) {
   const hex = await sha256Hex(seed + "|required|" + set.key + "|" + round);
   const n = parseInt(hex.slice(0, 8), 16);
   return set.chars[n % set.chars.length];
-}
-
-async function fillFromCombined(seed, chars, round) {
-  const hex = await sha256Hex(seed + "|fill|" + round);
-  let out = "";
-  for (let i = 0; i < hex.length; i += 2) {
-    const n = parseInt(hex.slice(i, i + 2), 16);
-    out += chars[n % chars.length];
-  }
-  return out;
 }
 
 async function deterministicShuffle(items, seed) {
@@ -497,6 +483,37 @@ async function deterministicShuffle(items, seed) {
     scored.push({ value: items[i], score: await sha256Hex(seed + "|shuffle|" + i + "|" + items[i]) });
   }
   return scored.sort((a, b) => a.score.localeCompare(b.score)).map(item => item.value).join("");
+}
+
+async function deterministicSetOrder(sets, seed, round) {
+  const scored = [];
+  for (let i = 0; i < sets.length; i++) {
+    scored.push({ value: sets[i], score: await sha256Hex(seed + "|set-order|" + round + "|" + sets[i].key) });
+  }
+  return scored.sort((a, b) => a.score.localeCompare(b.score)).map(item => item.value);
+}
+
+async function distributedCharacters(seed, sets, length) {
+  const out = [];
+  const minimumPerSet = Math.max(1, Math.min(2, Math.floor(length / sets.length)));
+
+  for (const set of sets) {
+    for (let i = 0; i < minimumPerSet && out.length < length; i++) {
+      out.push(await charFromSet(seed, set, i));
+    }
+  }
+
+  let round = 0;
+  while (out.length < length) {
+    const orderedSets = await deterministicSetOrder(sets, seed, round);
+    for (const set of orderedSets) {
+      if (out.length >= length) break;
+      out.push(await charFromSet(seed, set, minimumPerSet + round));
+    }
+    round++;
+  }
+
+  return out;
 }
 
 async function deterministicPassword() {
@@ -509,7 +526,6 @@ async function deterministicPassword() {
   const length = Math.max(8, Math.min(64, parseInt($("length").value || "16", 10)));
   const counter = Math.max(1, Math.min(999, parseInt($("counter").value || "1", 10)));
   const sets = selectedCharsets();
-  const chars = combinedCharset(sets);
   const optionKey = sets.map(set => set.key).join(",");
   const seed = googleSubjectId && trustedDeviceKey
     ? `GPIDV2TG|${siteId}|${counter}|${master}|${securityKey}|${trustedDeviceKey}|${googleSubjectId}|${optionKey}`
@@ -521,19 +537,7 @@ async function deterministicPassword() {
     ? `GPIDV2K|${siteId}|${counter}|${master}|${securityKey}|${optionKey}`
     : `GPIDV2|${siteId}|${counter}|${master}|${optionKey}`;
 
-  const out = [];
-  for (let i = 0; i < sets.length && out.length < length; i++) {
-    out.push(await charFromSet(seed, sets[i], i));
-  }
-
-  let round = 0;
-  while (out.length < length) {
-    const chunk = await fillFromCombined(seed, chars, round++);
-    for (const ch of chunk) {
-      if (out.length >= length) break;
-      out.push(ch);
-    }
-  }
+  const out = await distributedCharacters(seed, sets, length);
 
   return await deterministicShuffle(out, seed);
 }

@@ -16,7 +16,7 @@ GoblinPass also includes an optional Security Key setting. When disabled, existi
 
 Trusted Device Protection is a separate optional setting. When enabled, GoblinPass adds a hidden local Trusted Device Key to password generation. Save the Recovery Key offline before relying on this mode; without it, passwords made with Trusted Device Protection cannot be recreated on another device.
 
-Optional Google Sign-In support uses Google Identity Services with a frontend Client ID only. Do not add a Google client secret to this static site. Google Sign-In can be used for future sync/import/export convenience without changing passwords.
+Optional Google Sign-In support uses Google Identity Services with a hardcoded frontend Client ID only. It does not request Gmail, Drive, Calendar, or other sensitive scopes. Do not add a Google client secret to this static site. Google Sign-In can be used for future sync/import/export convenience without changing passwords.
 
 Google Security Factor is a separate optional setting. When disabled, password generation remains unchanged. When enabled, users must sign in with Google and GoblinPass uses the stable Google account subject ID, not the email address, as an extra password generation input. The subject ID is kept in memory for generation and is not saved in plain text. If access to that Google account is lost, the same passwords may not be recoverable.
 

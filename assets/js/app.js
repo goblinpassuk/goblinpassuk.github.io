@@ -694,16 +694,6 @@ async function gpCharFromSet(seed, set, round) {
   return set.chars[n % set.chars.length];
 }
 
-async function gpFillFromCombined(seed, chars, round) {
-  const hex = await gpSha256Hex(seed + "|fill|" + round);
-  let out = "";
-  for (let i = 0; i < hex.length; i += 2) {
-    const n = parseInt(hex.slice(i, i + 2), 16);
-    out += chars[n % chars.length];
-  }
-  return out;
-}
-
 async function gpDeterministicShuffle(items, seed) {
   const scored = [];
   for (let i = 0; i < items.length; i++) {
@@ -712,12 +702,42 @@ async function gpDeterministicShuffle(items, seed) {
   return scored.sort((a, b) => a.score.localeCompare(b.score)).map(item => item.value).join("");
 }
 
+async function gpDeterministicSetOrder(sets, seed, round) {
+  const scored = [];
+  for (let i = 0; i < sets.length; i++) {
+    scored.push({ value: sets[i], score: await gpSha256Hex(seed + "|set-order|" + round + "|" + sets[i].key) });
+  }
+  return scored.sort((a, b) => a.score.localeCompare(b.score)).map(item => item.value);
+}
+
+async function gpDistributedCharacters(seed, sets, length) {
+  const out = [];
+  const minimumPerSet = Math.max(1, Math.min(2, Math.floor(length / sets.length)));
+
+  for (const set of sets) {
+    for (let i = 0; i < minimumPerSet && out.length < length; i++) {
+      out.push(await gpCharFromSet(seed, set, i));
+    }
+  }
+
+  let round = 0;
+  while (out.length < length) {
+    const orderedSets = await gpDeterministicSetOrder(sets, seed, round);
+    for (const set of orderedSets) {
+      if (out.length >= length) break;
+      out.push(await gpCharFromSet(seed, set, minimumPerSet + round));
+    }
+    round++;
+  }
+
+  return out;
+}
+
 async function goblinPassGenerate(siteId, masterPassword, options = {}) {
   const length = Math.max(8, Math.min(64, parseInt(options.length || "16", 10)));
   const counter = Math.max(1, Math.min(999, parseInt(options.counter || "1", 10)));
   const selectedKeys = options.selectedKeys && options.selectedKeys.length ? options.selectedKeys : ["lower", "upper", "nums", "symbols"];
   const sets = GP_CHARSETS.filter(set => selectedKeys.includes(set.key));
-  const chars = sets.map(set => set.chars).join("");
   const optionKey = sets.map(set => set.key).join(",");
   const normalizedSiteId = String(siteId).trim().toLowerCase();
   const securityKey = String(options.securityKey || "");
@@ -732,16 +752,7 @@ async function goblinPassGenerate(siteId, masterPassword, options = {}) {
     : securityKey
     ? \`GPIDV2K|\${normalizedSiteId}|\${counter}|\${masterPassword}|\${securityKey}|\${optionKey}\`
     : \`GPIDV2|\${normalizedSiteId}|\${counter}|\${masterPassword}|\${optionKey}\`;
-  const out = [];
-  for (let i = 0; i < sets.length && out.length < length; i++) out.push(await gpCharFromSet(seed, sets[i], i));
-  let round = 0;
-  while (out.length < length) {
-    const chunk = await gpFillFromCombined(seed, chars, round++);
-    for (const ch of chunk) {
-      if (out.length >= length) break;
-      out.push(ch);
-    }
-  }
+  const out = await gpDistributedCharacters(seed, sets, length);
   return await gpDeterministicShuffle(out, seed);
 }
 window.goblinPassGenerate = goblinPassGenerate;`;
@@ -798,7 +809,7 @@ function maskText(value) {
 }
 function selectedKeys() {
   const keys = CHARSET_KEYS.filter(key => $(key).checked);
-  return keys.length ? keys : ["lower", "upper", "nums"];
+  return keys.length ? keys : CHARSET_KEYS;
 }
 function loadSettings() {
   try {
