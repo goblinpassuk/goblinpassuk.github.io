@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass Strength Checker</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="#top" aria-label="GoblinPass Strength Checker home">
+          <span class="brand-mark" aria-hidden="true">GP</span>
+          <span>GoblinPass</span>
+        </a>
+        <button
+          id="navToggle"
+          class="nav-toggle"
+          type="button"
+          aria-label="Open navigation menu"
+          aria-controls="navLinks"
+          aria-expanded="false"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="#top">Home</a>
+          <a class="nav-link" href="#checker">Password Checker</a>
+          <a class="nav-link" href="#tips">Password Tips</a>
+          <a class="nav-link" href="#email-aliases">Email Aliases</a>
+          <details class="nav-dropdown">
+            <summary>Stateless</summary>
+            <div class="dropdown-menu">
+              <a href="#goblinpass">GoblinPass</a>
+              <a href="#goblinpass-app">Included App</a>
+              <a href="#create-your-own-pass">Create Your Own Pass</a>
+              <a href="#master-password">Master Password</a>
+              <a href="#lesspass-comparison">LessPass Comparison</a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>About</summary>
+            <div class="dropdown-menu">
+              <a href="#about">About Us</a>
+              <a href="#why-github">Why GitHub</a>
+            </div>
+          </details>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section">
+        <div class="hero-copy">
+          <p class="eyebrow">Private password check</p>
+          <h1>How strong is your password?</h1>
+          <p>
+            Test a password in your browser and get a plain-English read on its
+            strength, weak spots, and better habits.
+          </p>
+        </div>
+      </section>
+
+      <section id="checker" class="tool-section section" aria-labelledby="checker-title">
+        <div class="checker-card">
+          <div class="checker-head">
+            <div>
+              <p class="eyebrow">Password checker tool</p>
+              <h2 id="checker-title">Check your password</h2>
+            </div>
+            <p class="local-badge">Runs offline</p>
+          </div>
+
+          <div class="password-field">
+            <label for="passwordInput">Password</label>
+            <div class="input-row">
+              <input
+                id="passwordInput"
+                type="password"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                aria-describedby="privacy-note strengthSummary"
+              />
+              <button id="togglePassword" class="icon-button" type="button" aria-label="Show password">
+                <span aria-hidden="true">Show</span>
+              </button>
+            </div>
+            <p id="privacy-note">Nothing you type here is saved or sent anywhere.</p>
+          </div>
+
+          <div class="result-grid">
+            <section class="result-panel big-result" aria-live="polite">
+              <p class="panel-label">Strength</p>
+              <div class="strength-label" id="strengthLabel">Empty</div>
+              <p id="strengthSummary">Start typing to see a local score.</p>
+              <div class="meter" aria-hidden="true">
+                <div class="meter-fill" id="meterFill"></div>
+              </div>
+              <div class="score-line">
+                <span>Score</span>
+                <strong id="scoreValue">0 / 100</strong>
+              </div>
+            </section>
+
+            <section class="result-panel">
+              <p class="panel-label">Estimated time to crack</p>
+              <div class="crack-time" id="crackTime">No password yet</div>
+              <p class="small-note">
+                Estimate assumes fast offline guessing. Real risk depends on how a service protects passwords.
+              </p>
+            </section>
+          </div>
+
+          <div class="detail-grid">
+            <section class="result-panel">
+              <h3>Checklist</h3>
+              <ul class="checklist" id="checklist">
+                <li data-check="length"><span></span>At least 12 characters</li>
+                <li data-check="uppercase"><span></span>Uses uppercase letters</li>
+                <li data-check="lowercase"><span></span>Uses lowercase letters</li>
+                <li data-check="numbers"><span></span>Includes numbers</li>
+                <li data-check="symbols"><span></span>Includes symbols</li>
+                <li data-check="notCommon"><span></span>Not a common password</li>
+                <li data-check="notRepeated"><span></span>No obvious repeats</li>
+                <li data-check="notKeyboard"><span></span>No keyboard or counting pattern</li>
+              </ul>
+            </section>
+
+            <section class="result-panel">
+              <h3>Warnings</h3>
+              <ul class="warnings" id="warnings">
+                <li>Enter a password to see warning signs.</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section id="privacy" class="section split-section">
+        <div>
+          <p class="eyebrow">Your password stays on your device</p>
+          <h2>Your password stays on your device</h2>
+        </div>
+        <p>
+          The password checker runs in the browser you opened it in, without accounts,
+          analytics, storage, or network requests. The included GoblinPass vault app is
+          also local-first, but it can store vault metadata in your browser if you choose
+          to save entries.
+        </p>
+      </section>
+
+      <section id="tips" class="section info-grid" aria-labelledby="tips-title">
+        <div>
+          <p class="eyebrow">Password tips</p>
+          <h2 id="tips-title">Build passwords that are harder to guess</h2>
+        </div>
+        <div class="info-list">
+          <article>
+            <h3>Use more length</h3>
+            <p>Longer passwords resist guessing better than short passwords with tiny twists.</p>
+          </article>
+          <article>
+            <h3>Mix character types</h3>
+            <p>Blend lowercase, uppercase, numbers, and symbols without relying on one predictable recipe.</p>
+          </article>
+          <article>
+            <h3>Prefer unique passwords</h3>
+            <p>Every important account deserves its own password, especially email, banking, and work tools.</p>
+          </article>
+          <article>
+            <h3>Consider a passphrase</h3>
+            <p>A few unrelated words with separators can be easier to remember and much harder to attack.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section mistakes" aria-labelledby="mistakes-title">
+        <p class="eyebrow">Common password mistakes</p>
+        <h2 id="mistakes-title">Patterns attackers try early</h2>
+        <div class="mistake-list">
+          <article>
+            <h3>Dictionary words with swaps</h3>
+            <p>Changing letters to symbols, like a to @ or o to 0, is familiar to cracking tools.</p>
+          </article>
+          <article>
+            <h3>Keyboard walks</h3>
+            <p>Rows such as qwerty, asdf, zxcv, and 123456 are easy to test automatically.</p>
+          </article>
+          <article>
+            <h3>Repeating blocks</h3>
+            <p>Sequences like aaaaaa, 111111, or abcabcabc add length without adding much protection.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="security-title">
+        <div class="section-intro">
+          <p class="eyebrow">Password security</p>
+          <h2 id="security-title">One password should not unlock your whole life</h2>
+          <p>
+            Many people reuse the same password across websites, or make small changes
+            such as adding a symbol, an exclamation mark, or a number at the end. That
+            feels different, but attackers often try those patterns automatically.
+          </p>
+        </div>
+        <div class="content-cards two-column">
+          <article>
+            <h3>Reuse creates a chain reaction</h3>
+            <p>
+              If one website is hacked, attackers may test the same password, and
+              close variations of it, on email, shopping, banking, social, and work
+              accounts. Every important website should have a unique password.
+            </p>
+          </article>
+          <article>
+            <h3>Your email is the reset key</h3>
+            <p>
+              A password is only as secure as the email account connected to it.
+              Your main Gmail, Hotmail, Outlook, or personal email account should
+              be treated like a private master key because it can reset many other
+              accounts.
+            </p>
+          </article>
+          <article>
+            <h3>Protect the address too</h3>
+            <p>
+              Avoid sharing your main private email address everywhere. The fewer
+              places that know it, the fewer places can leak it or target it.
+            </p>
+          </article>
+          <article>
+            <h3>Small changes are not enough</h3>
+            <p>
+              Changing Password2026 to Password2026! may look stronger, but it
+              still follows a pattern. Unique passwords reduce risk more than small
+              edits to one reused password.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="email-aliases" class="section content-section" aria-labelledby="aliases-title">
+        <div class="section-intro">
+          <p class="eyebrow">Email aliases and forwarding</p>
+          <h2 id="aliases-title">Use aliases to keep your private inbox quieter</h2>
+          <p>
+            A safer approach is to use email aliases or forwarding addresses. You
+            can keep one private email address that only you know, then use different
+            forwarding aliases when signing up to websites.
+          </p>
+        </div>
+        <div class="content-cards three-column">
+          <article>
+            <h3>How forwarding helps</h3>
+            <p>
+              Emails sent to an alias still arrive in your real inbox, but the
+              website never sees your real email address. That adds another layer
+              of privacy without needing a separate inbox for every account.
+            </p>
+          </article>
+          <article>
+            <h3>Leaks are easier to contain</h3>
+            <p>
+              If a forum or website gets hacked and your alias is leaked, you can
+              block or delete that alias and create a new one. Your real email
+              address stays private.
+            </p>
+          </article>
+          <article>
+            <h3>Still watch for phishing</h3>
+            <p>
+              Email aliases reduce exposure, but they do not stop phishing. Still
+              stay alert for suspicious messages, urgent requests, fake login pages,
+              and links you were not expecting.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section split-section">
+        <div>
+          <p class="eyebrow">Privacy tools</p>
+          <h2>DuckDuckGo is one practical example</h2>
+        </div>
+        <p>
+          Privacy-focused tools such as DuckDuckGo Browser and DuckDuckGo Email
+          Protection can help reduce tracking and make private email aliases easier
+          to use. They are not magic shields, but they can help lower everyday
+          exposure when used with careful password habits.
+        </p>
+      </section>
+
+      <section id="goblinpass" class="section content-section featured-section" aria-labelledby="goblinpass-title">
+        <div class="section-intro">
+          <p class="eyebrow">GoblinPass</p>
+          <h2 id="goblinpass-title">A local helper for unique passwords</h2>
+          <p>
+            GoblinPass is a local/offline password helper designed to make unique
+            passwords easier to manage without relying on a normal online password
+            vault. It can help users create or manage unique passwords for different
+            websites while keeping things simple and private.
+          </p>
+          <a class="demo-link local-app-link" href="#goblinpass-app">
+            View included GoblinPass app
+          </a>
+          <a
+            class="demo-link secondary-link"
+            href="https://goblinpassuk.github.io/Goblin-Pass-Version-2.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open live GoblinPass demo
+          </a>
+        </div>
+        <div class="content-cards two-column">
+          <article>
+            <h3>Simple by design</h3>
+            <p>
+              The goal is practical security: fewer reused passwords, clearer habits,
+              and less dependence on sending sensitive information through online
+              services.
+            </p>
+          </article>
+          <article>
+            <h3>Careful wording matters</h3>
+            <p>
+              No tool should be described as unhackable. GoblinPass can help reduce
+              risk, but users should still protect their device, keep backups in mind,
+              and stay alert for phishing.
+            </p>
+          </article>
+        </div>
+
+        <div class="tool-preview" aria-labelledby="goblinpass-preview-title">
+          <div class="section-intro compact-intro">
+            <p class="eyebrow">Tool preview</p>
+            <h3 id="goblinpass-preview-title">How the GoblinPass vault can work</h3>
+            <p>
+              These example screens show the basic flow: generate a site-specific
+              password, set a local vault PIN, save an entry, and reveal only the
+              first part of the password as a hint when needed.
+            </p>
+          </div>
+
+          <div class="preview-grid">
+            <figure class="screen-card large-screen">
+              <figcaption>1. GoblinPass tool screen</figcaption>
+              <div class="mini-app">
+                <div class="mini-brand">
+                  <span class="mini-logo">GP</span>
+                  <div>
+                    <strong>Goblin</strong>
+                    <small>Tiny vault. Minimal secrets.</small>
+                  </div>
+                </div>
+                <div class="mini-field">
+                  <span>Website ID</span>
+                  <strong>22</strong>
+                </div>
+                <div class="mini-field">
+                  <span>Site (optional)</span>
+                  <strong>facebook.com</strong>
+                </div>
+                <div class="mini-field">
+                  <span>Login (optional)</span>
+                  <strong>myemail@hotmail.com</strong>
+                </div>
+                <label class="mini-check"><span></span> Store full login for this entry</label>
+                <div class="mini-field password-row">
+                  <span>Master Password</span>
+                  <strong>••••••••••••••••••••••••</strong>
+                  <em>Show</em>
+                </div>
+                <div class="mini-options">
+                  <span>✓ a-z</span>
+                  <span>✓ A-Z</span>
+                  <span>✓ 0-9</span>
+                  <span>✓ %!@</span>
+                </div>
+                <div class="mini-two">
+                  <div class="mini-field"><span>Length</span><strong>16</strong></div>
+                  <div class="mini-field"><span>Counter</span><strong>1</strong></div>
+                </div>
+                <div class="mini-actions">
+                  <strong>Generate & copy</strong>
+                  <span>Save</span>
+                </div>
+                <div class="mini-output">
+                  Generated and copied: 1%GzTU4Meq!BBwQe <em>Hide</em>
+                </div>
+              </div>
+            </figure>
+
+            <figure class="screen-card">
+              <figcaption>2. Step-by-step vault setup</figcaption>
+              <div class="mini-vault">
+                <div class="mini-vault-head">
+                  <strong>Vault</strong>
+                  <span>Cancel</span>
+                </div>
+                <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+                <p>Create a permanent 4 digit vault PIN. This PIN will be required to view saved IDs.</p>
+                <div class="mini-pin">
+                  <span>Vault PIN</span>
+                  <strong>Set PIN</strong>
+                </div>
+              </div>
+            </figure>
+
+            <figure class="screen-card">
+              <figcaption>3. Example saved entry</figcaption>
+              <div class="mini-vault">
+                <div class="mini-vault-head">
+                  <strong>Vault</strong>
+                  <span>Lock vault</span>
+                </div>
+                <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+                <div class="mini-search">Filter vault...</div>
+                <div class="mini-entry">
+                  <strong>22</strong>
+                  <p>Site: facebook.com</p>
+                  <p>Login: myem***il@hotmail.com</p>
+                  <p>Password hint: ******</p>
+                  <p>Length: 16 - Counter: 1</p>
+                  <div class="mini-entry-actions">
+                    <span>Use</span>
+                    <span>Show hint</span>
+                    <span>Copy login</span>
+                    <em>Delete</em>
+                  </div>
+                </div>
+              </div>
+            </figure>
+
+            <figure class="screen-card">
+              <figcaption>4. Hint reveals only the first part</figcaption>
+              <div class="mini-vault">
+                <div class="mini-vault-head">
+                  <strong>Vault</strong>
+                  <span>Lock vault</span>
+                </div>
+                <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+                <div class="mini-search">Filter vault...</div>
+                <div class="mini-entry">
+                  <strong>22</strong>
+                  <p>Site: facebook.com</p>
+                  <p>Login: myem***il@hotmail.com</p>
+                  <p>Password hint: jFX5@</p>
+                  <p>Length: 16 - Counter: 1</p>
+                  <div class="mini-entry-actions">
+                    <span>Use</span>
+                    <span>Show hint</span>
+                    <span>Copy login</span>
+                    <em>Delete</em>
+                  </div>
+                </div>
+              </div>
+            </figure>
+          </div>
+
+          <div class="content-cards two-column preview-notes">
+            <article>
+              <h3>Optional full login details</h3>
+              <p>
+                GoblinPass can include an option to save full login information for
+                an entry. That can expose the email address used for the account, so
+                it is best treated as a deliberate choice rather than a default habit.
+              </p>
+            </article>
+            <article>
+              <h3>Useful with alias emails</h3>
+              <p>
+                If you use alias emails, saving the login locally can help you keep
+                track of which alias belongs to which website. This can be useful
+                when the information stays local and is protected carefully.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="create-your-own-pass" class="section content-section" aria-labelledby="create-pass-title">
+        <div class="section-intro">
+          <p class="eyebrow">Create Your Own Pass</p>
+          <h2 id="create-pass-title">Brand your own GoblinPass fork</h2>
+          <p>
+            Create a fully branded version of GoblinPass while keeping the password
+            generation engine separate from your theme, logo, colours, and about
+            text. The package is generated locally in your browser and is designed
+            to be ready for GitHub Pages.
+          </p>
+        </div>
+
+        <div class="builder-grid">
+          <form class="builder-form" id="brandForm">
+            <div class="form-grid">
+              <label>
+                Site Name
+                <input id="brandSiteName" type="text" value="MyPass" autocomplete="off" />
+              </label>
+              <label>
+                Tagline
+                <input id="brandTagline" type="text" value="Private passwords, your way." autocomplete="off" />
+              </label>
+              <label>
+                Primary Colour
+                <input id="brandPrimary" type="color" value="#77f05a" />
+              </label>
+              <label>
+                Secondary Colour
+                <input id="brandSecondary" type="color" value="#101914" />
+              </label>
+              <label>
+                Upload Logo
+                <input id="brandLogo" type="file" accept="image/png" />
+              </label>
+              <label>
+                Theme
+                <select id="brandTheme">
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Custom About Us text
+              <textarea id="brandAbout" rows="6">We built this password helper to make unique passwords easier to use while keeping the password engine local and transparent.</textarea>
+            </label>
+            <div class="engine-status">
+              <div>
+                <span>GoblinPass engine version</span>
+                <strong id="engineVersion">2.0.0</strong>
+              </div>
+              <p>
+                Security warning: branding changes must not modify files inside
+                <code>/core</code>. If core files are changed, review the fork before
+                trusting generated passwords.
+              </p>
+            </div>
+            <div class="builder-actions">
+              <button class="download-button" id="downloadFork" type="button">Download Fork Package</button>
+            </div>
+          </form>
+
+          <aside class="brand-preview" id="brandPreview" aria-live="polite">
+            <div class="preview-shell">
+              <header>
+                <div class="preview-logo" id="previewLogo">MP</div>
+                <div>
+                  <strong id="previewName">MyPass</strong>
+                  <span id="previewTagline">Private passwords, your way.</span>
+                </div>
+              </header>
+              <section>
+                <label>Website ID</label>
+                <div class="preview-input">22</div>
+                <label>Master Password</label>
+                <div class="preview-input">••••••••••••••••</div>
+                <button type="button">Generate & copy</button>
+              </section>
+              <footer>Powered by the GoblinPass Open Source Engine.</footer>
+            </div>
+          </aside>
+        </div>
+
+        <div class="config-panel">
+          <div>
+            <h3>Generated configuration</h3>
+            <p>
+              Branding is saved in <code>config.json</code> and <code>themes/config.json</code>.
+              The password engine remains in <code>/core</code> so future themes can be
+              added without changing the generator.
+            </p>
+          </div>
+          <pre id="configOutput"></pre>
+        </div>
+      </section>
+
+      <section id="goblinpass-app" class="section content-section" aria-labelledby="goblinpass-app-title">
+        <div class="section-intro">
+          <p class="eyebrow">Included app</p>
+          <h2 id="goblinpass-app-title">Use GoblinPass from this website</h2>
+          <p>
+            The original GoblinPass mobile PWA source is included with this website
+            under <code>/goblinpass</code>. It runs in the browser, uses the local
+            password generator, and can keep vault metadata on the device for people
+            who choose to use that feature.
+          </p>
+        </div>
+        <div class="app-embed-card">
+          <div class="app-embed-copy">
+            <h3>Local-first app access</h3>
+            <p>
+              Open the included app for the full generator and vault experience.
+              The checker page remains separate, while the GoblinPass app keeps its
+              own files, manifest, icons, style, and script.
+            </p>
+            <p class="source-note">
+              Note: the included GoblinPass vault stores saved ID/site/login metadata,
+              masked login details, optional full login details, hints, and vault
+              settings in the browser's local storage. It does not save the master
+              password or full generated passwords.
+            </p>
+            <a class="demo-link" href="goblinpass/index.html">Launch GoblinPass</a>
+          </div>
+          <iframe
+            class="goblinpass-frame"
+            src="goblinpass/index.html"
+            title="GoblinPass included app preview"
+            loading="lazy"
+          ></iframe>
+        </div>
+      </section>
+
+      <section id="master-password" class="section content-section" aria-labelledby="master-password-title">
+        <div class="section-intro">
+          <p class="eyebrow">Master password</p>
+          <h2 id="master-password-title">One remembered secret, many regenerated passwords</h2>
+          <p>
+            What if you could generate a unique secure password for every website you
+            use, while only needing to remember the private master password that
+            belongs to you?
+          </p>
+        </div>
+        <div class="content-cards two-column">
+          <article>
+            <h3>What the master password does</h3>
+            <p>
+              The master password is the private phrase you type into GoblinPass to
+              generate a website password. It should be something only you know,
+              strong enough to resist guessing, and memorable enough that you do not
+              need to write it in unsafe places.
+            </p>
+          </article>
+          <article>
+            <h3>How regeneration works</h3>
+            <p>
+              GoblinPass uses a local algorithm with the website ID, your master
+              password, and the selected options. If the same ID, master password,
+              length, counter, and character options are used again, the same website
+              password can be regenerated.
+            </p>
+          </article>
+          <article>
+            <h3>You choose the website ID</h3>
+            <p>
+              You decide which ID to use for every website. The important part is
+              knowing which ID belongs to which account, because that ID becomes one
+              of the ingredients used to regenerate the password later.
+            </p>
+          </article>
+          <article>
+            <h3>The password is not stored</h3>
+            <p>
+              The generated password does not need to be saved in a password list. It
+              is simply recreated when the same inputs match. Optional vault details
+              can help track IDs, aliases, hints, and login notes, but the generated
+              password itself can be regenerated locally.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="lesspass-comparison" class="section content-section" aria-labelledby="lesspass-title">
+        <div class="section-intro">
+          <p class="eyebrow">GoblinPass and LessPass</p>
+          <h2 id="lesspass-title">Different takes on stateless password generation</h2>
+          <p>
+            LessPass and GoblinPass both belong to the same broad idea: generate a
+            repeatable password from inputs you control instead of storing every
+            generated password in a normal online vault.
+          </p>
+        </div>
+        <div class="content-cards two-column">
+          <article>
+            <h3>LessPass approach</h3>
+            <p>
+              LessPass describes itself as a stateless password manager. It computes
+              a unique password from a site, login, master password, and options, and
+              it is designed so the generated password does not need to be saved.
+            </p>
+          </article>
+          <article>
+            <h3>GoblinPass approach</h3>
+            <p>
+              GoblinPass is built around a simple website ID chosen by the user. The
+              ID, master password, and options regenerate the password, while the
+              optional local vault can help remember which ID, alias email, counter,
+              and hint belong to each website.
+            </p>
+          </article>
+          <article>
+            <h3>The practical difference</h3>
+            <p>
+              LessPass asks you to remember or enter the site and login inputs.
+              GoblinPass focuses on remembering a chosen website ID and can keep
+              local supporting notes if the user wants that extra convenience.
+            </p>
+          </article>
+          <article>
+            <h3>Neither removes responsibility</h3>
+            <p>
+              A deterministic generator depends heavily on the strength of the master
+              password and the secrecy of the inputs. It can help reduce password
+              reuse, but users still need to protect their device, avoid phishing,
+              and change affected passwords if an account is compromised.
+            </p>
+          </article>
+        </div>
+        <div class="comparison-panel" aria-label="GoblinPass and LessPass feature comparison">
+          <div class="comparison-row comparison-head">
+            <span>Topic</span>
+            <span>GoblinPass</span>
+            <span>LessPass</span>
+          </div>
+          <div class="comparison-row">
+            <span>Main idea</span>
+            <span>Generate repeatable passwords from a chosen website ID, master password, and options.</span>
+            <span>Generate repeatable passwords from site, login, master password, and options.</span>
+          </div>
+          <div class="comparison-row">
+            <span>What you remember</span>
+            <span>Your master password, plus which website ID you chose for each account.</span>
+            <span>Your master password, plus the site and login values used for each account.</span>
+          </div>
+          <div class="comparison-row">
+            <span>Saved password</span>
+            <span>The generated password does not need to be stored; it can be regenerated locally.</span>
+            <span>The generated password does not need to be stored; it can be recomputed.</span>
+          </div>
+          <div class="comparison-row">
+            <span>Optional notes</span>
+            <span>Can use a local vault to track IDs, alias emails, counters, and partial hints.</span>
+            <span>Focuses on stateless generation rather than a local notes vault.</span>
+          </div>
+          <div class="comparison-row">
+            <span>Email aliases</span>
+            <span>Designed to work neatly with alias tracking when users want local login notes.</span>
+            <span>Can still be used with aliases, but alias tracking is not the central idea.</span>
+          </div>
+          <div class="comparison-row">
+            <span>Best fit</span>
+            <span>People who like numeric site IDs and want optional local reminders without storing full passwords.</span>
+            <span>People who prefer entering site and login details directly into a stateless generator.</span>
+          </div>
+        </div>
+        <p class="source-note">
+          LessPass reference: its public documentation describes computing passwords
+          from site, login, and master password, with generated passwords not saved.
+        </p>
+      </section>
+
+      <section id="about" class="section content-section" aria-labelledby="about-title">
+        <div class="section-intro">
+          <p class="eyebrow">About Us</p>
+          <h2 id="about-title">About GoblinPass</h2>
+          <p>
+            At GoblinPass, we believe password security should not be complicated.
+            Every day, millions of people reuse the same password across multiple
+            websites, often making only tiny changes such as adding a ! or changing
+            a number at the end. When one website suffers a data breach, attackers
+            can often gain access to many other accounts using the same password.
+          </p>
+          <p>
+            GoblinPass was created to help solve this problem. Our goal is simple:
+            make it easier for everyone to use strong, unique passwords for every
+            website without needing to remember hundreds of different passwords.
+            GoblinPass uses a stateless password generation system, allowing you to
+            generate secure passwords whenever you need them while keeping your
+            master password under your control.
+          </p>
+          <p>
+            We also provide tools that help you understand and improve your password
+            security. Whether you are checking the strength of an existing password,
+            learning about common mistakes, or exploring better ways to protect your
+            accounts, GoblinPass aims to make online security easier to understand.
+          </p>
+        </div>
+        <div class="content-cards three-column">
+          <article>
+            <h3>Security First</h3>
+            <p>
+              Your online security is only as strong as your weakest link. Your email
+              account is often the key to resetting passwords across dozens of
+              websites, so it deserves especially careful protection.
+            </p>
+            <ul class="plain-list">
+              <li>Use a unique password for every website.</li>
+              <li>Protect your email account with an especially strong password.</li>
+              <li>Enable two-factor authentication wherever possible.</li>
+              <li>Never share your email account credentials with anyone.</li>
+              <li>Avoid simple password variations that only change a character or two.</li>
+            </ul>
+          </article>
+          <article>
+            <h3>Open Source Transparency</h3>
+            <p>
+              GoblinPass is developed using GitHub because transparency matters.
+              Open-source code allows anyone to inspect how GoblinPass works, helping
+              ensure that the password generation process cannot be secretly altered
+              behind the scenes.
+            </p>
+            <p>We believe trust should be earned through openness, not blind faith.</p>
+          </article>
+          <article>
+            <h3>Our Mission</h3>
+            <p>
+              Our mission is to help people build better password habits, improve
+              their online security, and take control of their digital lives without
+              sacrificing convenience.
+            </p>
+            <p class="mission-line">Strong passwords. Better habits. Safer accounts.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="why-github" class="section content-section" aria-labelledby="github-title">
+        <div class="section-intro">
+          <p class="eyebrow">Why We Use GitHub</p>
+          <h2 id="github-title">Security should be visible, not hidden</h2>
+          <p>
+            Trust is important, especially when it comes to security tools. All
+            GoblinPass projects are hosted on GitHub and made available as
+            open-source software whenever possible, because users should be able
+            to see how a security tool works rather than simply trust our claims.
+          </p>
+          <a
+            class="demo-link secondary-link"
+            href="https://github.com/goblinpassuk/Goblin-Pass-Version-2.0"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View GoblinPass on GitHub
+          </a>
+        </div>
+        <div class="content-cards two-column">
+          <article>
+            <h3>Public project history</h3>
+            <p>
+              By using GitHub, every code change is recorded publicly. Anyone can
+              review previous versions, inspect the source code, and see exactly
+              what has changed over time.
+            </p>
+          </article>
+          <article>
+            <h3>Open does not mean perfect</h3>
+            <p>
+              We do not claim that open-source software is automatically secure.
+              Public code simply allows security researchers, developers, and
+              curious users to inspect the software, identify issues, and suggest
+              improvements.
+            </p>
+          </article>
+          <article>
+            <h3>Our goal</h3>
+            <ul class="plain-list">
+              <li>Be transparent</li>
+              <li>Be honest</li>
+              <li>Keep things local whenever possible</li>
+              <li>Avoid unnecessary data collection</li>
+              <li>Give users control over their own security</li>
+            </ul>
+          </article>
+          <article>
+            <h3>Verify for yourself</h3>
+            <p>
+              If you do not trust us, that is perfectly reasonable. We encourage
+              you to inspect the code, review the project history, and make your
+              own judgement. Security should never depend solely on trust. It
+              should be verifiable.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>GoblinPass Strength Checker</p>
+      <p>Local browser check. No saving. No sending. No tracking.</p>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>
