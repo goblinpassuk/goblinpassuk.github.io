@@ -15,6 +15,7 @@ const STORAGE_KEY = "goblinpass_mobile_entries_v1";
 const PIN_KEY = "goblinpass_mobile_pin_v1";
 const SETTINGS_KEY = "goblinpass_mobile_settings_v1";
 const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
+const GOOGLE_CLIENT_ID = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
 
 const CHARSETS = [
   { key: "lower", chars: "abcdefghijklmnopqrstuvwxyz" },
@@ -81,7 +82,6 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
-      googleClientId: "",
       googleSecurityFactorEnabled: false,
       ...saved
     };
@@ -92,7 +92,6 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
-      googleClientId: "",
       googleSecurityFactorEnabled: false
     };
   }
@@ -107,7 +106,6 @@ function saveSettings(settings) {
     trustedDeviceEnabled: !!next.trustedDeviceEnabled,
     trustedDeviceBackedUp: !!next.trustedDeviceBackedUp,
     copyPasswordOnly: !!next.copyPasswordOnly,
-    googleClientId: String(next.googleClientId || "").trim(),
     googleSecurityFactorEnabled: !!next.googleSecurityFactorEnabled
   }));
 }
@@ -303,16 +301,8 @@ function loadGoogleIdentityScript() {
 
 function updateGoogleStatus() {
   const settings = loadSettings();
-  const clientId = settings.googleClientId;
-  if ($("googleClientId")) $("googleClientId").value = clientId;
   if ($("googleSecurityFactor")) $("googleSecurityFactor").checked = !!settings.googleSecurityFactorEnabled;
   if (!$("googleSignInStatus")) return;
-  if (!clientId) {
-    $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
-      ? "Google Security Factor: Client ID required"
-      : "Google Sign-In: Not configured";
-    return;
-  }
   if (googleUser) {
     $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
       ? `Google Security Factor: Ready as ${googleUser.email || googleUser.name || "signed in"}`
@@ -321,7 +311,7 @@ function updateGoogleStatus() {
   }
   $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
     ? "Google Security Factor: Sign in required before generating"
-    : "Google Sign-In: Configured, not signed in";
+    : "Google Sign-In: Not signed in";
 }
 
 function isGoogleSecurityFactorEnabled() {
@@ -344,18 +334,11 @@ function handleGoogleCredential(response) {
 }
 
 async function setupGoogleSignIn() {
-  const clientId = $("googleClientId").value.trim();
-  if (!clientId) {
-    saveSettings({ googleClientId: "" });
-    updateGoogleStatus();
-    return alert("Enter your Google Client ID first.");
-  }
-  saveSettings({ googleClientId: clientId });
   updateGoogleStatus();
   try {
     await loadGoogleIdentityScript();
     google.accounts.id.initialize({
-      client_id: clientId,
+      client_id: GOOGLE_CLIENT_ID,
       callback: handleGoogleCredential,
       auto_select: false
     });
@@ -924,12 +907,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
     saveSettings({ googleSecurityFactorEnabled: enabled });
-    updateGoogleStatus();
-  };
-  $("googleClientId").onchange = () => {
-    googleUser = null;
-    saveSettings({ googleClientId: $("googleClientId").value.trim() });
-    $("googleSignInButton").innerHTML = "";
     updateGoogleStatus();
   };
 });

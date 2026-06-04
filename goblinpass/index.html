@@ -152,8 +152,6 @@
 
         <h3 class="settings-subtitle">Google Sign-In</h3>
         <p class="muted">Optional. Google Sign-In can identify the user for future encrypted vault sync/import/export convenience. It is not used for password generation unless Google Security Factor is enabled.</p>
-        <label for="googleClientId">Google Client ID</label>
-        <input id="googleClientId" type="text" placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com" autocomplete="off" spellcheck="false">
         <label class="setting-row">
           <input id="googleSecurityFactor" type="checkbox">
           Google Security Factor
@@ -165,8 +163,8 @@
           <button id="googleSignOut" type="button">Sign out</button>
         </div>
         <div id="googleSignInButton" class="google-button-area"></div>
-        <p id="googleSignInStatus" class="status-line">Google Sign-In: Not configured</p>
-        <p class="notice">Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
+        <p id="googleSignInStatus" class="status-line">Google Sign-In: Not signed in</p>
+        <p class="notice">Google Sign-In uses basic identity only. Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
       </section>
     </section>
   </main>
