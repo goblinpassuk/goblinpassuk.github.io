@@ -425,11 +425,22 @@ function getYubiKeyCredentialId() {
   return localStorage.getItem(YUBIKEY_CREDENTIAL_KEY) || "";
 }
 
+function setYubiKeyMessage(message, type = "info") {
+  const el = $("yubiKeyMessage");
+  if (!el) return;
+  el.textContent = message || "";
+  el.dataset.messageType = type;
+  el.classList.toggle("hidden", !message);
+}
+
 function updateYubiKeyUi() {
   const enabled = !!$("useYubiKey")?.checked;
   const registered = !!getYubiKeyCredentialId();
   if ($("yubiKeyBox")) $("yubiKeyBox").classList.toggle("hidden", !enabled);
   if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = registered ? "Status: Registered" : "Status: Not registered";
+  if (!enabled) setYubiKeyMessage("");
+  else if (!webAuthnPrfSupported()) setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
+  else if (registered) setYubiKeyMessage("YubiKey is registered for this site origin. Keep using the same registered key to recreate YubiKey-protected passwords.", "success");
 }
 
 function webAuthnPrfSupported() {
@@ -453,7 +464,11 @@ function yubiKeyErrorMessage(error) {
 }
 
 async function registerYubiKey() {
-  if (!webAuthnPrfSupported()) return alert("This browser does not support WebAuthn PRF.");
+  if (!webAuthnPrfSupported()) {
+    setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
+    return;
+  }
+  setYubiKeyMessage("Waiting for the browser and YubiKey. Complete any touch or PIN prompt.", "info");
   try {
     const credential = await navigator.credentials.create({
       publicKey: {
@@ -480,13 +495,14 @@ async function registerYubiKey() {
     });
     const results = credential.getClientExtensionResults?.();
     if (!results?.prf?.enabled) {
-      return alert("This browser or YubiKey did not enable WebAuthn PRF/hmac-secret.");
+      setYubiKeyMessage("This browser or YubiKey did not enable WebAuthn PRF/hmac-secret. GoblinPass cannot use this key as a password ingredient unless PRF is available.", "warning");
+      return;
     }
     localStorage.setItem(YUBIKEY_CREDENTIAL_KEY, bytesToBase64Url(new Uint8Array(credential.rawId)));
     updateYubiKeyUi();
-    alert("YubiKey registered for this app origin.");
+    setYubiKeyMessage("YubiKey registered for this app origin.", "success");
   } catch (error) {
-    alert(yubiKeyErrorMessage(error));
+    setYubiKeyMessage(yubiKeyErrorMessage(error), "warning");
   }
 }
 

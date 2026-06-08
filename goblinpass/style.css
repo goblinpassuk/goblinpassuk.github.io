@@ -291,6 +291,16 @@ button,.import-label{
   font-weight:850;
   overflow-wrap:anywhere;
 }
+.challenge-code[data-message-type="warning"]{
+  border-color:#6a5b20;
+  background:#1b1909;
+  color:#ffe58a;
+}
+.challenge-code[data-message-type="success"]{
+  border-color:var(--green);
+  background:rgba(116,255,157,.08);
+  color:#dfffe7;
+}
 .high-security-badge{
   display:inline-flex;
   border:1px solid var(--green);

@@ -339,6 +339,18 @@
   overflow-wrap: anywhere;
 }
 
+.embedded-goblin-app .challenge-code[data-message-type="warning"] {
+  border-color: #6a5b20;
+  background: #1b1909;
+  color: #ffe58a;
+}
+
+.embedded-goblin-app .challenge-code[data-message-type="success"] {
+  border-color: var(--gp-green);
+  background: rgba(116, 255, 157, 0.08);
+  color: #dfffe7;
+}
+
 .embedded-goblin-app .high-security-badge {
   display: inline-flex;
   border: 1px solid var(--gp-green);
