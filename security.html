@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - Security Overview</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home">
+          <span class="brand-mark" aria-hidden="true">GP</span>
+          <span>GoblinPass</span>
+        </a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Launch App</a>
+              <a href="checker.html">Password Checker</a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>Security</summary>
+            <div class="dropdown-menu">
+              <a href="security.html">Security Overview</a>
+              <a href="security-model.html">Security Model</a>
+              <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
+              <a href="security.html#security-key">Security Key</a>
+              <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#copy-password-only">Copy Password Only</a>
+            </div>
+          </details>
+          <a class="nav-link" href="guide.html">Guide</a>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <details class="nav-dropdown">
+            <summary>About Us</summary>
+            <div class="dropdown-menu">
+              <a href="about.html">About GoblinPass</a>
+              <a href="github.html">Why We Use GitHub</a>
+              <a href="lesspass.html">GoblinPass vs LessPass</a>
+            </div>
+          </details>
+          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section content-section how-section" aria-labelledby="security-title">
+        <div class="section-intro">
+          <p class="eyebrow">Security Overview</p>
+          <h1 id="security-title">Unique passwords from repeatable private inputs</h1>
+          <p>
+            GoblinPass is stateless: the generated password is recreated from the
+            same inputs instead of being stored in an online vault.
+          </p>
+        </div>
+        <div class="formula-card" aria-label="Password generation formula">
+          <span>Website ID</span>
+          <b>+</b>
+          <span>Master Password</span>
+          <b>+</b>
+          <span>Optional security factors</span>
+          <b class="formula-line">=</b>
+          <strong>Generated Password</strong>
+        </div>
+        <p class="source-note">
+          No passwords are stored on GoblinPass servers. Optional vault metadata
+          can stay local on your device if you choose to use it.
+        </p>
+      </section>
+
+      <section class="section content-section" aria-labelledby="security-layers-title">
+        <div class="section-intro">
+          <p class="eyebrow">Optional protection layers</p>
+          <h2 id="security-layers-title">Extra controls when you want them</h2>
+          <p>
+            These settings are optional. Existing passwords stay the same unless a
+            user deliberately enables an extra factor and keeps using it.
+          </p>
+        </div>
+        <div class="content-cards two-column">
+          <article id="trusted-device-protection">
+            <h3>Trusted Device Protection</h3>
+            <p>
+              Trusted Device Protection adds a hidden local key to password
+              generation. Passwords created with it enabled cannot be recreated on
+              another device unless the recovery key is restored.
+            </p>
+            <p>
+              If the Trusted Device Key is lost and no recovery key was saved,
+              passwords generated with this feature cannot be recovered.
+            </p>
+          </article>
+          <article id="security-key">
+            <h3>Security Key</h3>
+            <p>
+              The optional Security Key is a second secret typed or selected by the
+              user every time. GoblinPass does not store it, export it, or save it
+              in the vault.
+            </p>
+            <p>
+              The full Security Key is part of the deterministic password input, so
+              partial prompts are not used.
+            </p>
+          </article>
+          <article id="google-security-factor">
+            <h3>Google Security Factor</h3>
+            <p>
+              When enabled, GoblinPass requires Google Sign-In and uses the stable
+              Google account subject ID as an extra password ingredient. It does
+              not use your email address.
+            </p>
+            <p>
+              If this is enabled, the same Google account must be used to regenerate
+              the same passwords.
+            </p>
+          </article>
+          <article id="copy-password-only">
+            <h3>Copy Password Only</h3>
+            <p>
+              Copy Password Only copies the generated password to the clipboard
+              without displaying the full value on screen. This can reduce casual
+              exposure, but it does not protect against a compromised device.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section content-section google-factor-section" aria-labelledby="google-detail-title">
+        <div class="section-intro">
+          <p class="eyebrow">Google Security Factor</p>
+          <h2 id="google-detail-title">Why Google sign-in can be a powerful extra layer</h2>
+          <p>
+            Google Security Factor is optional and separate from normal generation.
+            When it is off, GoblinPass keeps the standard formula unchanged. When
+            it is on, the signed-in Google account becomes another hidden ingredient
+            in the password derivation process.
+          </p>
+        </div>
+        <div class="content-cards two-column">
+          <article>
+            <h3>What sign-in looks like</h3>
+            <div class="google-signin-preview">
+              <span class="google-mark large" aria-hidden="true">G</span>
+              <div>
+                <strong>Signed in with Google</strong>
+                <span>Google Security Factor: Enabled</span>
+                <small>Only basic identity is requested.</small>
+              </div>
+            </div>
+            <p>
+              GoblinPass uses Google Identity Services for basic sign-in. It uses a
+              frontend Client ID only, with no client secret, because this is a
+              static GitHub Pages app.
+            </p>
+          </article>
+          <article>
+            <h3>What is used</h3>
+            <p>
+              Google provides a stable account subject ID. GoblinPass can use that
+              ID as hidden input material during password derivation. The email
+              address is not used as the password ingredient, and the subject ID is
+              not shown as a normal setting.
+            </p>
+            <p>
+              This is derivation input, not a public password field. It should be
+              thought of as an extra account-bound factor used alongside the Website
+              ID, master password, and optional Security Key.
+            </p>
+          </article>
+          <article>
+            <h3>Why it helps</h3>
+            <p>
+              With Google Security Factor enabled, someone who only knows your
+              master password and Website ID still should not be able to recreate
+              the same passwords without also signing into the same Google account.
+              In practice, that means an attacker would need to defeat your Google
+              account protection as well as know your GoblinPass inputs.
+            </p>
+          </article>
+          <article>
+            <h3>Important limits</h3>
+            <p>
+              This does not make GoblinPass unhackable. A fully compromised device,
+              malicious browser extension, phishing attack, or stolen Google session
+              can still create risk. If you enable this feature, protect your Google
+              account with a strong password and two-factor authentication.
+            </p>
+          </article>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <p><strong>GoblinPass</strong></p>
+        <p>Tiny vault. Minimal secrets.</p>
+        <p>Open source. Local first. No password storage.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="index.html">Home</a>
+        <a href="app.html">Web Tools</a>
+        <a href="checker.html">Password Checker</a>
+        <a href="guide.html">Guide</a>
+        <a href="faq.html">FAQ</a>
+        <a href="about.html">About Us</a>
+      </nav>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>

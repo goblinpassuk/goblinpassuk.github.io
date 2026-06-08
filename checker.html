@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - Password Checker</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home"><span class="brand-mark" aria-hidden="true">GP</span><span>GoblinPass</span></a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Launch App</a>
+              <a href="checker.html">Password Checker</a>
+            </div>
+          </details>
+          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Security Key</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
+          <a class="nav-link" href="guide.html">Guide</a>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a><a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
+          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="tool-section section" aria-labelledby="checker-title">
+        <div class="checker-card">
+          <div class="checker-head">
+            <div>
+              <p class="eyebrow">Password checker tool</p>
+              <h1 id="checker-title">Check your password</h1>
+              <p>Test password strength locally in your browser. Nothing you type here is saved or sent anywhere.</p>
+            </div>
+          </div>
+          <label for="passwordInput">Password</label>
+          <div class="input-row">
+            <input id="passwordInput" type="password" autocomplete="off" spellcheck="false" />
+            <button id="togglePassword" class="icon-button" type="button" aria-label="Show password">
+              <span>Show</span>
+            </button>
+          </div>
+          <p class="privacy-line">The password never leaves this page and is not stored in local storage, cookies, files, or logs.</p>
+
+          <div class="result-grid">
+            <section class="result-panel">
+              <p class="panel-label">Strength</p>
+              <strong id="strengthLabel">Empty</strong>
+              <p id="strengthSummary">Start typing to see a local score.</p>
+              <div class="meter"><span id="meterFill"></span></div>
+              <div class="score-row">
+                <span>Score</span>
+                <strong id="scoreValue">0 / 100</strong>
+              </div>
+            </section>
+            <section class="result-panel">
+              <p class="panel-label">Estimated time to crack</p>
+              <strong id="crackTime">No password yet</strong>
+              <p>Estimate assumes fast offline guessing. Real risk depends on how a service protects passwords.</p>
+            </section>
+          </div>
+
+          <div class="detail-grid">
+            <section>
+              <h2>Checklist</h2>
+              <ul class="checklist">
+                <li data-check="length">At least 12 characters</li>
+                <li data-check="uppercase">Uses uppercase letters</li>
+                <li data-check="lowercase">Uses lowercase letters</li>
+                <li data-check="numbers">Includes numbers</li>
+                <li data-check="symbols">Includes symbols</li>
+                <li data-check="notCommon">Not a common password</li>
+                <li data-check="notRepeated">Not repeated</li>
+                <li data-check="notKeyboard">Not a keyboard pattern</li>
+              </ul>
+            </section>
+            <section>
+              <h2>Warnings</h2>
+              <ul id="warnings" class="warnings"></ul>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer"><div class="footer-brand"><p><strong>GoblinPass</strong></p><p>Tiny vault. Minimal secrets.</p><p>Open source. Local first. No password storage.</p></div><nav class="footer-links" aria-label="Footer navigation"><a href="index.html">Home</a><a href="app.html">Web Tools</a><a href="checker.html">Password Checker</a><a href="security.html">Security</a><a href="guide.html">Guide</a></nav></footer>
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>

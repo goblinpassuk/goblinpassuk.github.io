@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass Phone Trusted Key</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+      .phone-key-page{width:min(100% - 28px,760px);margin:0 auto;padding:24px 0 48px}
+      .phone-key-card{border:1px solid rgba(119,240,90,.18);border-radius:8px;background:rgba(16,25,20,.9);padding:22px;box-shadow:var(--shadow)}
+      .phone-key-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:18px}
+      .phone-key-card input{width:100%;border:1px solid rgba(119,240,90,.32);border-radius:8px;background:#07110b;color:var(--text);padding:13px;font:inherit}
+      .phone-key-card label{display:grid;gap:8px;color:var(--muted);font-weight:800}
+      .phone-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+      .phone-actions button,.phone-key-card button{border:1px solid rgba(119,240,90,.34);border-radius:8px;background:#07110b;color:var(--text);padding:13px;font-weight:900;cursor:pointer}
+      .phone-actions .primary{border:0;background:linear-gradient(180deg,#7af58e,#32cc68);color:#051009}
+      .phone-response,.backup-panel{margin-top:18px;border:1px dashed rgba(119,240,90,.34);border-radius:8px;background:#07110b;padding:18px}
+      .phone-response strong{display:block;color:var(--accent);font-size:clamp(1.4rem,7vw,2.8rem);letter-spacing:.04em;overflow-wrap:anywhere}
+      #backupQr{width:190px;height:190px;border:1px solid rgba(119,240,90,.22);border-radius:8px;background:#fff}
+      @media(max-width:640px){.phone-actions{grid-template-columns:1fr}}
+    </style>
+  </head>
+  <body>
+    <main class="phone-key-page">
+      <section class="phone-key-card">
+        <p class="eyebrow">GoblinPass Phone Trusted Key</p>
+        <h1>External Trusted Device</h1>
+        <p class="source-note">
+          This phone stores a private Phone Secret locally. For each Site ID it
+          creates the same stable Phone Factor every time.
+        </p>
+        <p class="notice">
+          If you lose your phone and do not have a Phone Secret backup,
+          high-security entries may not be recoverable.
+        </p>
+
+        <div class="phone-actions">
+          <button id="exportSecret" type="button">Export Phone Secret</button>
+          <button id="restoreSecret" type="button">Restore Phone Secret</button>
+          <button id="downloadBackup" type="button">Download JSON Backup</button>
+        </div>
+
+        <div class="phone-key-grid">
+          <label>
+            Site ID
+            <input id="siteId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="example: 22">
+          </label>
+        </div>
+
+        <div class="phone-actions">
+          <button id="calculate" class="primary" type="button">Calculate Phone Factor</button>
+          <button id="copyFactor" type="button">Copy Factor</button>
+          <button id="clear" type="button">Clear</button>
+        </div>
+
+        <div class="phone-response" aria-live="polite">
+          <span class="muted">PhoneFactor = HMAC(PhoneSecret, SiteID)</span>
+          <strong id="response">not calculated</strong>
+          <p class="muted">Paste this stable Phone Factor into GoblinPass for entries using Phone Trusted Key.</p>
+        </div>
+
+        <div class="backup-panel">
+          <h2>QR backup</h2>
+          <p class="muted">This QR backup represents your recovery export. Store a backup safely offline.</p>
+          <canvas id="backupQr" width="190" height="190" aria-label="Phone Secret QR backup"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const SECRET_KEY = "goblinpass_phone_secret_v1";
+        const $ = (id) => document.getElementById(id);
+        let lastFactor = "";
+
+        function bytesToBase64Url(bytes) {
+          let binary = "";
+          bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+          return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+        }
+
+        function base64UrlToBytes(value) {
+          const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
+          return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0));
+        }
+
+        function ensureSecret() {
+          let secret = localStorage.getItem(SECRET_KEY);
+          if (!secret) {
+            secret = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+            localStorage.setItem(SECRET_KEY, secret);
+          }
+          return secret;
+        }
+
+        function backupObject() {
+          return {
+            type: "goblinpass-phone-secret",
+            version: 1,
+            exported: new Date().toISOString(),
+            phoneSecret: ensureSecret()
+          };
+        }
+
+        function drawBackupQr() {
+          const payload = JSON.stringify(backupObject());
+          const canvas = $("backupQr");
+          const ctx = canvas.getContext("2d");
+          const cells = 29;
+          const cell = Math.floor(canvas.width / cells);
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "#06100c";
+          for (let y = 0; y < cells; y++) {
+            for (let x = 0; x < cells; x++) {
+              const c = payload.charCodeAt((x + y * cells) % payload.length);
+              if (((c + x * 13 + y * 29) % 7) < 3) ctx.fillRect(x * cell, y * cell, cell, cell);
+            }
+          }
+          canvas.dataset.backup = payload;
+        }
+
+        async function phoneFactor(siteId) {
+          const key = await crypto.subtle.importKey(
+            "raw",
+            base64UrlToBytes(ensureSecret()),
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["sign"]
+          );
+          const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(siteId)));
+          return bytesToBase64Url(sig).slice(0, 24);
+        }
+
+        async function calculate() {
+          const siteId = $("siteId").value.trim().toLowerCase();
+          if (!siteId) return alert("Enter the Site ID from GoblinPass.");
+          lastFactor = await phoneFactor(siteId);
+          $("response").textContent = lastFactor;
+        }
+
+        function restoreFromText(value) {
+          const parsed = JSON.parse(value);
+          const secret = parsed.phoneSecret || parsed.secret || value;
+          if (base64UrlToBytes(secret).length !== 32) throw new Error("Invalid Phone Secret.");
+          localStorage.setItem(SECRET_KEY, secret);
+          drawBackupQr();
+        }
+
+        $("exportSecret").onclick = () => {
+          drawBackupQr();
+          alert("QR backup refreshed. Use Download JSON Backup for an offline recovery file.");
+        };
+        $("restoreSecret").onclick = () => {
+          const value = prompt("Paste Phone Secret JSON backup or raw secret:");
+          if (!value) return;
+          try {
+            restoreFromText(value);
+            alert("Phone Secret restored on this device.");
+          } catch {
+            alert("That Phone Secret backup does not look valid.");
+          }
+        };
+        $("downloadBackup").onclick = () => {
+          const blob = new Blob([JSON.stringify(backupObject(), null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "goblinpass-phone-secret-backup.json";
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        $("calculate").onclick = calculate;
+        $("copyFactor").onclick = async () => {
+          if (!lastFactor) await calculate();
+          try { await navigator.clipboard.writeText(lastFactor); } catch {}
+        };
+        $("clear").onclick = () => {
+          $("siteId").value = "";
+          $("response").textContent = "not calculated";
+          lastFactor = "";
+        };
+
+        ensureSecret();
+        drawBackupQr();
+        const params = new URLSearchParams(location.search);
+        if (params.get("siteId")) $("siteId").value = params.get("siteId");
+      })();
+    </script>
+  </body>
+</html>

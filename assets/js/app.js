@@ -294,6 +294,7 @@
   <meta name="theme-color" content="${config.secondaryColour}">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
+  ${makeGeneratedStyleFallback(config)}
 </head>
 <body>
   <main class="app">
@@ -360,7 +361,7 @@
     <section id="generatorPage" class="page-section">
     <section class="card">
       <label>Website ID</label>
-      <input id="siteId" type="text" placeholder="your spreadsheet ID" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input id="siteId" type="text" placeholder="Unique ID" autocomplete="off" autocapitalize="none" spellcheck="false">
 
       <div class="advanced-only">
         <label>Site (optional)</label>
@@ -387,6 +388,21 @@
         <p class="muted">The full Security Key is required every time. ${escapeHtml(config.siteName)} does not store it.</p>
         <div id="securityInputPanel" class="security-input-panel hidden" aria-live="polite"></div>
       </div>
+
+      <label for="passwordStyle">Password Style</label>
+      <select id="passwordStyle">
+        <option value="maximum">Maximum Security</option>
+        <option value="memorable">Memorable Password</option>
+      </select>
+      <div id="memorableOptions" class="hidden">
+        <label for="memorableStrength">Memorable Strength</label>
+        <select id="memorableStrength">
+          <option value="easy">Easy - 3 words</option>
+          <option value="standard" selected>Standard - 4 words</option>
+          <option value="strong">Strong - 4 words + number + symbol</option>
+        </select>
+      </div>
+      <p class="muted">Memorable passwords are easier to enter on consoles, TVs, handheld devices, and controllers. Maximum Security remains recommended for email, banking, and important accounts.</p>
 
       <div class="options-grid advanced-only">
         <label class="check"><input id="lower" type="checkbox" checked> a-z</label>
@@ -453,50 +469,84 @@
         <div class="vault-head">
           <h2>Settings</h2>
         </div>
-        <label class="setting-row">
-          <input id="enableSecurityKey" type="checkbox">
-          Enable Security Key
-        </label>
-        <label for="securityKeyInputMethod">Security Key Input Method</label>
-        <select id="securityKeyInputMethod">
-          <option value="normal">Normal Keyboard</option>
-          <option value="desktop-shuffled">Desktop Shuffled Keyboard</option>
-          <option value="mobile-combo">Mobile Combination Lock</option>
+        <select id="defaultPasswordStyle" class="hidden" aria-hidden="true" tabindex="-1">
+          <option value="maximum" selected>Maximum Security</option>
+          <option value="memorable">Memorable Password</option>
         </select>
-        <p class="muted">Recommended formats include G48372, DOG123, CAT456, or GP4837.</p>
-        <p class="muted">Suggested format: 2 letters + 4 digits, for example GP4837.</p>
-        <p class="notice">The Security Key adds an extra secret to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
-        <label class="setting-row">
-          <input id="enableTrustedDevice" type="checkbox">
-          Enable Trusted Device Protection
-        </label>
-        <p class="muted">Trusted Device Protection adds a hidden local key to password generation. Passwords created on this device cannot be recreated on another device unless the recovery key is restored.</p>
-        <p id="trustedDeviceStatus" class="status-line">Trusted Device Protection: Disabled</p>
-        <div class="settings-actions">
-          <button id="showRecoveryKey" type="button">Show Recovery Key</button>
-          <button id="restoreTrustedDevice" type="button">Restore Trusted Device</button>
+        <div class="settings-stack">
+          <section class="settings-card">
+            <h3>Vault</h3>
+            <label class="setting-row">
+              <input id="saveWebsiteIds" type="checkbox" checked>
+              Save Website IDs in vault
+            </label>
+            <p class="muted">Keeps saved entries easier to reuse. Turn this off if you prefer to remember IDs yourself.</p>
+          </section>
+          <section class="settings-card">
+            <h3>Security</h3>
+            <label class="setting-row">
+              <input id="enableSecurityKey" type="checkbox">
+              Enable Security Key
+            </label>
+            <div id="securityKeyMethodGroup" class="settings-reveal hidden">
+              <label for="securityKeyInputMethod">Security Key Input Method</label>
+              <select id="securityKeyInputMethod">
+                <option value="normal">Normal Keyboard</option>
+                <option value="desktop-shuffled">Desktop Shuffled Keyboard</option>
+                <option value="mobile-combo">Mobile Combination Lock</option>
+              </select>
+              <details class="more-info">
+                <summary>More info</summary>
+                <p>Recommended formats include G48372, DOG123, CAT456, or GP4837. Suggested format: 2 letters + 4 digits, for example GP4837.</p>
+              </details>
+              <p id="securityKeyWarning" class="notice">The Security Key adds an extra secret to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
+            </div>
+            <label class="setting-row">
+              <input id="enableTrustedDevice" type="checkbox">
+              Enable Trusted Device Protection
+            </label>
+            <div id="trustedDeviceDetails" class="settings-reveal hidden">
+              <p id="trustedDeviceStatus" class="status-line">Trusted Device Protection: Disabled</p>
+              <div class="settings-actions">
+                <button id="showRecoveryKey" type="button">Show Recovery Key</button>
+                <button id="restoreTrustedDevice" type="button">Restore Trusted Device</button>
+              </div>
+              <details class="more-info">
+                <summary>More info</summary>
+                <p>Trusted Device Protection adds a hidden local key to password generation. Passwords created with it enabled need the same trusted key restored on another device.</p>
+              </details>
+              <p id="trustedDeviceWarning" class="notice">If the Trusted Device Key is lost and no recovery key was saved, passwords generated with Trusted Device Protection cannot be recovered.</p>
+            </div>
+          </section>
+          <section class="settings-card">
+            <h3>Privacy</h3>
+            <label class="setting-row">
+              <input id="copyPasswordOnly" type="checkbox">
+              Copy Password Only
+            </label>
+            <p class="muted">Copies the generated password without showing it on screen.</p>
+          </section>
+          <section class="settings-card google-account-card">
+            <h3>Google Sign-In</h3>
+            <p class="muted">Optional. Google Sign-In can identify the user for future encrypted vault sync/import/export convenience. It is not used for password generation unless Google Security Factor is enabled.</p>
+            <label class="setting-row">
+              <input id="googleSecurityFactor" type="checkbox">
+              Google Security Factor
+            </label>
+            <p class="muted">When enabled, GoblinPass requires Google Sign-In and uses the stable Google account subject ID as an extra password ingredient. It does not use your email address.</p>
+            <p id="googleSecurityWarning" class="notice">If you lose access to this Google account, you may not be able to regenerate the same passwords.</p>
+            <div class="settings-actions">
+              <button id="setupGoogleSignIn" type="button">Set up Google Sign-In</button>
+              <button id="googleSignOut" type="button">Sign out</button>
+            </div>
+            <div id="googleSignInButton" class="google-button-area"></div>
+            <p id="googleSignInStatus" class="status-line">Google Sign-In: Not signed in</p>
+            <details class="more-info">
+              <summary>More info</summary>
+              <p>Google Sign-In uses basic identity only. Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
+            </details>
+          </section>
         </div>
-        <p class="notice">If the Trusted Device Key is lost and no recovery key was saved, passwords generated with Trusted Device Protection cannot be recovered.</p>
-        <label class="setting-row">
-          <input id="copyPasswordOnly" type="checkbox">
-          Copy Password Only
-        </label>
-        <p class="muted">When enabled, generated passwords are copied to the clipboard without being shown on screen.</p>
-        <h3 class="settings-subtitle">Google Sign-In</h3>
-        <p class="muted">Optional. Google Sign-In can identify the user for future encrypted vault sync/import/export convenience. It is not used for password generation unless Google Security Factor is enabled.</p>
-        <label class="setting-row">
-          <input id="googleSecurityFactor" type="checkbox">
-          Google Security Factor
-        </label>
-        <p class="muted">When enabled, GoblinPass requires Google Sign-In and uses the stable Google account subject ID as an extra password ingredient. It does not use your email address.</p>
-        <p class="notice">If you lose access to this Google account, you may not be able to regenerate the same passwords.</p>
-        <div class="settings-actions">
-          <button id="setupGoogleSignIn" type="button">Set up Google Sign-In</button>
-          <button id="googleSignOut" type="button">Sign out</button>
-        </div>
-        <div id="googleSignInButton" class="google-button-area"></div>
-        <p id="googleSignInStatus" class="status-line">Google Sign-In: Not signed in</p>
-        <p class="notice">Google Sign-In uses basic identity only. Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
       </section>
     </section>
   </main>
@@ -515,7 +565,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About ${escapeHtml(config.siteName)}</title>
-      <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css">
+  ${makeGeneratedStyleFallback(config)}
 </head>
 <body>
   <main class="app">
@@ -577,6 +628,9 @@ Install support depends on the mobile browser. The app includes a web manifest a
 - The optional Security Key setting is saved locally, but the Security Key itself is never saved, exported, or transmitted.
 - The Security Key input method preference is saved locally. The actual Security Key is cleared on refresh, app close, or Clear.
 - The full Security Key is required every time. This fork does not use partial or random character prompts for the Security Key.
+- Maximum Security is the default password style and keeps existing complex generation unchanged.
+- Memorable Password mode is optional and creates deterministic word-based passwords with Easy, Standard, and Strong choices.
+- The vault can optionally avoid saving Website IDs. If Website ID saving is off, users must remember or enter the ID themselves when regenerating a password.
 - Trusted Device Protection is optional. Save the Recovery Key offline before relying on it on another device.
 - If the Trusted Device Key is lost and no Recovery Key was saved, passwords generated with Trusted Device Protection cannot be recovered.
 - Optional Google Sign-In uses a hardcoded frontend Client ID only. It does not request Gmail, Drive, Calendar, or other sensitive scopes. Do not add a client secret to this static site.
@@ -614,6 +668,7 @@ Powered by the GoblinPass Open Source Engine.
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Setup ${escapeHtml(config.siteName)}</title>
   <link rel="stylesheet" href="style.css">
+  ${makeGeneratedStyleFallback(config)}
 </head>
 <body>
   <main class="app">
@@ -651,6 +706,9 @@ Powered by the GoblinPass Open Source Engine.
         <li>The optional Security Key setting is saved locally, but the Security Key itself is never saved or exported.</li>
         <li>The Security Key input method preference is saved locally. The actual Security Key is cleared on refresh, app close, or Clear.</li>
         <li>The full Security Key is required every time. This fork does not use partial or random character prompts.</li>
+        <li>Maximum Security is the default password style and keeps existing complex generation unchanged.</li>
+        <li>Memorable Password mode is optional and creates deterministic word-based passwords with Easy, Standard, and Strong choices.</li>
+        <li>The vault can optionally avoid saving Website IDs. If Website ID saving is off, users must remember or enter the ID themselves when regenerating a password.</li>
         <li>Trusted Device Protection is optional. Save the Recovery Key offline before relying on it on another device.</li>
         <li>If the Trusted Device Key is lost and no Recovery Key was saved, passwords generated with Trusted Device Protection cannot be recovered.</li>
         <li>Optional Google Sign-In uses a hardcoded frontend Client ID only. It does not request Gmail, Drive, Calendar, or other sensitive scopes. Do not add a client secret to this static site.</li>
@@ -670,7 +728,11 @@ Powered by the GoblinPass Open Source Engine.
 
   function makeGeneratedCss(config) {
     const light = config.theme === "light";
-    return `:root{--bg:${light ? "#f7fff8" : "#06100c"};--card:${config.secondaryColour};--card2:${config.secondaryColour};--border:${config.primaryColour};--border2:${config.primaryColour};--text:${light ? "#0b160f" : "#effff2"};--muted:${light ? "#4d6355" : "#9fc7aa"};--input:${light ? "#ffffff" : "#06120d"};--green:${config.primaryColour};--green2:${config.primaryColour};--danger:#ff6672;--shadow:0 14px 34px rgba(0,0,0,.38)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.app{width:min(100%,520px);margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom))}.brand{display:flex;align-items:center;gap:12px;padding:8px 4px 14px}.brand>div{flex:1}.theme-edit-toggle{width:auto;min-height:38px;padding:9px 12px}.mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}.mode-toggle button.active{background:var(--green);color:#041009;border-color:var(--green)}body.simple-mode .advanced-only{display:none!important}.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:var(--input);border:1px solid var(--green);color:var(--green);font-weight:950;box-shadow:0 0 20px rgba(116,255,157,.18);object-fit:cover}.logo-fallback{display:grid}h1{font-size:25px;line-height:1;margin:0;font-weight:950;letter-spacing:.01em}.brand p{margin:4px 0 0;color:var(--muted);font-size:12px}.app-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}.app-menu button.active{background:var(--green);color:#041009;border-color:var(--green)}.page-section{display:block}.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}.theme-editor{display:grid;gap:10px}.swatch-row{display:grid;grid-template-columns:1fr repeat(4,42px);gap:8px;align-items:center}.swatch-row input{height:42px;padding:5px}.swatch-row button{height:42px;padding:0;border-color:var(--border)}.swatch-row button[data-colour="#74ff9d"]{background:#74ff9d}.swatch-row button[data-colour="#ec4bdd"]{background:#ec4bdd}.swatch-row button[data-colour="#4da3ff"]{background:#4da3ff}.swatch-row button[data-colour="#ffd166"]{background:#ffd166}.swatch-row button[data-secondary="#09160f"]{background:#09160f}.swatch-row button[data-secondary="#161026"]{background:#161026}.swatch-row button[data-secondary="#101827"]{background:#101827}.swatch-row button[data-secondary="#f7fff8"]{background:#f7fff8}.swatch-row button[data-text="#effff2"]{background:#effff2}.swatch-row button[data-text="#0b160f"]{background:#0b160f}.swatch-row button[data-text="#ffd166"]{background:#ffd166}.swatch-row button[data-text="#ffffff"]{background:#ffffff}.swatch-row button[data-muted="#9fc7aa"]{background:#9fc7aa}.swatch-row button[data-muted="#4d6355"]{background:#4d6355}.swatch-row button[data-muted="#c7f9cc"]{background:#c7f9cc}.swatch-row button[data-muted="#f4d35e"]{background:#f4d35e}label{display:block;font-weight:800;margin:0 0 8px}input,select{width:100%;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px;outline:none;font-size:16px}select{margin-bottom:12px}input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 18%,transparent)}input::placeholder{color:var(--muted)}.card>input{margin-bottom:16px}.advanced-only{margin-bottom:16px}.advanced-only>input{margin-bottom:16px}.advanced-only>input:last-of-type{margin-bottom:10px}.input-row{display:flex;gap:9px;margin-bottom:16px}.input-row input{flex:1}.icon-btn{width:58px;min-width:58px;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;cursor:pointer}.icon-btn.small{height:42px;width:72px;min-width:72px;padding:9px 12px;white-space:nowrap}.save-full-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:6px 0 0;font-weight:750}.check{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:0;font-weight:750}.save-full-row input,.check input{width:16px;height:16px;padding:0;accent-color:var(--green2);flex:0 0 16px}.options-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}.check{justify-content:center;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:10px 6px}.number-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.button-row{display:grid;grid-template-columns:1fr .55fr;gap:9px}button,.import-label{border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px 12px;font-weight:850;cursor:pointer;text-align:center;font-size:14px}.primary{background:var(--green);color:#041009;border:0}.result{margin-top:14px;border:1px dashed var(--border2);border-radius:12px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 72px;align-items:center;gap:10px;background:var(--input);color:var(--text)}.result span{min-width:0;overflow-wrap:anywhere;line-height:1.35}.hidden{display:none!important}.security-key-box{margin-bottom:16px}.security-key-box input[readonly]{cursor:pointer}.security-input-panel{margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:15px;background:var(--input)}.security-panel-title{margin:0 0 10px;color:var(--muted);font-size:12px;font-weight:850}.security-progress{margin:0 0 10px;color:var(--text);font-size:13px;font-weight:850}.security-key-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.security-key-grid button,.security-actions button{min-height:46px;padding:10px 6px}.security-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.combo-slots{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.combo-slots button{min-height:50px;padding:10px 4px;font-size:18px}.combo-choice-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}.combo-actions{grid-template-columns:repeat(3,1fr)}.notice{margin:12px 0 0;padding:12px;border:1px solid #6a5b20;border-radius:12px;background:#1b1909;color:#ffe58a;font-size:13px}.setting-row{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--text)}.setting-row input{width:18px;height:18px;padding:0;accent-color:var(--green2);flex:0 0 18px}.status-line{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--input);color:var(--text);font-weight:800;font-size:13px}.settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.settings-subtitle{margin:22px 0 8px;font-size:16px}.google-button-area{min-height:44px;display:flex;align-items:center;margin:10px 0}.vault-head{display:flex;align-items:center;justify-content:space-between;gap:10px}h2{margin:0;font-size:18px}.muted{color:var(--muted);font-size:12px;margin:7px 0 12px}.pin-row{display:grid;grid-template-columns:1fr 96px;gap:8px}.filter{margin:4px 0 10px}.vault-actions{display:flex;gap:8px;margin-bottom:10px}.import-label{position:relative;overflow:hidden}.import-label input{position:absolute;inset:0;opacity:0}.entry{border:1px solid var(--border);border-radius:15px;padding:13px;margin-bottom:10px;background:var(--input)}.entry-title{font-weight:950;margin-bottom:7px}.entry-line{color:var(--text);font-size:13px;margin:4px 0}.entry-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.entry-actions button{padding:10px 8px}.danger{color:#ffe3e6;border-color:#70424a;background:#211014}.sensitive-note{color:var(--muted);font-size:11px;margin-left:5px}footer{width:min(100%,520px);margin:0 auto;padding:8px 12px 28px;color:var(--muted)}@media(max-width:380px){.security-key-grid{grid-template-columns:repeat(4,1fr)}.combo-slots{grid-template-columns:repeat(6,1fr)}.security-actions{grid-template-columns:1fr}.combo-actions{grid-template-columns:1fr}.options-grid{grid-template-columns:repeat(2,1fr)}.button-row{grid-template-columns:1fr}.result{grid-template-columns:1fr}.result .icon-btn.small{width:100%}.settings-actions{grid-template-columns:1fr}}`;
+    return `:root{--bg:${light ? "#f7fff8" : "#06100c"};--card:${config.secondaryColour};--card2:${config.secondaryColour};--border:${config.primaryColour};--border2:${config.primaryColour};--text:${light ? "#0b160f" : "#effff2"};--muted:${light ? "#4d6355" : "#9fc7aa"};--input:${light ? "#ffffff" : "#06120d"};--green:${config.primaryColour};--green2:${config.primaryColour};--danger:#ff6672;--shadow:0 14px 34px rgba(0,0,0,.38)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.app{width:min(100%,520px);margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom))}.brand{display:flex;align-items:center;gap:12px;padding:8px 4px 14px}.brand>div{flex:1}.theme-edit-toggle{width:auto;min-height:38px;padding:9px 12px}.mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}.mode-toggle button.active{background:var(--green);color:#041009;border-color:var(--green)}body.simple-mode .advanced-only{display:none!important}.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:var(--input);border:1px solid var(--green);color:var(--green);font-weight:950;box-shadow:0 0 20px rgba(116,255,157,.18);object-fit:cover}.logo-fallback{display:grid}h1{font-size:25px;line-height:1;margin:0;font-weight:950;letter-spacing:.01em}.brand p{margin:4px 0 0;color:var(--muted);font-size:12px}.app-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}.app-menu button.active{background:var(--green);color:#041009;border-color:var(--green)}.page-section{display:block}.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}.theme-editor{display:grid;gap:10px}.swatch-row{display:grid;grid-template-columns:1fr repeat(4,42px);gap:8px;align-items:center}.swatch-row input{height:42px;padding:5px}.swatch-row button{height:42px;padding:0;border-color:var(--border)}.swatch-row button[data-colour="#74ff9d"]{background:#74ff9d}.swatch-row button[data-colour="#ec4bdd"]{background:#ec4bdd}.swatch-row button[data-colour="#4da3ff"]{background:#4da3ff}.swatch-row button[data-colour="#ffd166"]{background:#ffd166}.swatch-row button[data-secondary="#09160f"]{background:#09160f}.swatch-row button[data-secondary="#161026"]{background:#161026}.swatch-row button[data-secondary="#101827"]{background:#101827}.swatch-row button[data-secondary="#f7fff8"]{background:#f7fff8}.swatch-row button[data-text="#effff2"]{background:#effff2}.swatch-row button[data-text="#0b160f"]{background:#0b160f}.swatch-row button[data-text="#ffd166"]{background:#ffd166}.swatch-row button[data-text="#ffffff"]{background:#ffffff}.swatch-row button[data-muted="#9fc7aa"]{background:#9fc7aa}.swatch-row button[data-muted="#4d6355"]{background:#4d6355}.swatch-row button[data-muted="#c7f9cc"]{background:#c7f9cc}.swatch-row button[data-muted="#f4d35e"]{background:#f4d35e}label{display:block;font-weight:800;margin:0 0 8px}input,select{width:100%;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px;outline:none;font-size:16px}select{margin-bottom:12px}input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 18%,transparent)}input::placeholder{color:var(--muted)}.card>input{margin-bottom:16px}.advanced-only{margin-bottom:16px}.advanced-only>input{margin-bottom:16px}.advanced-only>input:last-of-type{margin-bottom:10px}.input-row{display:flex;gap:9px;margin-bottom:16px}.input-row input{flex:1}.icon-btn{width:58px;min-width:58px;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;cursor:pointer}.icon-btn.small{height:42px;width:72px;min-width:72px;padding:9px 12px;white-space:nowrap}.save-full-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:6px 0 0;font-weight:750}.check{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:0;font-weight:750}.save-full-row input,.check input{width:16px;height:16px;padding:0;accent-color:var(--green2);flex:0 0 16px}.options-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}.check{justify-content:center;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:10px 6px}.number-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.button-row{display:grid;grid-template-columns:1fr .55fr;gap:9px}button,.import-label{border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px 12px;font-weight:850;cursor:pointer;text-align:center;font-size:14px}.primary{background:var(--green);color:#041009;border:0}.result{margin-top:14px;border:1px dashed var(--border2);border-radius:12px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 72px;align-items:center;gap:10px;background:var(--input);color:var(--text)}.result span{min-width:0;overflow-wrap:anywhere;line-height:1.35}.hidden{display:none!important}.security-key-box{margin-bottom:16px}.security-key-box input[readonly]{cursor:pointer}.security-input-panel{margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:15px;background:var(--input)}.security-panel-title{margin:0 0 10px;color:var(--muted);font-size:12px;font-weight:850}.security-progress{margin:0 0 10px;color:var(--text);font-size:13px;font-weight:850}.security-key-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.security-key-grid button,.security-actions button{min-height:46px;padding:10px 6px}.security-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.combo-slots{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.combo-slots button{min-height:50px;padding:10px 4px;font-size:18px}.combo-choice-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}.combo-actions{grid-template-columns:repeat(3,1fr)}.notice{margin:12px 0 0;padding:12px;border:1px solid #6a5b20;border-radius:12px;background:#1b1909;color:#ffe58a;font-size:13px}.setting-row{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--text)}.setting-row input{width:18px;height:18px;padding:0;accent-color:var(--green2);flex:0 0 18px}.status-line{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--input);color:var(--text);font-weight:800;font-size:13px}.settings-stack{display:grid;gap:12px;margin-top:12px}.settings-card{border:1px solid var(--border);border-radius:16px;background:color-mix(in srgb,var(--input) 76%,transparent);padding:14px}.settings-card h3{margin:0 0 10px;font-size:16px}.settings-reveal{margin:8px 0 14px;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--input)}.more-info{margin:8px 0;color:var(--muted);font-size:12px}.more-info summary{cursor:pointer;color:var(--green);font-weight:850}.more-info p{margin:8px 0 0}.settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.settings-actions.single-action{grid-template-columns:1fr}.settings-subtitle{margin:22px 0 8px;font-size:16px}.google-button-area{min-height:44px;display:flex;align-items:center;margin:10px 0}.google-button-area:empty{display:none}.google-account-card input:disabled{opacity:.55}.vault-head{display:flex;align-items:center;justify-content:space-between;gap:10px}h2{margin:0;font-size:18px}.muted{color:var(--muted);font-size:12px;margin:7px 0 12px}.pin-row{display:grid;grid-template-columns:1fr 96px;gap:8px}.filter{margin:4px 0 10px}.vault-actions{display:flex;gap:8px;margin-bottom:10px}.import-label{position:relative;overflow:hidden}.import-label input{position:absolute;inset:0;opacity:0}.entry{border:1px solid var(--border);border-radius:15px;padding:13px;margin-bottom:10px;background:var(--input)}.entry-title{font-weight:950;margin-bottom:7px}.entry-line{color:var(--text);font-size:13px;margin:4px 0}.entry-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.entry-actions button{padding:10px 8px}.danger{color:#ffe3e6;border-color:#70424a;background:#211014}.sensitive-note{color:var(--muted);font-size:11px;margin-left:5px}footer{width:min(100%,520px);margin:0 auto;padding:8px 12px 28px;color:var(--muted)}@media(max-width:380px){.security-key-grid{grid-template-columns:repeat(4,1fr)}.combo-slots{grid-template-columns:repeat(6,1fr)}.security-actions{grid-template-columns:1fr}.combo-actions{grid-template-columns:1fr}.options-grid{grid-template-columns:repeat(2,1fr)}.button-row{grid-template-columns:1fr}.result{grid-template-columns:1fr}.result .icon-btn.small{width:100%}.settings-actions{grid-template-columns:1fr}}`;
+  }
+
+  function makeGeneratedStyleFallback(config) {
+    return `<style>${makeGeneratedCss(config)}</style>`;
   }
 
   function makeCoreGenerator() {
@@ -681,6 +743,19 @@ const GP_CHARSETS = [
   { key: "upper", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" },
   { key: "nums", chars: "0123456789" },
   { key: "symbols", chars: "%!@#$_-" }
+];
+const GP_MEMORABLE_WORDS = [
+  "Amber", "Anchor", "Aspen", "Atlas", "Autumn", "Beacon", "Berry", "Blossom",
+  "Bridge", "Bronze", "Canyon", "Cedar", "Cherry", "Cloud", "Comet", "Copper",
+  "Crystal", "Daisy", "Delta", "Echo", "Ember", "Falcon", "Forest", "Frost",
+  "Galaxy", "Garden", "Harbor", "Hazel", "Hidden", "Indigo", "Island", "Jasper",
+  "Juniper", "Kernel", "Lagoon", "Lantern", "Maple", "Marble", "Meadow", "Meteor",
+  "Midnight", "Mint", "Mountain", "Nectar", "Nova", "Ocean", "Olive", "Onyx",
+  "Orbit", "Pebble", "Pepper", "Phoenix", "Pine", "Pixel", "Planet", "Purple",
+  "Quartz", "River", "Rocket", "Saffron", "Shadow", "Silver", "Solstice", "Spark",
+  "Stone", "Storm", "Summit", "Sunset", "Thistle", "Thunder", "Topaz", "Tulip",
+  "Velvet", "Violet", "Willow", "Winter", "Zephyr", "Hammer", "Compass", "Puzzle",
+  "Signal", "Castle", "Engine", "Voyage", "Button", "Cobalt"
 ];
 
 async function gpSha256Hex(text) {
@@ -733,6 +808,24 @@ async function gpDistributedCharacters(seed, sets, length) {
   return out;
 }
 
+async function gpMemorableWord(seed, round) {
+  const hex = await gpSha256Hex(seed + "|word|" + round);
+  return GP_MEMORABLE_WORDS[parseInt(hex.slice(0, 8), 16) % GP_MEMORABLE_WORDS.length];
+}
+
+async function gpMemorablePassword(seed, strength) {
+  const wordCount = strength === "easy" ? 3 : 4;
+  const words = [];
+  for (let i = 0; i < wordCount; i++) words.push(await gpMemorableWord(seed, i));
+  if (strength === "strong") {
+    const digitHex = await gpSha256Hex(seed + "|digit");
+    const symbolHex = await gpSha256Hex(seed + "|symbol");
+    const symbols = "!@#$%";
+    return \`\${words.join("-")}\${symbols[parseInt(symbolHex.slice(0, 8), 16) % symbols.length]}\${parseInt(digitHex.slice(0, 8), 16) % 10}\`;
+  }
+  return words.join("-");
+}
+
 async function goblinPassGenerate(siteId, masterPassword, options = {}) {
   const length = Math.max(8, Math.min(64, parseInt(options.length || "16", 10)));
   const counter = Math.max(1, Math.min(999, parseInt(options.counter || "1", 10)));
@@ -743,6 +836,12 @@ async function goblinPassGenerate(siteId, masterPassword, options = {}) {
   const securityKey = String(options.securityKey || "");
   const trustedDeviceKey = String(options.trustedDeviceKey || "");
   const googleSubjectId = String(options.googleSubjectId || "");
+  const passwordStyle = options.passwordStyle === "memorable" ? "memorable" : "maximum";
+  const memorableStrength = ["easy", "standard", "strong"].includes(options.memorableStrength) ? options.memorableStrength : "standard";
+  if (passwordStyle === "memorable") {
+    const memorableSeed = \`GPMEMV1|\${normalizedSiteId}|\${counter}|\${masterPassword}|\${securityKey}|\${trustedDeviceKey}|\${googleSubjectId}|\${memorableStrength}\`;
+    return gpMemorablePassword(memorableSeed, memorableStrength);
+  }
   const seed = googleSubjectId && trustedDeviceKey
     ? \`GPIDV2TG|\${normalizedSiteId}|\${counter}|\${masterPassword}|\${securityKey}|\${trustedDeviceKey}|\${googleSubjectId}|\${optionKey}\`
     : googleSubjectId
@@ -775,6 +874,7 @@ let securityKeyRevealTimer = 0;
 let securityKeyRevealVisible = false;
 let googleUser = null;
 let googleScriptPromise = null;
+let lastGeneratedMeta = null;
 const STORAGE_KEY = "goblinpass_mobile_entries_v1";
 const PIN_KEY = "goblinpass_mobile_pin_v1";
 const THEME_KEY = "goblinpass_brand_theme_v1";
@@ -784,6 +884,8 @@ const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
 const GOOGLE_CLIENT_ID = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
 const CHARSET_KEYS = ["lower", "upper", "nums", "symbols"];
 const SECURITY_INPUT_METHODS = ["normal", "desktop-shuffled", "mobile-combo"];
+const PASSWORD_STYLES = ["maximum", "memorable"];
+const MEMORABLE_STRENGTHS = ["easy", "standard", "strong"];
 const DEFAULT_THEME = {
   siteName: "${escapeHtml(config.siteName)}",
   tagline: "${escapeHtml(config.tagline)}",
@@ -819,6 +921,8 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
+      defaultPasswordStyle: "maximum",
+      saveWebsiteIds: true,
       googleSecurityFactorEnabled: false,
       ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
     };
@@ -830,6 +934,8 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
+      defaultPasswordStyle: "maximum",
+      saveWebsiteIds: true,
       googleSecurityFactorEnabled: false
     };
   }
@@ -843,10 +949,32 @@ function saveSettings(settings) {
     trustedDeviceEnabled: !!next.trustedDeviceEnabled,
     trustedDeviceBackedUp: !!next.trustedDeviceBackedUp,
     copyPasswordOnly: !!next.copyPasswordOnly,
+    defaultPasswordStyle: PASSWORD_STYLES.includes(next.defaultPasswordStyle) ? next.defaultPasswordStyle : "maximum",
+    saveWebsiteIds: next.saveWebsiteIds !== false,
     googleSecurityFactorEnabled: !!next.googleSecurityFactorEnabled
   }));
 }
 function isSecurityKeyEnabled() { return !!loadSettings().securityKeyEnabled; }
+function getDefaultPasswordStyle() {
+  const style = loadSettings().defaultPasswordStyle;
+  return PASSWORD_STYLES.includes(style) ? style : "maximum";
+}
+function getQuickPasswordStyle() {
+  return PASSWORD_STYLES.includes($("passwordStyle")?.value) ? $("passwordStyle").value : getDefaultPasswordStyle();
+}
+function getMemorableStrength() {
+  return MEMORABLE_STRENGTHS.includes($("memorableStrength")?.value) ? $("memorableStrength").value : "standard";
+}
+function clearGeneratedResult() {
+  generatedPassword = "";
+  generatedVisible = false;
+  lastGeneratedMeta = null;
+  if ($("result")) $("result").classList.add("hidden");
+}
+function updatePasswordStyleUi() {
+  const style = getQuickPasswordStyle();
+  if ($("memorableOptions")) $("memorableOptions").classList.toggle("hidden", style !== "memorable");
+}
 function isMobileDevice() { return window.matchMedia("(pointer: coarse), (max-width: 640px)").matches; }
 function getDefaultSecurityInputMethod() { return isMobileDevice() ? "mobile-combo" : "desktop-shuffled"; }
 function getSecurityInputMethod() {
@@ -894,6 +1022,8 @@ function applySecurityKeySetting() {
   $("enableSecurityKey").checked = enabled;
   $("securityKeyInputMethod").value = SECURITY_INPUT_METHODS.includes(method) ? method : getDefaultSecurityInputMethod();
   $("securityKeyBox").classList.toggle("hidden", !enabled);
+  if ($("securityKeyMethodGroup")) $("securityKeyMethodGroup").classList.toggle("hidden", !enabled);
+  if ($("securityKeyWarning")) $("securityKeyWarning").classList.toggle("hidden", !enabled);
   $("securityKeyInputMethod").disabled = !enabled;
   $("securityKey").readOnly = enabled && getSecurityInputMethod() !== "normal";
   $("securityKey").placeholder = getSecurityInputMethod() === "mobile-combo" ? "[L] [L] [#] [#] [#] [#]" : "Example: GP4837";
@@ -950,6 +1080,8 @@ function updateTrustedDeviceStatus() {
   const settings = loadSettings();
   if ($("enableTrustedDevice")) $("enableTrustedDevice").checked = !!settings.trustedDeviceEnabled;
   if ($("copyPasswordOnly")) $("copyPasswordOnly").checked = !!settings.copyPasswordOnly;
+  if ($("trustedDeviceDetails")) $("trustedDeviceDetails").classList.toggle("hidden", !settings.trustedDeviceEnabled);
+  if ($("trustedDeviceWarning")) $("trustedDeviceWarning").classList.toggle("hidden", !settings.trustedDeviceEnabled);
   if (!$("trustedDeviceStatus")) return;
   if (!settings.trustedDeviceEnabled) {
     $("trustedDeviceStatus").textContent = "Trusted Device Protection: Disabled";
@@ -1005,6 +1137,7 @@ function loadGoogleIdentityScript() {
 function updateGoogleStatus() {
   const settings = loadSettings();
   if ($("googleSecurityFactor")) $("googleSecurityFactor").checked = !!settings.googleSecurityFactorEnabled;
+  if ($("googleSecurityWarning")) $("googleSecurityWarning").classList.toggle("hidden", !settings.googleSecurityFactorEnabled);
   if (!$("googleSignInStatus")) return;
   if (googleUser) {
     $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
@@ -1166,6 +1299,8 @@ function previewPassword(pw) {
   return pw.slice(0, 4) + "********" + pw.slice(-4);
 }
 function getEntryId(entry) { return entry.siteId || ""; }
+function getEntryKey(entry) { return entry.entryKey || entry.siteId || entry.site || entry.maskedLogin || entry.updated || ""; }
+function getEntryTitle(entry) { return getEntryId(entry) || entry.site || getEntryLogin(entry) || "Saved entry"; }
 function getEntryLogin(entry) { return entry.fullLogin || entry.maskedLogin || ""; }
 async function loadEntries() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
 async function saveEntries(entries) { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
@@ -1245,21 +1380,26 @@ async function verifyPin(message) {
   if (!ok) alert("Wrong PIN.");
   return ok;
 }
-async function deterministicPassword() {
+async function deterministicPassword(style = getQuickPasswordStyle(), strength = getMemorableStrength()) {
   return await window.goblinPassGenerate($("siteId").value, $("master").value, {
     length: $("length").value,
     counter: $("counter").value,
     selectedKeys: selectedKeys(),
     securityKey: isSecurityKeyEnabled() ? getSecurityKeyInputValue() : "",
     trustedDeviceKey: getTrustedDeviceGenerationKey(),
-    googleSubjectId: getGoogleSubjectForGeneration()
+    googleSubjectId: getGoogleSubjectForGeneration(),
+    passwordStyle: style,
+    memorableStrength: strength
   });
 }
 async function generate() {
   if (!$("siteId").value.trim() || !$("master").value) return alert("Enter website ID and master password.");
   if (isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
   if (isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before generating passwords, or turn off Google Security Factor in Settings.");
-  generatedPassword = await deterministicPassword();
+  const style = getQuickPasswordStyle();
+  const strength = getMemorableStrength();
+  generatedPassword = await deterministicPassword(style, strength);
+  lastGeneratedMeta = { style, strength };
   generatedVisible = false;
   try { await navigator.clipboard.writeText(generatedPassword); } catch {}
   if (loadSettings().copyPasswordOnly) {
@@ -1275,17 +1415,26 @@ async function generate() {
 async function saveCurrent() {
   if (!vaultUnlocked && !(await verifyPin("Save requires your vault PIN."))) return;
   if (!$("siteId").value.trim()) return alert("Enter website ID before saving.");
-  if (!generatedPassword && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
-  if (!generatedPassword && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
-  const pw = generatedPassword || ($("master").value ? await deterministicPassword() : "");
+  const savedStyle = getQuickPasswordStyle();
+  const savedStrength = getMemorableStrength();
+  let pw = generatedPassword;
+  if (pw && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength)) pw = "";
+  if (!pw && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
+  if (!pw && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
+  if (!pw && $("master").value) pw = await deterministicPassword(savedStyle, savedStrength);
   const login = $("login").value.trim();
+  const settings = loadSettings();
+  const siteId = $("siteId").value.trim().toLowerCase();
   const entry = {
-    siteId: $("siteId").value.trim().toLowerCase(),
+    entryKey: "entry-" + bytesToBase64Url(crypto.getRandomValues(new Uint8Array(12))),
+    siteId: settings.saveWebsiteIds ? siteId : "",
+    idSaved: settings.saveWebsiteIds,
     site: $("site").value.trim().toLowerCase(),
     maskedLogin: maskText(login),
     fullLogin: $("storeFullLogin").checked ? login : "",
     fullLoginStored: $("storeFullLogin").checked,
     passwordHint: pw ? pw.slice(0, 5) : "",
+    memorableStrength: getMemorableStrength(),
     length: parseInt($("length").value || "16", 10),
     counter: parseInt($("counter").value || "1", 10),
     options: {
@@ -1297,8 +1446,11 @@ async function saveCurrent() {
     updated: new Date().toISOString()
   };
   const entries = await loadEntries();
-  const existing = entries.findIndex(item => item.siteId === entry.siteId);
-  if (existing >= 0) entries[existing] = entry;
+  const existing = settings.saveWebsiteIds ? entries.findIndex(item => item.siteId === siteId) : -1;
+  if (existing >= 0) {
+    entry.entryKey = entries[existing].entryKey || entry.entryKey;
+    entries[existing] = entry;
+  }
   else entries.unshift(entry);
   await saveEntries(entries);
   renderEntries();
@@ -1344,24 +1496,28 @@ function applyEntry(entry) {
   $("site").value = entry.site || "";
   $("login").value = entry.fullLogin || entry.maskedLogin || "";
   $("storeFullLogin").checked = !!entry.fullLoginStored;
+  $("passwordStyle").value = getDefaultPasswordStyle();
+  $("memorableStrength").value = MEMORABLE_STRENGTHS.includes(entry.memorableStrength) ? entry.memorableStrength : "standard";
   $("length").value = entry.length || 16;
   $("counter").value = entry.counter || 1;
   $("lower").checked = !!entry.options?.lower;
   $("upper").checked = !!entry.options?.upper;
   $("nums").checked = !!entry.options?.nums;
   $("symbols").checked = !!entry.options?.symbols;
+  updatePasswordStyleUi();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 async function renderEntries() {
   if (!vaultUnlocked) return;
   const box = $("entries");
   const filter = ($("filter").value || "").toLowerCase();
-  const entries = (await loadEntries()).filter(entry => (entry.siteId + " " + entry.site + " " + getEntryLogin(entry)).toLowerCase().includes(filter));
+  const entries = (await loadEntries()).filter(entry => (getEntryTitle(entry) + " " + entry.site + " " + getEntryLogin(entry)).toLowerCase().includes(filter));
   box.innerHTML = entries.length ? "" : '<p class="muted">No matching vault entries.</p>';
   entries.forEach(entry => {
     const div = document.createElement("div");
     div.className = "entry";
-    div.innerHTML = \`<div class="entry-title">\${escapeHtml(getEntryId(entry))}</div>
+    div.innerHTML = \`<div class="entry-title">\${escapeHtml(getEntryTitle(entry))}</div>
+      <div class="entry-line">Website ID: \${getEntryId(entry) ? escapeHtml(getEntryId(entry)) : "not saved"}</div>
       \${entry.site ? \`<div class="entry-line">Site: \${escapeHtml(entry.site)}</div>\` : ""}
       <div class="entry-line">Login: <span data-login>\${escapeHtml(entry.maskedLogin || "not saved")}</span>\${entry.fullLoginStored ? '<span class="sensitive-note">full stored</span>' : ""}</div>
       <div class="entry-line">Password hint: <span data-hint>*****</span></div>
@@ -1378,7 +1534,7 @@ async function renderEntries() {
     };
     div.querySelector("[data-delete]").onclick = async () => {
       if (!(await verifyPin("Enter vault PIN to delete."))) return;
-      await saveEntries((await loadEntries()).filter(item => item.siteId !== entry.siteId));
+      await saveEntries((await loadEntries()).filter(item => getEntryKey(item) !== getEntryKey(entry)));
       renderEntries();
     };
     box.appendChild(div);
@@ -1412,6 +1568,11 @@ document.addEventListener("DOMContentLoaded", () => {
   applySecurityKeySetting();
   updateTrustedDeviceStatus();
   updateGoogleStatus();
+  $("defaultPasswordStyle").value = getDefaultPasswordStyle();
+  $("passwordStyle").value = getDefaultPasswordStyle();
+  $("saveWebsiteIds").checked = loadSettings().saveWebsiteIds !== false;
+  $("memorableStrength").value = "standard";
+  updatePasswordStyleUi();
   applyMode(localStorage.getItem(MODE_KEY) || "simple");
   $("generate").onclick = generate;
   $("save").onclick = saveCurrent;
@@ -1437,6 +1598,22 @@ document.addEventListener("DOMContentLoaded", () => {
   $("securityKey").onclick = openSecurityInputMethod;
   $("securityKey").oninput = () => {
     if (getSecurityInputMethod() === "normal") securityKeyMemory = "";
+  };
+  $("passwordStyle").onchange = () => {
+    clearGeneratedResult();
+    updatePasswordStyleUi();
+  };
+  $("memorableStrength").onchange = () => {
+    clearGeneratedResult();
+    updatePasswordStyleUi();
+  };
+  $("defaultPasswordStyle").onchange = () => {
+    saveSettings({ defaultPasswordStyle: $("defaultPasswordStyle").value });
+    clearGeneratedResult();
+    updatePasswordStyleUi();
+  };
+  $("saveWebsiteIds").onchange = () => {
+    saveSettings({ saveWebsiteIds: $("saveWebsiteIds").checked });
   };
   $("themeEditToggle").onclick = () => $("themeEditor").classList.toggle("hidden");
   document.querySelectorAll("[data-page-target]").forEach(button => {
@@ -1622,13 +1799,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const config = getBrandConfig();
     const logoBytes = uploadedLogo ? uploadedLogo.bytes : transparentPngBytes();
     const configJson = JSON.stringify(config, null, 2);
+    const generatedCss = makeGeneratedCss(config);
     const files = [
       { name: "index.html", bytes: textBytes(makeGeneratedIndex(config)) },
       { name: "about.html", bytes: textBytes(makeGeneratedAbout(config)) },
       { name: "readme.html", bytes: textBytes(makeGeneratedReadmeHtml(config)) },
       { name: "README.md", bytes: textBytes(makeGeneratedReadmeMarkdown(config)) },
       { name: "app.js", bytes: textBytes(makeGeneratedAppJs(config)) },
-      { name: "style.css", bytes: textBytes(makeGeneratedCss(config)) },
+      { name: "style.css", bytes: textBytes(generatedCss) },
+      { name: "assets/css/style.css", bytes: textBytes(generatedCss) },
       { name: "manifest.webmanifest", bytes: textBytes(makeGeneratedManifest(config)) },
       { name: "config.json", bytes: textBytes(configJson) },
       { name: "themes/config.json", bytes: textBytes(configJson) },
@@ -1771,39 +1950,44 @@ document.addEventListener("DOMContentLoaded", () => {
     scoreValue.textContent = `${result.score} / 100`;
     crackTime.textContent = result.crackEstimate;
     meterFill.style.width = `${result.score}%`;
+    meterFill.style.minWidth = value && result.score > 0 ? "28px" : "0";
     meterFill.style.backgroundColor = getMeterColor(result.score);
 
     renderChecklist(result.checks);
     renderWarnings(value ? result.warnings : ["Enter a password to see warning signs."]);
   }
 
-  togglePassword.addEventListener("click", () => {
-    const shouldShow = passwordInput.type === "password";
-    passwordInput.type = shouldShow ? "text" : "password";
-    togglePassword.setAttribute("aria-label", shouldShow ? "Hide password" : "Show password");
-    togglePassword.querySelector("span").textContent = shouldShow ? "Hide" : "Show";
-    passwordInput.focus();
-  });
+  if (togglePassword && passwordInput) {
+    togglePassword.addEventListener("click", () => {
+      const shouldShow = passwordInput.type === "password";
+      passwordInput.type = shouldShow ? "text" : "password";
+      togglePassword.setAttribute("aria-label", shouldShow ? "Hide password" : "Show password");
+      togglePassword.querySelector("span").textContent = shouldShow ? "Hide" : "Show";
+      passwordInput.focus();
+    });
+  }
 
-  navToggle.addEventListener("click", () => {
-    const isOpen = navLinks.classList.toggle("open");
-    navToggle.setAttribute("aria-expanded", String(isOpen));
-    navToggle.setAttribute("aria-label", isOpen ? "Close navigation menu" : "Open navigation menu");
-  });
+  if (navToggle && navLinks) {
+    navToggle.addEventListener("click", () => {
+      const isOpen = navLinks.classList.toggle("open");
+      navToggle.setAttribute("aria-expanded", String(isOpen));
+      navToggle.setAttribute("aria-label", isOpen ? "Close navigation menu" : "Open navigation menu");
+    });
 
-  navLinks.addEventListener("click", (event) => {
-    if (event.target.matches("a")) {
-      const openDropdown = navLinks.querySelector("details[open]");
-      if (openDropdown) openDropdown.removeAttribute("open");
-      navLinks.classList.remove("open");
-      navToggle.setAttribute("aria-expanded", "false");
-      navToggle.setAttribute("aria-label", "Open navigation menu");
-    }
-  });
+    navLinks.addEventListener("click", (event) => {
+      if (event.target.matches("a")) {
+        const openDropdown = navLinks.querySelector("details[open]");
+        if (openDropdown) openDropdown.removeAttribute("open");
+        navLinks.classList.remove("open");
+        navToggle.setAttribute("aria-expanded", "false");
+        navToggle.setAttribute("aria-label", "Open navigation menu");
+      }
+    });
+  }
 
   if (engineVersion) engineVersion.textContent = ENGINE_VERSION;
 
-  if (brandFields.siteName) {
+  if (brandFields.siteName && brandFields.logo && downloadFork) {
     Object.values(brandFields).forEach((field) => {
       if (!field || field.type === "file") return;
       field.addEventListener("input", renderBrandPreview);
@@ -1834,6 +2018,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderBrandPreview();
   }
 
-  passwordInput.addEventListener("input", update);
-  update();
+  if (passwordInput) {
+    passwordInput.addEventListener("input", update);
+    update();
+  }
 })();

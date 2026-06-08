@@ -14,6 +14,10 @@ The included GoblinPass app under `goblinpass/` is a separate local-first ID-bas
 
 GoblinPass also includes an optional Security Key setting. When disabled, existing users keep generating the same passwords as before. When enabled, the full Security Key is added during generation as a second secret, but the key itself is not saved in the vault, exported, transmitted, or stored. Users can enter it with a normal keyboard, a desktop shuffled on-screen keyboard, or a mobile combination lock. GoblinPass does not use partial or random character prompts for the Security Key.
 
+GoblinPass supports two password styles. Maximum Security is the default and keeps existing complex password generation unchanged. Memorable Password mode is optional and generates deterministic word-based passwords, with Easy, Standard, and Strong strength choices.
+
+The vault can optionally avoid saving Website IDs. When this setting is off, users must remember or enter the Website ID themselves when regenerating a password.
+
 Trusted Device Protection is a separate optional setting. When enabled, GoblinPass adds a hidden local Trusted Device Key to password generation. Save the Recovery Key offline before relying on this mode; without it, passwords made with Trusted Device Protection cannot be recreated on another device.
 
 Optional Google Sign-In support uses Google Identity Services with a hardcoded frontend Client ID only. It does not request Gmail, Drive, Calendar, or other sensitive scopes. Do not add a Google client secret to this static site. Google Sign-In can be used for future sync/import/export convenience without changing passwords.
@@ -35,6 +39,7 @@ The page includes:
 - A link to the live GoblinPass demo
 - An included GoblinPass mobile PWA under `goblinpass/`
 - Optional Security Key settings for the included app and generated forks
+- Optional Memorable Password mode for the included app and generated forks
 - A link to the GoblinPass GitHub repository
 - Master password and regeneration guidance
 - A GoblinPass and LessPass comparison table

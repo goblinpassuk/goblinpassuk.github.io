@@ -10,11 +10,14 @@ let securityKeyRevealTimer = 0;
 let securityKeyRevealVisible = false;
 let googleUser = null;
 let googleScriptPromise = null;
+let lastGeneratedMeta = null;
+let currentYubiKeyFactor = "";
 
 const STORAGE_KEY = "goblinpass_mobile_entries_v1";
 const PIN_KEY = "goblinpass_mobile_pin_v1";
 const SETTINGS_KEY = "goblinpass_mobile_settings_v1";
 const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
+const YUBIKEY_CREDENTIAL_KEY = "goblinpass_yubikey_credential_id_v1";
 const GOOGLE_CLIENT_ID = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
 
 const CHARSETS = [
@@ -24,6 +27,21 @@ const CHARSETS = [
   { key: "symbols", chars: "%!@#$_-" }
 ];
 const SECURITY_INPUT_METHODS = ["normal", "desktop-shuffled", "mobile-combo"];
+const PASSWORD_STYLES = ["maximum", "memorable"];
+const MEMORABLE_STRENGTHS = ["easy", "standard", "strong"];
+const MEMORABLE_WORDS = [
+  "Amber", "Anchor", "Aspen", "Atlas", "Autumn", "Beacon", "Berry", "Blossom",
+  "Bridge", "Bronze", "Canyon", "Cedar", "Cherry", "Cloud", "Comet", "Copper",
+  "Crystal", "Daisy", "Delta", "Echo", "Ember", "Falcon", "Forest", "Frost",
+  "Galaxy", "Garden", "Harbor", "Hazel", "Hidden", "Indigo", "Island", "Jasper",
+  "Juniper", "Kernel", "Lagoon", "Lantern", "Maple", "Marble", "Meadow", "Meteor",
+  "Midnight", "Mint", "Mountain", "Nectar", "Nova", "Ocean", "Olive", "Onyx",
+  "Orbit", "Pebble", "Pepper", "Phoenix", "Pine", "Pixel", "Planet", "Purple",
+  "Quartz", "River", "Rocket", "Saffron", "Shadow", "Silver", "Solstice", "Spark",
+  "Stone", "Storm", "Summit", "Sunset", "Thistle", "Thunder", "Topaz", "Tulip",
+  "Velvet", "Violet", "Willow", "Winter", "Zephyr", "Hammer", "Compass", "Puzzle",
+  "Signal", "Castle", "Engine", "Lantern", "Voyage", "Harbor", "Button", "Cobalt"
+];
 
 async function sha256Hex(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -62,7 +80,9 @@ function storedLoginObject(login, storeFull) {
   return { maskedLogin: maskText(login), fullLogin: storeFull ? login : "", fullLoginStored: !!storeFull };
 }
 
-function getEntryId(e) { return e.siteId || e.id || e.site || ""; }
+function getEntryId(e) { return e.siteId || e.id || ""; }
+function getEntryKey(e) { return e.entryKey || e.siteId || e.id || e.site || e.maskedLogin || e.updated || ""; }
+function getEntryTitle(e) { return getEntryId(e) || e.site || getEntryLoginForDisplay(e) || "Saved entry"; }
 function getEntrySite(e) { return e.site || ""; }
 function getEntryLoginForDisplay(e) { return e.maskedLogin || maskText(e.login || ""); }
 function getEntryFullLogin(e) { return e.fullLogin || e.login || ""; }
@@ -82,6 +102,8 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
+      defaultPasswordStyle: "maximum",
+      saveWebsiteIds: true,
       googleSecurityFactorEnabled: false,
       ...saved
     };
@@ -92,6 +114,8 @@ function loadSettings() {
       trustedDeviceEnabled: false,
       trustedDeviceBackedUp: false,
       copyPasswordOnly: false,
+      defaultPasswordStyle: "maximum",
+      saveWebsiteIds: true,
       googleSecurityFactorEnabled: false
     };
   }
@@ -106,12 +130,39 @@ function saveSettings(settings) {
     trustedDeviceEnabled: !!next.trustedDeviceEnabled,
     trustedDeviceBackedUp: !!next.trustedDeviceBackedUp,
     copyPasswordOnly: !!next.copyPasswordOnly,
+    defaultPasswordStyle: PASSWORD_STYLES.includes(next.defaultPasswordStyle) ? next.defaultPasswordStyle : "maximum",
+    saveWebsiteIds: next.saveWebsiteIds !== false,
     googleSecurityFactorEnabled: !!next.googleSecurityFactorEnabled
   }));
 }
 
 function isSecurityKeyEnabled() {
   return !!loadSettings().securityKeyEnabled;
+}
+
+function getDefaultPasswordStyle() {
+  const style = loadSettings().defaultPasswordStyle;
+  return PASSWORD_STYLES.includes(style) ? style : "maximum";
+}
+
+function getQuickPasswordStyle() {
+  return PASSWORD_STYLES.includes($("passwordStyle")?.value) ? $("passwordStyle").value : getDefaultPasswordStyle();
+}
+
+function getMemorableStrength() {
+  return MEMORABLE_STRENGTHS.includes($("memorableStrength")?.value) ? $("memorableStrength").value : "standard";
+}
+
+function clearGeneratedResult() {
+  generatedPassword = "";
+  generatedVisible = false;
+  lastGeneratedMeta = null;
+  if ($("result")) $("result").classList.add("hidden");
+}
+
+function updatePasswordStyleUi() {
+  const style = getQuickPasswordStyle();
+  if ($("memorableOptions")) $("memorableOptions").classList.toggle("hidden", style !== "memorable");
 }
 
 function getSecurityKeyInputValue() {
@@ -175,6 +226,8 @@ function applySecurityKeySetting() {
   $("enableSecurityKey").checked = enabled;
   $("securityKeyInputMethod").value = SECURITY_INPUT_METHODS.includes(method) ? method : getDefaultSecurityInputMethod();
   $("securityKeyBox").classList.toggle("hidden", !enabled);
+  if ($("securityKeyMethodGroup")) $("securityKeyMethodGroup").classList.toggle("hidden", !enabled);
+  if ($("securityKeyWarning")) $("securityKeyWarning").classList.toggle("hidden", !enabled);
   $("securityKeyInputMethod").disabled = !enabled;
   $("securityKey").readOnly = enabled && getSecurityInputMethod() !== "normal";
   $("securityKey").placeholder = getSecurityInputMethod() === "mobile-combo" ? "[L] [L] [#] [#] [#] [#]" : "Example: GP4837";
@@ -200,6 +253,11 @@ function bytesToBase64Url(bytes) {
   let binary = "";
   bytes.forEach(byte => { binary += String.fromCharCode(byte); });
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlToBytes(value) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
+  return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
 }
 
 function createTrustedDeviceKey() {
@@ -242,6 +300,8 @@ function updateTrustedDeviceStatus() {
   const settings = loadSettings();
   if ($("enableTrustedDevice")) $("enableTrustedDevice").checked = !!settings.trustedDeviceEnabled;
   if ($("copyPasswordOnly")) $("copyPasswordOnly").checked = !!settings.copyPasswordOnly;
+  if ($("trustedDeviceDetails")) $("trustedDeviceDetails").classList.toggle("hidden", !settings.trustedDeviceEnabled);
+  if ($("trustedDeviceWarning")) $("trustedDeviceWarning").classList.toggle("hidden", !settings.trustedDeviceEnabled);
   if (!$("trustedDeviceStatus")) return;
   if (!settings.trustedDeviceEnabled) {
     $("trustedDeviceStatus").textContent = "Trusted Device Protection: Disabled";
@@ -302,6 +362,7 @@ function loadGoogleIdentityScript() {
 function updateGoogleStatus() {
   const settings = loadSettings();
   if ($("googleSecurityFactor")) $("googleSecurityFactor").checked = !!settings.googleSecurityFactorEnabled;
+  if ($("googleSecurityWarning")) $("googleSecurityWarning").classList.toggle("hidden", !settings.googleSecurityFactorEnabled);
   if (!$("googleSignInStatus")) return;
   if (googleUser) {
     $("googleSignInStatus").textContent = settings.googleSecurityFactorEnabled
@@ -358,6 +419,109 @@ function googleSignOut() {
   googleUser = null;
   if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
   updateGoogleStatus();
+}
+
+function getYubiKeyCredentialId() {
+  return localStorage.getItem(YUBIKEY_CREDENTIAL_KEY) || "";
+}
+
+function updateYubiKeyUi() {
+  const enabled = !!$("useYubiKey")?.checked;
+  const registered = !!getYubiKeyCredentialId();
+  if ($("yubiKeyBox")) $("yubiKeyBox").classList.toggle("hidden", !enabled);
+  if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = registered ? "Status: Registered" : "Status: Not registered";
+}
+
+function webAuthnPrfSupported() {
+  return !!(navigator.credentials?.create && navigator.credentials?.get && window.PublicKeyCredential);
+}
+
+async function yubiKeySalt() {
+  const siteId = $("siteId").value.trim().toLowerCase();
+  const login = $("login").value.trim().toLowerCase();
+  const material = `GoblinPass-YubiKey-v1|${siteId}|${login}|${location.origin}`;
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material)));
+}
+
+function yubiKeyErrorMessage(error) {
+  if (!webAuthnPrfSupported()) return "This browser does not support WebAuthn PRF.";
+  if (error?.name === "NotAllowedError") return "YubiKey prompt was cancelled, timed out, the wrong YubiKey was used, or touch/PIN was not completed.";
+  if (error?.name === "InvalidStateError") return "This YubiKey may already be registered for this app.";
+  if (error?.name === "NotReadableError") return "YubiKey not detected or could not be read.";
+  if (error?.name === "SecurityError") return "WebAuthn is not available for this origin. Use HTTPS or GitHub Pages.";
+  return error?.message || "YubiKey failed. Check that the registered YubiKey is connected.";
+}
+
+async function registerYubiKey() {
+  if (!webAuthnPrfSupported()) return alert("This browser does not support WebAuthn PRF.");
+  try {
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: "GoblinPass" },
+        user: {
+          id: crypto.getRandomValues(new Uint8Array(32)),
+          name: "goblinpass-local-user",
+          displayName: "GoblinPass Local User"
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 }
+        ],
+        authenticatorSelection: {
+          residentKey: "discouraged",
+          userVerification: "preferred"
+        },
+        timeout: 60000,
+        extensions: {
+          prf: {}
+        }
+      }
+    });
+    const results = credential.getClientExtensionResults?.();
+    if (!results?.prf?.enabled) {
+      return alert("This browser or YubiKey did not enable WebAuthn PRF/hmac-secret.");
+    }
+    localStorage.setItem(YUBIKEY_CREDENTIAL_KEY, bytesToBase64Url(new Uint8Array(credential.rawId)));
+    updateYubiKeyUi();
+    alert("YubiKey registered for this app origin.");
+  } catch (error) {
+    alert(yubiKeyErrorMessage(error));
+  }
+}
+
+async function getYubiKeyFactor() {
+  if (!$("useYubiKey")?.checked) return "";
+  if (!webAuthnPrfSupported()) throw new Error("This browser does not support WebAuthn PRF.");
+  const id = getYubiKeyCredentialId();
+  if (!id) throw new Error("Register a YubiKey before generating a YubiKey-protected password.");
+  const salt = await yubiKeySalt();
+  try {
+    const credential = await navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ type: "public-key", id: base64UrlToBytes(id) }],
+        userVerification: "preferred",
+        timeout: 60000,
+        extensions: {
+          prf: { eval: { first: salt } }
+        }
+      }
+    });
+    const output = credential.getClientExtensionResults?.().prf?.results?.first;
+    if (!output) throw new Error("This browser or YubiKey did not return PRF extension data.");
+    const mixKey = await crypto.subtle.importKey(
+      "raw",
+      output,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const mixed = await crypto.subtle.sign("HMAC", mixKey, new TextEncoder().encode("GoblinPass-YubiKey-Mix-v1"));
+    return bytesToBase64Url(new Uint8Array(mixed));
+  } catch (error) {
+    throw new Error(yubiKeyErrorMessage(error));
+  }
 }
 
 function closeSecurityInputPanel() {
@@ -516,18 +680,47 @@ async function distributedCharacters(seed, sets, length) {
   return out;
 }
 
-async function deterministicPassword() {
+async function deterministicWord(seed, round) {
+  const hex = await sha256Hex(seed + "|word|" + round);
+  const n = parseInt(hex.slice(0, 8), 16);
+  return MEMORABLE_WORDS[n % MEMORABLE_WORDS.length];
+}
+
+async function deterministicDigit(seed) {
+  const hex = await sha256Hex(seed + "|digit");
+  return String(parseInt(hex.slice(0, 8), 16) % 10);
+}
+
+async function deterministicSymbol(seed) {
+  const symbols = "!@#$%";
+  const hex = await sha256Hex(seed + "|symbol");
+  return symbols[parseInt(hex.slice(0, 8), 16) % symbols.length];
+}
+
+async function deterministicMemorablePassword(seed, strength) {
+  const wordCount = strength === "easy" ? 3 : 4;
+  const words = [];
+  for (let i = 0; i < wordCount; i++) words.push(await deterministicWord(seed, i));
+  if (strength === "strong") return `${words.join("-")}${await deterministicSymbol(seed)}${await deterministicDigit(seed)}`;
+  return words.join("-");
+}
+
+function getPasswordSeedParts() {
   const siteId = $("siteId").value.trim().toLowerCase();
   const master = $("master").value;
   const securityKeyEnabled = isSecurityKeyEnabled();
   const securityKey = securityKeyEnabled ? getSecurityKeyInputValue() : "";
   const trustedDeviceKey = getTrustedDeviceGenerationKey();
   const googleSubjectId = getGoogleSubjectForGeneration();
-  const length = Math.max(8, Math.min(64, parseInt($("length").value || "16", 10)));
+  const yubiKeyFactor = $("useYubiKey")?.checked ? currentYubiKeyFactor : "";
   const counter = Math.max(1, Math.min(999, parseInt($("counter").value || "1", 10)));
-  const sets = selectedCharsets();
-  const optionKey = sets.map(set => set.key).join(",");
-  const seed = googleSubjectId && trustedDeviceKey
+  return { siteId, master, securityKey, trustedDeviceKey, googleSubjectId, yubiKeyFactor, counter };
+}
+
+function buildComplexSeed(parts, optionKey) {
+  const { siteId, master, securityKey, trustedDeviceKey, googleSubjectId, yubiKeyFactor, counter } = parts;
+  if (yubiKeyFactor) return `GPIDV2Y|${siteId}|${counter}|${master}|${securityKey}|${trustedDeviceKey}|${googleSubjectId}|${yubiKeyFactor}|${optionKey}`;
+  return googleSubjectId && trustedDeviceKey
     ? `GPIDV2TG|${siteId}|${counter}|${master}|${securityKey}|${trustedDeviceKey}|${googleSubjectId}|${optionKey}`
     : googleSubjectId
     ? `GPIDV2G|${siteId}|${counter}|${master}|${securityKey}|${googleSubjectId}|${optionKey}`
@@ -536,10 +729,32 @@ async function deterministicPassword() {
     : securityKey
     ? `GPIDV2K|${siteId}|${counter}|${master}|${securityKey}|${optionKey}`
     : `GPIDV2|${siteId}|${counter}|${master}|${optionKey}`;
+}
+
+function buildMemorableSeed(parts, strength) {
+  const { siteId, master, securityKey, trustedDeviceKey, googleSubjectId, yubiKeyFactor, counter } = parts;
+  if (yubiKeyFactor) return `GPMEMV1Y|${siteId}|${counter}|${master}|${securityKey}|${trustedDeviceKey}|${googleSubjectId}|${yubiKeyFactor}|${strength}`;
+  return `GPMEMV1|${siteId}|${counter}|${master}|${securityKey}|${trustedDeviceKey}|${googleSubjectId}|${strength}`;
+}
+
+async function deterministicComplexPassword() {
+  const parts = getPasswordSeedParts();
+  const length = Math.max(8, Math.min(64, parseInt($("length").value || "16", 10)));
+  const sets = selectedCharsets();
+  const optionKey = sets.map(set => set.key).join(",");
+  const seed = buildComplexSeed(parts, optionKey);
 
   const out = await distributedCharacters(seed, sets, length);
 
   return await deterministicShuffle(out, seed);
+}
+
+async function deterministicPassword(style = getQuickPasswordStyle(), strength = getMemorableStrength()) {
+  const parts = getPasswordSeedParts();
+  if (style === "memorable") {
+    return deterministicMemorablePassword(buildMemorableSeed(parts, strength), strength);
+  }
+  return deterministicComplexPassword();
 }
 
 function previewPassword(pw) {
@@ -556,7 +771,17 @@ async function generate() {
   if (!$("siteId").value.trim() || !$("master").value) return alert("Enter website ID and master password.");
   if (isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
   if (isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before generating passwords, or turn off Google Security Factor in Settings.");
-  generatedPassword = await deterministicPassword();
+  const style = getQuickPasswordStyle();
+  const strength = getMemorableStrength();
+  try {
+    currentYubiKeyFactor = await getYubiKeyFactor();
+  } catch (error) {
+    currentYubiKeyFactor = "";
+    return alert(error.message);
+  }
+  generatedPassword = await deterministicPassword(style, strength);
+  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked };
+  currentYubiKeyFactor = "";
   generatedVisible = false;
   try { await navigator.clipboard.writeText(generatedPassword); } catch {}
   if (loadSettings().copyPasswordOnly) {
@@ -573,13 +798,19 @@ async function generate() {
 function getEntryPayload(passwordHint) {
   const login = $("login").value.trim();
   const loginStore = storedLoginObject(login, $("storeFullLogin").checked);
+  const settings = loadSettings();
+  const siteId = $("siteId").value.trim().toLowerCase();
   return {
-    siteId: $("siteId").value.trim().toLowerCase(),
+    entryKey: "entry-" + bytesToBase64Url(crypto.getRandomValues(new Uint8Array(12))),
+    siteId: settings.saveWebsiteIds ? siteId : "",
+    idSaved: settings.saveWebsiteIds,
     site: $("site").value.trim().toLowerCase(),
     maskedLogin: loginStore.maskedLogin,
     fullLogin: loginStore.fullLogin,
     fullLoginStored: loginStore.fullLoginStored,
     passwordHint: passwordHint || "",
+    yubiKeyRequired: !!$("useYubiKey")?.checked,
+    memorableStrength: getMemorableStrength(),
     length: parseInt($("length").value || "16", 10),
     counter: parseInt($("counter").value || "1", 10),
     options: {
@@ -647,18 +878,36 @@ async function ensureVaultUnlocked(message) {
 async function saveCurrent() {
   if (!(await ensureVaultUnlocked("Save requires your vault PIN."))) return;
 
+  const savedStyle = getQuickPasswordStyle();
+  const savedStrength = getMemorableStrength();
   let pwForHint = generatedPassword;
+  const usingYubiKey = !!$("useYubiKey")?.checked;
+  if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey)) {
+    pwForHint = "";
+  }
   if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
   if (!pwForHint && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
-  if (!pwForHint && $("master").value && $("siteId").value.trim()) pwForHint = await deterministicPassword();
+  if (!pwForHint && $("master").value && $("siteId").value.trim()) {
+    try {
+      currentYubiKeyFactor = await getYubiKeyFactor();
+    } catch (error) {
+      currentYubiKeyFactor = "";
+      return alert(error.message);
+    }
+    pwForHint = await deterministicPassword(savedStyle, savedStrength);
+    currentYubiKeyFactor = "";
+  }
 
   const entry = getEntryPayload(pwForHint ? pwForHint.slice(0, 5) : "");
-  if (!entry.siteId) return alert("Enter website ID before saving.");
+  if (!$("siteId").value.trim()) return alert("Enter website ID before saving.");
 
   const entries = await loadEntries();
-  const idx = entries.findIndex(e => getEntryId(e) === entry.siteId);
+  const idx = loadSettings().saveWebsiteIds
+    ? entries.findIndex(e => getEntryId(e) === $("siteId").value.trim().toLowerCase())
+    : -1;
   if (idx >= 0) {
     if (!entry.passwordHint && entries[idx].passwordHint) entry.passwordHint = entries[idx].passwordHint;
+    entry.entryKey = entries[idx].entryKey || entry.entryKey;
     entries[idx] = entry;
   } else entries.unshift(entry);
 
@@ -727,12 +976,17 @@ function applyEntry(e) {
   $("site").value = getEntrySite(e);
   $("login").value = canRevealFullLogin(e) ? getEntryFullLogin(e) : getEntryLoginForDisplay(e);
   $("storeFullLogin").checked = !!e.fullLoginStored;
+  $("passwordStyle").value = getDefaultPasswordStyle();
+  $("memorableStrength").value = MEMORABLE_STRENGTHS.includes(e.memorableStrength) ? e.memorableStrength : "standard";
   $("length").value = e.length || 16;
   $("counter").value = e.counter || 1;
   $("lower").checked = !!e.options?.lower;
   $("upper").checked = !!e.options?.upper;
   $("nums").checked = !!e.options?.nums;
   $("symbols").checked = !!e.options?.symbols;
+  $("useYubiKey").checked = !!e.yubiKeyRequired;
+  updateYubiKeyUi();
+  updatePasswordStyleUi();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -743,7 +997,7 @@ async function renderEntries() {
   const filter = ($("filter").value || "").toLowerCase();
   const entries = await loadEntries();
   const shown = entries.filter(e => (
-    getEntryId(e) + " " +
+    getEntryTitle(e) + " " +
     getEntrySite(e) + " " +
     getEntryLoginForDisplay(e) + " " +
     getEntryFullLogin(e)
@@ -760,10 +1014,12 @@ async function renderEntries() {
     const div = document.createElement("div");
     div.className = "entry";
     div.innerHTML = `
-      <div class="entry-title">${escapeHtml(getEntryId(e))}</div>
+      <div class="entry-title">${escapeHtml(getEntryTitle(e))}</div>
+      <div class="entry-line">Website ID: ${getEntryId(e) ? escapeHtml(getEntryId(e)) : "not saved"}</div>
       ${site ? `<div class="entry-line">Site: ${escapeHtml(site)}</div>` : ""}
       <div class="entry-line">Login: <span data-login>${escapeHtml(getEntryLoginForDisplay(e) || "not saved")}</span>${e.fullLoginStored ? '<span class="sensitive-note">full stored</span>' : ""}</div>
       <div class="entry-line">Password hint: <span data-pwhint>${escapeHtml(maskPasswordHint(e.passwordHint))}</span></div>
+      ${e.yubiKeyRequired ? '<div class="entry-line"><span class="high-security-badge">YubiKey Required</span></div>' : ""}
       <div class="entry-line">Length: ${e.length} - Counter: ${e.counter}</div>
       <div class="entry-actions">
         <button data-use>Use</button>
@@ -788,7 +1044,7 @@ async function renderEntries() {
     div.querySelector("[data-delete]").onclick = async () => {
       if (!(await verifyPin())) return alert("Wrong PIN.");
       const all = await loadEntries();
-      await saveEntries(all.filter(x => getEntryId(x) !== getEntryId(e)));
+      await saveEntries(all.filter(x => getEntryKey(x) !== getEntryKey(e)));
       renderEntries();
     };
     box.appendChild(div);
@@ -833,6 +1089,11 @@ document.addEventListener("DOMContentLoaded", () => {
   applySecurityKeySetting();
   updateTrustedDeviceStatus();
   updateGoogleStatus();
+  $("defaultPasswordStyle").value = getDefaultPasswordStyle();
+  $("passwordStyle").value = getDefaultPasswordStyle();
+  $("saveWebsiteIds").checked = loadSettings().saveWebsiteIds !== false;
+  $("memorableStrength").value = "standard";
+  updatePasswordStyleUi();
   $("generate").onclick = generate;
   $("save").onclick = saveCurrent;
   $("vaultBtn").onclick = showVault;
@@ -859,6 +1120,25 @@ document.addEventListener("DOMContentLoaded", () => {
   $("securityKey").onclick = openSecurityInputMethod;
   $("securityKey").oninput = () => {
     if (getSecurityInputMethod() === "normal") securityKeyMemory = "";
+  };
+  $("useYubiKey").onchange = () => { generatedPassword = ""; updateYubiKeyUi(); };
+  $("registerYubiKey").onclick = registerYubiKey;
+  updateYubiKeyUi();
+  $("passwordStyle").onchange = () => {
+    clearGeneratedResult();
+    updatePasswordStyleUi();
+  };
+  $("memorableStrength").onchange = () => {
+    clearGeneratedResult();
+    updatePasswordStyleUi();
+  };
+  $("defaultPasswordStyle").onchange = () => {
+    saveSettings({ defaultPasswordStyle: $("defaultPasswordStyle").value });
+    clearGeneratedResult();
+    updatePasswordStyleUi();
+  };
+  $("saveWebsiteIds").onchange = () => {
+    saveSettings({ saveWebsiteIds: $("saveWebsiteIds").checked });
   };
   document.querySelectorAll("[data-page-target]").forEach(button => {
     button.onclick = () => {

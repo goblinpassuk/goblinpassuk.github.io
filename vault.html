@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - Vault Preview</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home"><span class="brand-mark" aria-hidden="true">GP</span><span>GoblinPass</span></a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Launch App</a>
+              <a href="checker.html">Password Checker</a>
+            </div>
+          </details>
+          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Security Key</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
+          <a class="nav-link" href="guide.html">Guide</a>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a><a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
+          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section content-section tool-preview" aria-labelledby="vault-title">
+        <div class="section-intro">
+          <p class="eyebrow">Tool preview</p>
+          <h1 id="vault-title">How the GoblinPass vault can work</h1>
+          <p>
+            These example screens show the basic flow: generate a site-specific
+            password, set a local vault PIN, save an entry, and reveal only the
+            first part of the password as a hint when needed.
+          </p>
+        </div>
+
+        <div class="preview-grid">
+          <figure class="screen-card large-screen">
+            <figcaption>1. GoblinPass tool screen</figcaption>
+            <div class="mini-app">
+              <div class="mini-brand">
+                <span class="mini-logo">GP</span>
+                <div>
+                  <strong>Goblin</strong>
+                  <small>Tiny vault. Minimal secrets.</small>
+                </div>
+              </div>
+              <label class="mini-field">
+                <span>Website ID</span>
+                <strong>22</strong>
+              </label>
+              <label class="mini-field">
+                <span>Site (optional)</span>
+                <strong>facebook.com</strong>
+              </label>
+              <label class="mini-field">
+                <span>Login (optional)</span>
+                <strong>myemail@hotmail.com</strong>
+              </label>
+              <div class="mini-check"><span></span>Store full login for this entry</div>
+              <label class="mini-field password-row">
+                <span>Master Password</span>
+                <strong>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</strong>
+                <em>Show</em>
+              </label>
+              <div class="mini-options">
+                <span>&#10003; a-z</span>
+                <span>&#10003; A-Z</span>
+                <span>&#10003; 0-9</span>
+                <span>&#10003; %!@</span>
+              </div>
+              <div class="mini-two">
+                <label class="mini-field"><span>Length</span><strong>16</strong></label>
+                <label class="mini-field"><span>Counter</span><strong>1</strong></label>
+              </div>
+              <div class="mini-actions">
+                <strong>Generate & copy</strong>
+                <span>Save</span>
+              </div>
+              <div class="mini-output">
+                Generated and copied: 1%GzTU4Meq!BBwQe
+                <em>Hide</em>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="screen-card">
+            <figcaption>2. Step-by-step vault setup</figcaption>
+            <div class="mini-vault">
+              <div class="mini-vault-head">
+                <strong>Vault</strong>
+                <span>Cancel</span>
+              </div>
+              <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+              <p>Create a permanent 4 digit vault PIN. This PIN will be required to view saved IDs.</p>
+              <div class="mini-pin">
+                <span>Vault PIN</span>
+                <strong>Set PIN</strong>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="screen-card">
+            <figcaption>3. Example saved entry</figcaption>
+            <div class="mini-vault">
+              <div class="mini-vault-head">
+                <strong>Vault</strong>
+                <span>Lock vault</span>
+              </div>
+              <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+              <div class="mini-search">Filter vault...</div>
+              <div class="mini-entry">
+                <strong>22</strong>
+                <p>Site: facebook.com</p>
+                <p>Login: myem***il@hotmail.com</p>
+                <p>Password hint: ******</p>
+                <p>Length: 16 - Counter: 1</p>
+                <div class="mini-entry-actions">
+                  <span>Use</span>
+                  <span>Show hint</span>
+                  <span>Copy login</span>
+                  <em>Delete</em>
+                </div>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="screen-card">
+            <figcaption>4. Hint reveals only the first part</figcaption>
+            <div class="mini-vault">
+              <div class="mini-vault-head">
+                <strong>Vault</strong>
+                <span>Lock vault</span>
+              </div>
+              <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+              <div class="mini-search">Filter vault...</div>
+              <div class="mini-entry">
+                <strong>22</strong>
+                <p>Site: facebook.com</p>
+                <p>Login: myem***il@hotmail.com</p>
+                <p>Password hint: jFX5@</p>
+                <p>Length: 16 - Counter: 1</p>
+                <div class="mini-entry-actions">
+                  <span>Use</span>
+                  <span>Show hint</span>
+                  <span>Copy login</span>
+                  <em>Delete</em>
+                </div>
+              </div>
+            </div>
+          </figure>
+        </div>
+
+        <div class="content-cards two-column preview-notes">
+          <article>
+            <h3>Optional full login details</h3>
+            <p>
+              GoblinPass can include an option to save full login information for
+              an entry. That can expose the email address used for the account, so
+              it is best treated as a deliberate choice rather than a default habit.
+            </p>
+          </article>
+          <article>
+            <h3>Useful with alias emails</h3>
+            <p>
+              If you use alias emails, saving the login locally can help you keep
+              track of which alias belongs to which website. This can be useful
+              when the information stays local and is protected carefully.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer"><div class="footer-brand"><p><strong>GoblinPass</strong></p><p>Tiny vault. Minimal secrets.</p><p>Open source. Local first. No password storage.</p></div><nav class="footer-links" aria-label="Footer navigation"><a href="index.html">Home</a><a href="app.html">Web Tools</a><a href="checker.html">Password Checker</a><a href="guide.html">Guide</a><a href="security.html">Security</a></nav></footer>
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>

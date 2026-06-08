@@ -92,6 +92,14 @@ select{
   font-size:16px;
   margin-bottom:12px;
 }
+#passwordStyle,
+#defaultPasswordStyle,
+#memorableStrength{
+  margin-bottom:16px;
+}
+#memorableOptions{
+  margin-bottom:2px;
+}
 input:focus{
   border-color:var(--green);
   box-shadow:0 0 0 3px rgba(116,255,157,.14);
@@ -253,6 +261,46 @@ button,.import-label{
   color:#ffe58a;
   font-size:13px;
 }
+.high-security-toggle{
+  margin-top:0;
+}
+.phone-challenge-box{
+  display:grid;
+  gap:10px;
+  margin:0 0 16px;
+  padding:12px;
+  border:1px solid var(--border2);
+  border-radius:15px;
+  background:#07160d;
+}
+.challenge-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  color:var(--green);
+  font-size:13px;
+}
+.challenge-head span{
+  color:var(--muted);
+}
+.challenge-code{
+  border:1px dashed var(--border2);
+  border-radius:12px;
+  padding:10px;
+  color:#dfffe7;
+  font-weight:850;
+  overflow-wrap:anywhere;
+}
+.high-security-badge{
+  display:inline-flex;
+  border:1px solid var(--green);
+  border-radius:999px;
+  padding:4px 8px;
+  color:var(--green);
+  background:rgba(116,255,157,.08);
+  font-size:12px;
+  font-weight:850;
+}
 .vault-head{
   display:flex;
   align-items:center;
@@ -289,7 +337,7 @@ h2{margin:0;font-size:18px}
   display:flex;
   align-items:center;
   gap:10px;
-  margin:14px 0 10px;
+  margin:10px 0;
   color:var(--text);
 }
 .setting-row input{
@@ -308,6 +356,50 @@ h2{margin:0;font-size:18px}
   color:#dfffe7;
   font-weight:800;
   font-size:13px;
+}
+.settings-stack{
+  display:grid;
+  gap:12px;
+  margin-top:12px;
+}
+.settings-card{
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:rgba(7,22,13,.62);
+  padding:14px;
+}
+.settings-card h3{
+  margin:0 0 10px;
+  font-size:16px;
+}
+.settings-reveal{
+  margin:8px 0 14px;
+  padding:12px;
+  border:1px solid rgba(57,118,79,.55);
+  border-radius:14px;
+  background:#07160d;
+}
+.more-info{
+  margin:8px 0;
+  color:var(--muted);
+  font-size:12px;
+}
+.more-info summary{
+  cursor:pointer;
+  color:var(--green);
+  font-weight:850;
+}
+.more-info p{
+  margin:8px 0 0;
+}
+.single-action{
+  grid-template-columns:1fr;
+}
+.google-account-card .google-button-area:empty{
+  display:none;
+}
+.google-account-card input:disabled{
+  opacity:.55;
 }
 .settings-actions{
   display:grid;

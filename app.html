@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - Web Tools</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home">
+          <span class="brand-mark" aria-hidden="true">GP</span>
+          <span>GoblinPass</span>
+        </a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Launch App</a>
+              <a href="checker.html">Password Checker</a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>Security</summary>
+            <div class="dropdown-menu">
+              <a href="security.html">Security Overview</a>
+              <a href="security-model.html">Security Model</a>
+              <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
+              <a href="security.html#security-key">Security Key</a>
+              <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#copy-password-only">Copy Password Only</a>
+            </div>
+          </details>
+          <a class="nav-link" href="guide.html">Guide</a>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <details class="nav-dropdown">
+            <summary>About Us</summary>
+            <div class="dropdown-menu">
+              <a href="about.html">About GoblinPass</a>
+              <a href="github.html">Why We Use GitHub</a>
+              <a href="lesspass.html">GoblinPass vs LessPass</a>
+            </div>
+          </details>
+          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section content-section" aria-labelledby="app-title">
+        <div class="section-intro">
+          <p class="eyebrow">Web Tools</p>
+          <h1 id="app-title">GoblinPass web tools</h1>
+          <p>
+            The included GoblinPass app runs from local static files. It keeps the
+            generator, vault, settings, manifest, icons, style, and script inside
+            the <code>/goblinpass</code> folder.
+          </p>
+        </div>
+        <div class="app-embed-card integrated-app-layout">
+          <div class="app-embed-copy">
+            <h2>Full generator and vault</h2>
+            <p>
+              Use the GoblinPass app directly inside this website page. The
+              standalone app still lives in <code>/goblinpass</code> for people who
+              want the mobile-friendly installable version.
+            </p>
+            <p class="source-note">
+              The app does not save your master password or full generated
+              passwords. Optional vault metadata is stored locally in the browser.
+            </p>
+            <a class="demo-link" href="goblinpass/index.html" target="_blank" rel="noopener noreferrer">Open standalone app</a>
+          </div>
+          <div class="embedded-goblin-app" aria-label="Embedded GoblinPass app">
+            <main class="app">
+              <header class="brand">
+                <div class="logo">GP</div>
+                <div>
+                  <h1>Goblin<span>Pass</span></h1>
+                  <p>Tiny vault. Minimal secrets.</p>
+                </div>
+              </header>
+
+              <nav class="app-menu" aria-label="GoblinPass app menu">
+                <button id="generatorTab" class="active" type="button" data-page-target="generatorPage">Generator</button>
+                <button id="vaultTab" type="button" data-page-target="vaultPage">Vault</button>
+                <button id="settingsTab" type="button" data-page-target="settingsPage">Settings</button>
+              </nav>
+
+              <section id="generatorPage" class="page-section">
+                <section class="card">
+                  <label>Website ID</label>
+                  <input id="siteId" type="text" placeholder="Unique ID" autocomplete="off" autocapitalize="none" spellcheck="false">
+
+                  <label>Site (optional)</label>
+                  <input id="site" type="text" placeholder="example.com" autocomplete="off" autocapitalize="none" spellcheck="false">
+
+                  <label>Login (optional)</label>
+                  <input id="login" type="text" placeholder="username or email" autocomplete="off" autocapitalize="none" spellcheck="false">
+
+                  <label class="save-full-row">
+                    <input id="storeFullLogin" type="checkbox">
+                    Store full login for this entry
+                  </label>
+
+                  <label>Master Password</label>
+                  <div class="input-row">
+                    <input id="master" type="password" placeholder="Never saved" autocomplete="off" autocapitalize="none" spellcheck="false">
+                    <button id="toggleMaster" class="icon-btn" type="button" aria-label="Show master password">Show</button>
+                  </div>
+
+                  <div id="securityKeyBox" class="security-key-box hidden" data-entry-mode="keyboard">
+                    <label>Security Key</label>
+                    <input id="securityKey" type="password" placeholder="Example: GP4837" autocomplete="off" autocapitalize="characters" spellcheck="false">
+                    <p class="muted">The full Security Key is required every time. GoblinPass does not store it.</p>
+                    <div id="securityInputPanel" class="security-input-panel hidden" aria-live="polite"></div>
+                  </div>
+
+                  <label class="save-full-row yubikey-toggle">
+                    <input id="useYubiKey" type="checkbox">
+                    Use YubiKey
+                  </label>
+                  <p class="muted">Recommended for banking, email, GitHub, PayPal, and crypto.</p>
+                  <div id="yubiKeyBox" class="phone-challenge-box hidden">
+                    <div class="challenge-head">
+                      <strong>YubiKey password ingredient</strong>
+                      <span id="yubiKeyStatus">Status: Not registered</span>
+                    </div>
+                    <p class="muted">This is not normal 2FA. The YubiKey PRF output becomes part of the password recipe for this entry.</p>
+                    <div class="settings-actions">
+                      <button id="registerYubiKey" type="button">Register YubiKey</button>
+                    </div>
+                    <p class="notice">iPhone/iPad Safari with external YubiKeys may not support WebAuthn PRF extension data.</p>
+                  </div>
+
+                  <label for="passwordStyle">Password Style</label>
+                  <select id="passwordStyle">
+                    <option value="maximum">Maximum Security</option>
+                    <option value="memorable">Memorable Password</option>
+                  </select>
+                  <div id="memorableOptions" class="hidden">
+                    <label for="memorableStrength">Memorable Strength</label>
+                    <select id="memorableStrength">
+                      <option value="easy">Easy - 3 words</option>
+                      <option value="standard" selected>Standard - 4 words</option>
+                      <option value="strong">Strong - 4 words + number + symbol</option>
+                    </select>
+                  </div>
+                  <p class="muted">Memorable passwords are easier to enter on consoles, TVs, handheld devices, and controllers. Maximum Security remains recommended for email, banking, and important accounts.</p>
+
+                  <div class="options-grid">
+                    <label class="check"><input id="lower" type="checkbox" checked> a-z</label>
+                    <label class="check"><input id="upper" type="checkbox" checked> A-Z</label>
+                    <label class="check"><input id="nums" type="checkbox" checked> 0-9</label>
+                    <label class="check"><input id="symbols" type="checkbox" checked> %!@</label>
+                  </div>
+
+                  <div class="number-row">
+                    <div>
+                      <label>Length</label>
+                      <input id="length" type="number" min="8" max="64" value="16">
+                    </div>
+                    <div>
+                      <label>Counter</label>
+                      <input id="counter" type="number" min="1" max="999" value="1">
+                    </div>
+                  </div>
+
+                  <div class="button-row">
+                    <button id="generate" class="primary" type="button">Generate & copy</button>
+                    <button id="save" type="button">Save</button>
+                  </div>
+
+                  <div id="result" class="result hidden">
+                    <span id="resultText"></span>
+                    <button id="toggleGenerated" class="icon-btn small" type="button" aria-label="Show generated password">Show</button>
+                  </div>
+                </section>
+              </section>
+
+              <section id="vaultPage" class="page-section hidden">
+                <section class="card">
+                  <div class="vault-head">
+                    <h2>Vault</h2>
+                    <button id="vaultBtn" type="button">Show vault</button>
+                  </div>
+                  <p class="muted">Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+
+                  <div id="pinBox" class="pin-box hidden">
+                    <p class="muted">Create or enter your vault PIN.</p>
+                    <div class="pin-row">
+                      <input id="vaultPin" type="password" maxlength="4" inputmode="numeric" placeholder="Vault PIN">
+                      <button id="setOrUnlockPin" type="button">Unlock</button>
+                    </div>
+                  </div>
+
+                  <div id="vaultArea" class="hidden">
+                    <input id="filter" class="filter" type="text" placeholder="Filter vault..." autocomplete="off">
+                    <div class="vault-actions">
+                      <button id="exportBtn" type="button">Export</button>
+                      <label class="import-label">
+                        Import
+                        <input id="importFile" type="file" accept="application/json">
+                      </label>
+                    </div>
+                    <div id="entries" class="entries"></div>
+                  </div>
+                </section>
+              </section>
+
+              <section id="settingsPage" class="page-section hidden">
+                <section class="card">
+                  <div class="vault-head">
+                    <h2>Settings</h2>
+                  </div>
+                  <select id="defaultPasswordStyle" class="hidden" aria-hidden="true" tabindex="-1">
+                    <option value="maximum" selected>Maximum Security</option>
+                    <option value="memorable">Memorable Password</option>
+                  </select>
+
+                  <div class="settings-stack">
+                    <section class="settings-card">
+                      <h3>Vault</h3>
+                      <label class="setting-row">
+                        <input id="saveWebsiteIds" type="checkbox" checked>
+                        Save Website IDs in vault
+                      </label>
+                      <p class="muted">Keeps saved entries easier to reuse. Turn this off if you prefer to remember IDs yourself.</p>
+                    </section>
+
+                    <section class="settings-card">
+                      <h3>Security</h3>
+                      <label class="setting-row">
+                        <input id="enableSecurityKey" type="checkbox">
+                        Enable Security Key
+                      </label>
+                      <div id="securityKeyMethodGroup" class="settings-reveal hidden">
+                        <label for="securityKeyInputMethod">Security Key Input Method</label>
+                        <select id="securityKeyInputMethod">
+                          <option value="normal">Normal Keyboard</option>
+                          <option value="desktop-shuffled">Desktop Shuffled Keyboard</option>
+                          <option value="mobile-combo">Mobile Combination Lock</option>
+                        </select>
+                        <details class="more-info">
+                          <summary>More info</summary>
+                          <p>Recommended formats include G48372, DOG123, CAT456, or GP4837. Suggested format: 2 letters + 4 digits, for example GP4837.</p>
+                        </details>
+                        <p id="securityKeyWarning" class="notice">The Security Key adds an extra secret to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
+                      </div>
+
+                      <label class="setting-row">
+                        <input id="enableTrustedDevice" type="checkbox">
+                        Enable Trusted Device Protection
+                      </label>
+                      <div id="trustedDeviceDetails" class="settings-reveal hidden">
+                        <p id="trustedDeviceStatus" class="status-line">Trusted Device Protection: Disabled</p>
+                        <div class="settings-actions">
+                          <button id="showRecoveryKey" type="button">Show Recovery Key</button>
+                          <button id="restoreTrustedDevice" type="button">Restore Trusted Device</button>
+                        </div>
+                        <details class="more-info">
+                          <summary>More info</summary>
+                          <p>Trusted Device Protection adds a hidden local key to password generation. Passwords created with it enabled need the same trusted key restored on another device.</p>
+                        </details>
+                        <p id="trustedDeviceWarning" class="notice">If the Trusted Device Key is lost and no recovery key was saved, passwords generated with Trusted Device Protection cannot be recovered.</p>
+                      </div>
+                    </section>
+
+                    <section class="settings-card">
+                      <h3>Privacy</h3>
+                      <label class="setting-row">
+                        <input id="copyPasswordOnly" type="checkbox">
+                        Copy Password Only
+                      </label>
+                      <p class="muted">Copies the generated password without showing it on screen.</p>
+                    </section>
+
+                    <section class="settings-card google-account-card">
+                      <h3>Google Sign-In</h3>
+                      <p class="muted">Optional. Google Sign-In can identify the user for future encrypted vault sync/import/export convenience. It is not used for password generation unless Google Security Factor is enabled.</p>
+                      <label class="setting-row">
+                        <input id="googleSecurityFactor" type="checkbox">
+                        Google Security Factor
+                      </label>
+                      <p class="muted">When enabled, GoblinPass requires Google Sign-In and uses the stable Google account subject ID as an extra password ingredient. It does not use your email address.</p>
+                      <p id="googleSecurityWarning" class="notice">If you lose access to this Google account, you may not be able to regenerate the same passwords.</p>
+                      <div class="settings-actions">
+                        <button id="setupGoogleSignIn" type="button">Set up Google Sign-In</button>
+                        <button id="googleSignOut" type="button">Sign out</button>
+                      </div>
+                      <div id="googleSignInButton" class="google-button-area"></div>
+                      <p id="googleSignInStatus" class="status-line">Google Sign-In: Not signed in</p>
+                      <details class="more-info">
+                        <summary>More info</summary>
+                        <p>Google Sign-In uses basic identity only. Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
+                      </details>
+                    </section>
+                  </div>
+                </section>
+              </section>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section id="build-fork" class="section content-section" aria-labelledby="create-pass-title">
+        <div class="section-intro">
+          <p class="eyebrow">Build Fork</p>
+          <h2 id="create-pass-title">Brand your own GoblinPass fork</h2>
+          <p>
+            Create a branded static GoblinPass package while keeping the password
+            engine separate from your theme, logo, colours, and about text.
+          </p>
+        </div>
+
+        <div class="builder-grid">
+          <form class="builder-form" id="brandForm">
+            <div class="form-grid">
+              <label>
+                Site Name
+                <input id="brandSiteName" type="text" value="MyPass" autocomplete="off" />
+              </label>
+              <label>
+                Tagline
+                <input id="brandTagline" type="text" value="Private passwords, your way." autocomplete="off" />
+              </label>
+              <label>
+                Primary Colour
+                <input id="brandPrimary" type="color" value="#77f05a" />
+              </label>
+              <label>
+                Secondary Colour
+                <input id="brandSecondary" type="color" value="#101914" />
+              </label>
+              <label>
+                Upload Logo
+                <input id="brandLogo" type="file" accept="image/png" />
+              </label>
+              <label>
+                Theme
+                <select id="brandTheme">
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Custom About Us text
+              <textarea id="brandAbout" rows="6">We built this password helper to make unique passwords easier to use while keeping the password engine local and transparent.</textarea>
+            </label>
+            <div class="engine-status">
+              <div>
+                <span>GoblinPass engine version</span>
+                <strong id="engineVersion">2.0.0</strong>
+              </div>
+              <p>
+                Branding changes must not modify files inside <code>/core</code>.
+                Review the fork before trusting generated passwords if core files
+                are changed.
+              </p>
+            </div>
+            <div class="builder-actions">
+              <button class="download-button" id="downloadFork" type="button">Download Fork Package</button>
+            </div>
+          </form>
+
+          <aside class="brand-preview" id="brandPreview" aria-live="polite">
+            <div class="preview-shell">
+              <header>
+                <div id="previewLogo" class="preview-logo" aria-hidden="true">M</div>
+                <div>
+                  <strong id="previewName">MyPass</strong>
+                  <span id="previewTagline">Private passwords, your way.</span>
+                </div>
+              </header>
+              <section>
+                <label>Website ID</label>
+                <div class="preview-input">22</div>
+                <label>Master Password</label>
+                <div class="preview-input">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
+                <button type="button">Generate & copy</button>
+              </section>
+              <footer>Powered by the GoblinPass Open Source Engine.</footer>
+            </div>
+          </aside>
+        </div>
+
+        <div class="config-panel">
+          <div>
+            <h3>Generated configuration</h3>
+            <p>
+              Branding is saved in <code>config.json</code> and
+              <code>themes/config.json</code>. The password engine remains in
+              <code>/core</code>.
+            </p>
+          </div>
+          <pre id="configOutput"></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <p><strong>GoblinPass</strong></p>
+        <p>Tiny vault. Minimal secrets.</p>
+        <p>Open source. Local first. No password storage.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="index.html">Home</a>
+        <a href="about.html">About Us</a>
+        <a href="checker.html">Password Checker</a>
+        <a href="guide.html">Guide</a>
+        <a href="security.html">Security</a>
+        <a href="github.html">GitHub</a>
+      </nav>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+    <script src="goblinpass/app.js"></script>
+  </body>
+</html>

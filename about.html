@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - About Us</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home"><span class="brand-mark" aria-hidden="true">GP</span><span>GoblinPass</span></a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Launch App</a>
+              <a href="checker.html">Password Checker</a>
+            </div>
+          </details>
+          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Security Key</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
+          <a class="nav-link" href="guide.html">Guide</a>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a><a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
+          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+        </div>
+      </nav>
+    </header>
+    <main>
+      <section class="section content-section" aria-labelledby="about-title">
+        <div class="section-intro">
+          <p class="eyebrow">About Us</p>
+          <h1 id="about-title">About GoblinPass</h1>
+          <p>At GoblinPass, we believe password security should not be complicated.</p>
+        </div>
+        <div class="content-cards two-column">
+          <article><h2>Why GoblinPass was created</h2><p>Many people reuse the same password across websites, often making tiny changes such as adding a symbol or changing a number at the end. When one website is breached, attackers may try similar versions elsewhere.</p></article>
+          <article><h2>A simple alternative</h2><p>GoblinPass was created to make it easier to use strong, unique passwords without needing to remember hundreds of different passwords or rely entirely on a normal online vault.</p></article>
+          <article><h2>Security first</h2><p>Your online security is only as strong as your weakest link. Protect your email account, use unique passwords, enable two-factor authentication where possible, and avoid simple password variations.</p></article>
+          <article><h2>Our mission</h2><p>To help people build better password habits, improve their online security, and take control of their digital lives without sacrificing convenience.</p></article>
+        </div>
+        <div class="subnav-card" aria-label="About page links">
+          <a href="github.html">Why We Use GitHub</a>
+          <span>See how source visibility, public history, and GitHub hosting support the GoblinPass trust model.</span>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer"><div class="footer-brand"><p><strong>GoblinPass</strong></p><p>Tiny vault. Minimal secrets.</p><p>Open source. Local first. No password storage.</p></div><nav class="footer-links" aria-label="Footer navigation"><a href="index.html">Home</a><a href="app.html">Web Tools</a><a href="checker.html">Password Checker</a><a href="security.html">Security</a><a href="github.html">GitHub</a></nav></footer>
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>

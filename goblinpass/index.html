@@ -27,7 +27,7 @@
     <section id="generatorPage" class="page-section">
     <section class="card">
       <label>Website ID</label>
-      <input id="siteId" type="text" placeholder="your spreadsheet ID" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input id="siteId" type="text" placeholder="Unique ID" autocomplete="off" autocapitalize="none" spellcheck="false">
 
       <label>Site (optional)</label>
       <input id="site" type="text" placeholder="example.com" autocomplete="off" autocapitalize="none" spellcheck="false">
@@ -52,6 +52,38 @@
         <p class="muted">The full Security Key is required every time. GoblinPass does not store it.</p>
         <div id="securityInputPanel" class="security-input-panel hidden" aria-live="polite"></div>
       </div>
+
+      <label class="save-full-row yubikey-toggle">
+        <input id="useYubiKey" type="checkbox">
+        Use YubiKey
+      </label>
+      <p class="muted">Recommended for banking, email, GitHub, PayPal, and crypto.</p>
+      <div id="yubiKeyBox" class="phone-challenge-box hidden">
+        <div class="challenge-head">
+          <strong>YubiKey password ingredient</strong>
+          <span id="yubiKeyStatus">Status: Not registered</span>
+        </div>
+        <p class="muted">This is not normal 2FA. The YubiKey PRF output becomes part of the password recipe for this entry.</p>
+        <div class="settings-actions">
+          <button id="registerYubiKey" type="button">Register YubiKey</button>
+        </div>
+        <p class="notice">iPhone/iPad Safari with external YubiKeys may not support WebAuthn PRF extension data.</p>
+      </div>
+
+      <label for="passwordStyle">Password Style</label>
+      <select id="passwordStyle">
+        <option value="maximum">Maximum Security</option>
+        <option value="memorable">Memorable Password</option>
+      </select>
+      <div id="memorableOptions" class="hidden">
+        <label for="memorableStrength">Memorable Strength</label>
+        <select id="memorableStrength">
+          <option value="easy">Easy - 3 words</option>
+          <option value="standard" selected>Standard - 4 words</option>
+          <option value="strong">Strong - 4 words + number + symbol</option>
+        </select>
+      </div>
+      <p class="muted">Memorable passwords are easier to enter on consoles, TVs, handheld devices, and controllers. Maximum Security remains recommended for email, banking, and important accounts.</p>
 
       <div class="options-grid">
         <label class="check"><input id="lower" type="checkbox" checked> a-z</label>
@@ -118,53 +150,89 @@
         <div class="vault-head">
           <h2>Settings</h2>
         </div>
-        <label class="setting-row">
-          <input id="enableSecurityKey" type="checkbox">
-          Enable Security Key
-        </label>
-        <label for="securityKeyInputMethod">Security Key Input Method</label>
-        <select id="securityKeyInputMethod">
-          <option value="normal">Normal Keyboard</option>
-          <option value="desktop-shuffled">Desktop Shuffled Keyboard</option>
-          <option value="mobile-combo">Mobile Combination Lock</option>
+        <select id="defaultPasswordStyle" class="hidden" aria-hidden="true" tabindex="-1">
+          <option value="maximum" selected>Maximum Security</option>
+          <option value="memorable">Memorable Password</option>
         </select>
-        <p class="muted">Recommended formats include G48372, DOG123, CAT456, or GP4837.</p>
-        <p class="muted">Suggested format: 2 letters + 4 digits, for example GP4837.</p>
-        <p class="notice">The Security Key adds an extra secret to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
 
-        <label class="setting-row">
-          <input id="enableTrustedDevice" type="checkbox">
-          Enable Trusted Device Protection
-        </label>
-        <p class="muted">Trusted Device Protection adds a hidden local key to password generation. Passwords created on this device cannot be recreated on another device unless the recovery key is restored.</p>
-        <p id="trustedDeviceStatus" class="status-line">Trusted Device Protection: Disabled</p>
-        <div class="settings-actions">
-          <button id="showRecoveryKey" type="button">Show Recovery Key</button>
-          <button id="restoreTrustedDevice" type="button">Restore Trusted Device</button>
+        <div class="settings-stack">
+          <section class="settings-card">
+            <h3>Vault</h3>
+            <label class="setting-row">
+              <input id="saveWebsiteIds" type="checkbox" checked>
+              Save Website IDs in vault
+            </label>
+            <p class="muted">Keeps saved entries easier to reuse. Turn this off if you prefer to remember IDs yourself.</p>
+          </section>
+
+          <section class="settings-card">
+            <h3>Security</h3>
+            <label class="setting-row">
+              <input id="enableSecurityKey" type="checkbox">
+              Enable Security Key
+            </label>
+            <div id="securityKeyMethodGroup" class="settings-reveal hidden">
+              <label for="securityKeyInputMethod">Security Key Input Method</label>
+              <select id="securityKeyInputMethod">
+                <option value="normal">Normal Keyboard</option>
+                <option value="desktop-shuffled">Desktop Shuffled Keyboard</option>
+                <option value="mobile-combo">Mobile Combination Lock</option>
+              </select>
+              <details class="more-info">
+                <summary>More info</summary>
+                <p>Recommended formats include G48372, DOG123, CAT456, or GP4837. Suggested format: 2 letters + 4 digits, for example GP4837.</p>
+              </details>
+              <p id="securityKeyWarning" class="notice">The Security Key adds an extra secret to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
+            </div>
+
+            <label class="setting-row">
+              <input id="enableTrustedDevice" type="checkbox">
+              Enable Trusted Device Protection
+            </label>
+            <div id="trustedDeviceDetails" class="settings-reveal hidden">
+              <p id="trustedDeviceStatus" class="status-line">Trusted Device Protection: Disabled</p>
+              <div class="settings-actions">
+                <button id="showRecoveryKey" type="button">Show Recovery Key</button>
+                <button id="restoreTrustedDevice" type="button">Restore Trusted Device</button>
+              </div>
+              <details class="more-info">
+                <summary>More info</summary>
+                <p>Trusted Device Protection adds a hidden local key to password generation. Passwords created with it enabled need the same trusted key restored on another device.</p>
+              </details>
+              <p id="trustedDeviceWarning" class="notice">If the Trusted Device Key is lost and no recovery key was saved, passwords generated with Trusted Device Protection cannot be recovered.</p>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <h3>Privacy</h3>
+            <label class="setting-row">
+              <input id="copyPasswordOnly" type="checkbox">
+              Copy Password Only
+            </label>
+            <p class="muted">Copies the generated password without showing it on screen.</p>
+          </section>
+
+          <section class="settings-card google-account-card">
+            <h3>Google Sign-In</h3>
+            <p class="muted">Optional. Google Sign-In can identify the user for future encrypted vault sync/import/export convenience. It is not used for password generation unless Google Security Factor is enabled.</p>
+            <label class="setting-row">
+              <input id="googleSecurityFactor" type="checkbox">
+              Google Security Factor
+            </label>
+            <p class="muted">When enabled, GoblinPass requires Google Sign-In and uses the stable Google account subject ID as an extra password ingredient. It does not use your email address.</p>
+            <p id="googleSecurityWarning" class="notice">If you lose access to this Google account, you may not be able to regenerate the same passwords.</p>
+            <div class="settings-actions">
+              <button id="setupGoogleSignIn" type="button">Set up Google Sign-In</button>
+              <button id="googleSignOut" type="button">Sign out</button>
+            </div>
+            <div id="googleSignInButton" class="google-button-area"></div>
+            <p id="googleSignInStatus" class="status-line">Google Sign-In: Not signed in</p>
+            <details class="more-info">
+              <summary>More info</summary>
+              <p>Google Sign-In uses basic identity only. Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
+            </details>
+          </section>
         </div>
-        <p class="notice">If the Trusted Device Key is lost and no recovery key was saved, passwords generated with Trusted Device Protection cannot be recovered.</p>
-
-        <label class="setting-row">
-          <input id="copyPasswordOnly" type="checkbox">
-          Copy Password Only
-        </label>
-        <p class="muted">When enabled, generated passwords are copied to the clipboard without being shown on screen.</p>
-
-        <h3 class="settings-subtitle">Google Sign-In</h3>
-        <p class="muted">Optional. Google Sign-In can identify the user for future encrypted vault sync/import/export convenience. It is not used for password generation unless Google Security Factor is enabled.</p>
-        <label class="setting-row">
-          <input id="googleSecurityFactor" type="checkbox">
-          Google Security Factor
-        </label>
-        <p class="muted">When enabled, GoblinPass requires Google Sign-In and uses the stable Google account subject ID as an extra password ingredient. It does not use your email address.</p>
-        <p class="notice">If you lose access to this Google account, you may not be able to regenerate the same passwords.</p>
-        <div class="settings-actions">
-          <button id="setupGoogleSignIn" type="button">Set up Google Sign-In</button>
-          <button id="googleSignOut" type="button">Sign out</button>
-        </div>
-        <div id="googleSignInButton" class="google-button-area"></div>
-        <p id="googleSignInStatus" class="status-line">Google Sign-In: Not signed in</p>
-        <p class="notice">Google Sign-In uses basic identity only. Do not add a Google client secret to this static site. The Google Subject ID is kept in memory for generation and is not saved in plain text.</p>
       </section>
     </section>
   </main>
