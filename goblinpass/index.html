@@ -68,7 +68,7 @@
           <button id="registerYubiKey" type="button">Register YubiKey</button>
         </div>
         <p id="yubiKeyMessage" class="challenge-code hidden" aria-live="polite"></p>
-        <p class="notice">Choose a physical security key/YubiKey if the browser offers a choice. A Windows Hello or Microsoft Password Manager passkey may not provide the PRF/hmac-secret output GoblinPass needs. iPhone/iPad Safari with external YubiKeys may not support WebAuthn PRF extension data.</p>
+        <p class="notice">Choose a physical security key/YubiKey if the browser offers a choice. Some browsers only confirm PRF when generating, not during setup. A Windows Hello or Microsoft Password Manager passkey may not provide the PRF/hmac-secret output GoblinPass needs.</p>
       </div>
 
       <label for="passwordStyle">Password Style</label>
@@ -238,6 +238,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=20260608-5"></script>
+  <script src="app.js?v=20260608-6"></script>
 </body>
 </html>

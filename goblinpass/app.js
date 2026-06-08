@@ -470,6 +470,7 @@ async function registerYubiKey() {
   }
   setYubiKeyMessage("Waiting for the browser and YubiKey. Complete any touch or PIN prompt.", "info");
   try {
+    const registrationSalt = new TextEncoder().encode("GoblinPass-YubiKey-registration-check-v1");
     const credential = await navigator.credentials.create({
       publicKey: {
         challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -490,18 +491,18 @@ async function registerYubiKey() {
         },
         timeout: 60000,
         extensions: {
-          prf: {}
+          prf: { eval: { first: registrationSalt } }
         }
       }
     });
     const results = credential.getClientExtensionResults?.();
-    if (!results?.prf?.enabled) {
-      setYubiKeyMessage("This browser or YubiKey did not enable WebAuthn PRF/hmac-secret. GoblinPass cannot use this key as a password ingredient unless PRF is available.", "warning");
-      return;
-    }
     localStorage.setItem(YUBIKEY_CREDENTIAL_KEY, bytesToBase64Url(new Uint8Array(credential.rawId)));
     updateYubiKeyUi();
-    setYubiKeyMessage("YubiKey registered for this app origin.", "success");
+    if (results?.prf?.enabled) {
+      setYubiKeyMessage("YubiKey registered and PRF was confirmed during setup.", "success");
+    } else {
+      setYubiKeyMessage("YubiKey registered. Some browsers do not confirm PRF during setup, so GoblinPass will check PRF when you generate.", "info");
+    }
   } catch (error) {
     setYubiKeyMessage(yubiKeyErrorMessage(error), "warning");
   }
@@ -521,7 +522,7 @@ async function getYubiKeyFactor() {
         userVerification: "preferred",
         timeout: 60000,
         extensions: {
-          prf: { eval: { first: salt } }
+          prf: { evalByCredential: { [id]: { first: salt } } }
         }
       }
     });
