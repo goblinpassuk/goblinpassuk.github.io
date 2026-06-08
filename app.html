@@ -138,6 +138,11 @@
                     <div class="settings-actions">
                       <button id="registerYubiKey" type="button">Register YubiKey</button>
                     </div>
+                    <label for="yubiKeyMode">Hardware Key Mode</label>
+                    <select id="yubiKeyMode">
+                      <option value="prf">Password ingredient - requires PRF/hmac-secret</option>
+                      <option value="gate">Titan-compatible verification gate</option>
+                    </select>
                     <p id="yubiKeyMessage" class="challenge-code hidden" aria-live="polite"></p>
                     <p class="notice">Choose a physical security key/YubiKey if the browser offers a choice. Some browsers only confirm PRF when generating, not during setup. A Windows Hello or Microsoft Password Manager passkey may not provide the PRF/hmac-secret output GoblinPass needs.</p>
                   </div>
@@ -425,7 +430,7 @@
     </footer>
 
     <script src="assets/js/app.js?v=20260608-2"></script>
-    <script src="goblinpass/app.js?v=20260608-6"></script>
+    <script src="goblinpass/app.js?v=20260608-8"></script>
     <script src="assets/js/goblinpass-ui-guards.js?v=20260608-1"></script>
   </body>
 </html>
