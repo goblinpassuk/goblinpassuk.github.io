@@ -290,6 +290,7 @@ button,.import-label{
   color:#dfffe7;
   font-weight:850;
   overflow-wrap:anywhere;
+  white-space:pre-line;
 }
 .challenge-code[data-message-type="warning"]{
   border-color:#6a5b20;

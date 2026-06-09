@@ -60,17 +60,22 @@
       <p class="muted">Recommended for banking, email, GitHub, PayPal, and crypto.</p>
       <div id="yubiKeyBox" class="phone-challenge-box hidden">
         <div class="challenge-head">
-          <strong>YubiKey password ingredient</strong>
+          <strong>YubiKey hardware protection</strong>
           <span id="yubiKeyStatus">Status: Not registered</span>
         </div>
-        <p class="muted">This is not normal 2FA. The YubiKey PRF output becomes part of the password recipe for this entry.</p>
+        <p class="muted">PRF mode uses the YubiKey as a password ingredient. Touch-unlock mode only requires the key before showing or copying the normal password.</p>
         <div class="settings-actions">
           <button id="registerYubiKey" type="button">Register YubiKey</button>
           <button id="forgetYubiKey" type="button">Forget registered key</button>
           <button id="testYubiKeyPrf" type="button">Test PRF</button>
         </div>
+        <label for="yubiKeyMode">YubiKey mode</label>
+        <select id="yubiKeyMode">
+          <option value="prf">PRF ingredient - changes generated password</option>
+          <option value="gate">Touch unlock only - not a password ingredient</option>
+        </select>
         <p id="yubiKeyMessage" class="challenge-code hidden" aria-live="polite"></p>
-        <p class="notice">Choose a physical security key/YubiKey if the browser offers a choice. Some browsers only confirm PRF when generating, not during setup. A Windows Hello or Microsoft Password Manager passkey may not provide the PRF/hmac-secret output GoblinPass needs.</p>
+        <p class="notice">PRF ingredient mode changes the generated password. Touch unlock mode only unlocks or reveals the normal generated password.</p>
       </div>
 
       <label for="passwordStyle">Password Style</label>
@@ -240,6 +245,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=20260609-4"></script>
+  <script src="app.js?v=20260609-8"></script>
 </body>
 </html>

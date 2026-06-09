@@ -337,6 +337,7 @@
   padding: 10px;
   font-weight: 850;
   overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .embedded-goblin-app .challenge-code[data-message-type="warning"] {

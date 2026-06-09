@@ -18,7 +18,11 @@ const PIN_KEY = "goblinpass_mobile_pin_v1";
 const SETTINGS_KEY = "goblinpass_mobile_settings_v1";
 const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
 const YUBIKEY_CREDENTIAL_KEY = "goblinpass_yubikey_credential_id_v1";
+const YUBIKEY_MODE_KEY = "goblinpass_yubikey_mode_v2";
+const YUBIKEY_CAPABILITY_KEY = "goblinpass_yubikey_capability_v1";
 const GOOGLE_CLIENT_ID = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
+const PRIVATE_BROWSING_YUBIKEY_WARNING = "YubiKey mode may not work in private/incognito browsing because the registered credential cannot be reused. Please use normal browser mode.";
+const MOBILE_YUBIKEY_PRF_WARNING = "Mobile browsers may register a YubiKey but fail to reuse it for WebAuthn PRF. If PRF mode fails on this phone, use a desktop browser in normal mode.";
 
 const CHARSETS = [
   { key: "lower", chars: "abcdefghijklmnopqrstuvwxyz" },
@@ -422,7 +426,55 @@ function googleSignOut() {
 }
 
 function getYubiKeyCredentialId() {
-  return localStorage.getItem(YUBIKEY_CREDENTIAL_KEY) || "";
+  try {
+    return localStorage.getItem(YUBIKEY_CREDENTIAL_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function getYubiKeyMode() {
+  let stored = "";
+  try { stored = localStorage.getItem(YUBIKEY_MODE_KEY) || ""; } catch {}
+  const mode = stored || $("yubiKeyMode")?.value || "prf";
+  return mode === "gate" ? "gate" : "prf";
+}
+
+function setYubiKeyMode(mode) {
+  try {
+    localStorage.setItem(YUBIKEY_MODE_KEY, mode === "gate" ? "gate" : "prf");
+  } catch {
+    setYubiKeyMessage(PRIVATE_BROWSING_YUBIKEY_WARNING, "warning");
+  }
+}
+
+function getYubiKeyCapability() {
+  try {
+    return JSON.parse(localStorage.getItem(YUBIKEY_CAPABILITY_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveYubiKeyCapability(capability) {
+  try {
+    localStorage.setItem(YUBIKEY_CAPABILITY_KEY, JSON.stringify({
+      prfAvailable: !!capability.prfAvailable,
+      hmacSecretAvailable: !!capability.hmacSecretAvailable,
+      touchGateAvailable: !!capability.touchGateAvailable,
+      authenticatorAttachment: capability.authenticatorAttachment || "",
+      createResults: capability.createResults || "",
+      getResults: capability.getResults || "",
+      prfRequestShape: capability.prfRequestShape || "",
+      storedCredentialIdLength: capability.storedCredentialIdLength || 0,
+      allowCredentialsSupplied: !!capability.allowCredentialsSupplied,
+      prfResultReturned: !!capability.prfResultReturned,
+      browserUserAgent: capability.browserUserAgent || navigator.userAgent || "",
+      updated: new Date().toISOString()
+    }));
+  } catch {
+    setYubiKeyMessage(PRIVATE_BROWSING_YUBIKEY_WARNING, "warning");
+  }
 }
 
 function setYubiKeyMessage(message, type = "info") {
@@ -433,6 +485,59 @@ function setYubiKeyMessage(message, type = "info") {
   el.classList.toggle("hidden", !message);
 }
 
+function localStorageWorks() {
+  try {
+    const key = "goblinpass_storage_test";
+    localStorage.setItem(key, "1");
+    const ok = localStorage.getItem(key) === "1";
+    localStorage.removeItem(key);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function indexedDbWorks() {
+  return new Promise(resolve => {
+    if (!window.indexedDB) return resolve(false);
+    const name = `goblinpass-idb-test-${Date.now()}`;
+    let request;
+    try {
+      request = indexedDB.open(name, 1);
+    } catch {
+      resolve(false);
+      return;
+    }
+    request.onerror = () => resolve(false);
+    request.onblocked = () => resolve(false);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.close();
+      try { indexedDB.deleteDatabase(name); } catch {}
+      resolve(true);
+    };
+  });
+}
+
+async function yubiKeyStorageWarning() {
+  const localOk = localStorageWorks();
+  const idbOk = await indexedDbWorks();
+  return localOk && idbOk ? "" : PRIVATE_BROWSING_YUBIKEY_WARNING;
+}
+
+async function warnIfYubiKeyStorageLooksTemporary() {
+  if (!$("useYubiKey")?.checked) return;
+  const warning = await yubiKeyStorageWarning();
+  if (warning) setYubiKeyMessage(warning, "warning");
+  else if (mobileYubiKeyWarning() && getYubiKeyMode() === "prf") setYubiKeyMessage(mobileYubiKeyWarning(), "warning");
+}
+
+function mobileYubiKeyWarning() {
+  const ua = navigator.userAgent || "";
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  return mobile ? MOBILE_YUBIKEY_PRF_WARNING : "";
+}
+
 async function browserPrfCapabilityText() {
   if (!window.PublicKeyCredential) return "WebAuthn is not available in this browser.";
   if (typeof PublicKeyCredential.getClientCapabilities !== "function") {
@@ -440,22 +545,54 @@ async function browserPrfCapabilityText() {
   }
   try {
     const caps = await PublicKeyCredential.getClientCapabilities("public-key");
+    const extensions = Array.isArray(caps.extensions) ? caps.extensions.join(", ") : "none reported";
     return caps.extensions?.includes("prf")
-      ? "Browser reports WebAuthn PRF support."
-      : "Browser does not report WebAuthn PRF support.";
+      ? `Browser reports WebAuthn PRF support. Browser extensions: ${extensions}.`
+      : `Browser does not report WebAuthn PRF support. Browser extensions: ${extensions}.`;
   } catch {
     return "GoblinPass could not read the browser PRF capability. It will test PRF during generation.";
   }
 }
 
+function extensionSummary(results) {
+  const prf = results?.prf;
+  const first = prf?.results?.first;
+  const hmac = results?.hmacCreateSecret;
+  return `prf.enabled=${typeof prf?.enabled === "boolean" ? prf.enabled : "not returned"}; prf.first=${first ? `${first.byteLength || 0} bytes` : "not returned"}; hmacCreateSecret=${typeof hmac === "boolean" ? hmac : "not returned"}`;
+}
+
+function yubiKeyStatusText(extra = "") {
+  const cap = getYubiKeyCapability();
+  const browser = extra ? `${extra}\n` : "";
+  return `${browser}PRF available: ${cap.prfAvailable ? "yes" : "no"}\n` +
+    `hmac-secret available: ${cap.hmacSecretAvailable ? "yes" : "no"}\n` +
+    `Touch-gate available: ${cap.touchGateAvailable ? "yes" : "no"}\n` +
+    `Stored credential ID length: ${cap.storedCredentialIdLength || getYubiKeyCredentialId().length || 0}\n` +
+    `allowCredentials supplied: ${cap.allowCredentialsSupplied ? "yes" : "no"}\n` +
+    `PRF result returned: ${cap.prfResultReturned ? "yes" : "no"}\n` +
+    `Authenticator attachment: ${cap.authenticatorAttachment || "not reported"}\n` +
+    `Create extension results: ${cap.createResults || "not tested"}\n` +
+    `Get extension results: ${cap.getResults || "not tested"}\n` +
+    `PRF request shape: ${cap.prfRequestShape || "not tested"}\n` +
+    `Browser/userAgent: ${cap.browserUserAgent || navigator.userAgent || "not reported"}`;
+}
+
 function updateYubiKeyUi() {
   const enabled = !!$("useYubiKey")?.checked;
-  const registered = !!getYubiKeyCredentialId();
+  const mode = getYubiKeyMode();
+  const cap = getYubiKeyCapability();
+  const hasCredential = !!getYubiKeyCredentialId();
+  const registered = mode === "gate"
+    ? hasCredential && !!cap.touchGateAvailable
+    : hasCredential && !!cap.prfAvailable;
+  if ($("yubiKeyMode")) $("yubiKeyMode").value = mode;
   if ($("yubiKeyBox")) $("yubiKeyBox").classList.toggle("hidden", !enabled);
   if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = registered ? "Status: Registered" : "Status: Not registered";
   if (!enabled) setYubiKeyMessage("");
+  else if (mode === "gate" && registered) setYubiKeyMessage(yubiKeyStatusText("YubiKey touch unlock only is active. This mode does not change the generated password."), "info");
+  else if (mode === "prf" && registered && !cap.prfAvailable && !cap.hmacSecretAvailable) setYubiKeyMessage(yubiKeyStatusText("This registered key is not confirmed for PRF ingredient mode. Run Test PRF or register again."), "warning");
   else if (!webAuthnPrfSupported()) setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
-  else if (registered) setYubiKeyMessage("YubiKey is registered for this site origin. Keep using the same registered key to recreate YubiKey-protected passwords.", "success");
+  else if (registered) setYubiKeyMessage(yubiKeyStatusText("YubiKey is registered for this site origin."), "success");
 }
 
 function webAuthnPrfSupported() {
@@ -464,19 +601,71 @@ function webAuthnPrfSupported() {
 
 async function yubiKeySalt() {
   const siteId = $("siteId").value.trim().toLowerCase();
-  const login = $("login").value.trim().toLowerCase();
-  const material = `GoblinPass-YubiKey-v1|${siteId}|${login}|${location.origin}`;
+  const accountId = $("login").value.trim().toLowerCase();
+  const masterPassword = $("master").value;
+  const material = `GoblinPass PRF v1|${siteId}|${accountId}|${masterPassword}`;
   return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material)));
 }
 
 function yubiKeyErrorMessage(error) {
   if (!webAuthnPrfSupported()) return "This browser does not support WebAuthn PRF.";
+  const message = String(error?.message || "");
+  if (message.includes("No passkeys available") || message.includes("couldn't find") || message.includes("could not find")) return "No passkeys available for the stored credential. The YubiKey registration is not reusable in this browser.";
   if (error?.name === "NotAllowedError") return "YubiKey prompt was cancelled, timed out, the wrong YubiKey was used, or touch/PIN was not completed.";
   if (error?.name === "InvalidStateError") return "This YubiKey may already be registered for this app.";
   if (error?.name === "NotReadableError") return "YubiKey not detected or could not be read.";
   if (error?.name === "SecurityError") return "WebAuthn is not available for this origin. Use HTTPS or GitHub Pages.";
-  if (String(error?.message || "").includes("PRF extension data")) return "This key registered successfully, but this browser/key combination did not return PRF data during generation. GoblinPass cannot use it as a password ingredient here.";
+  if (message.includes("PRF extension data")) return "This key registered successfully, but this browser/key combination did not return PRF data during generation. GoblinPass cannot use it as a password ingredient here.";
   return error?.message || "YubiKey failed. Check that the registered YubiKey is connected.";
+}
+
+function isUnusableStoredCredentialError(error) {
+  const message = String(error?.message || "");
+  return message.includes("No passkeys available") ||
+    message.includes("couldn't find") ||
+    message.includes("could not find") ||
+    message.includes("not reusable");
+}
+
+function getPrfOutput(results) {
+  return results?.prf?.results?.first || null;
+}
+
+async function requestYubiKeyPrf(id, salt) {
+  const allowCredentials = [{ type: "public-key", id: base64UrlToBytes(id) }];
+  const basePublicKey = {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    allowCredentials,
+    userVerification: "preferred",
+    timeout: 60000
+  };
+
+  const firstCredential = await navigator.credentials.get({
+    publicKey: {
+      ...basePublicKey,
+      extensions: {
+        prf: { eval: { first: salt } }
+      }
+    }
+  });
+  const firstResults = firstCredential.getClientExtensionResults?.();
+  const firstOutput = getPrfOutput(firstResults);
+  if (firstOutput?.byteLength === 32) {
+    return { credential: firstCredential, results: firstResults, output: firstOutput, requestShape: "eval" };
+  }
+
+  const secondCredential = await navigator.credentials.get({
+    publicKey: {
+      ...basePublicKey,
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      extensions: {
+        prf: { evalByCredential: { [id]: { first: salt } } }
+      }
+    }
+  });
+  const secondResults = secondCredential.getClientExtensionResults?.();
+  const secondOutput = getPrfOutput(secondResults);
+  return { credential: secondCredential, results: secondResults, output: secondOutput, requestShape: "evalByCredential", firstResults };
 }
 
 async function registerYubiKey() {
@@ -484,7 +673,10 @@ async function registerYubiKey() {
     setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
     return;
   }
-  setYubiKeyMessage("Waiting for the browser and YubiKey. Complete any touch or PIN prompt.", "info");
+  const mode = getYubiKeyMode();
+  const storageWarning = await yubiKeyStorageWarning();
+  const mobileWarning = mode === "prf" ? mobileYubiKeyWarning() : "";
+  setYubiKeyMessage(storageWarning || mobileWarning || "Waiting for the browser and YubiKey. Complete any touch or PIN prompt.", storageWarning || mobileWarning ? "warning" : "info");
   try {
     const credential = await navigator.credentials.create({
       publicKey: {
@@ -506,18 +698,77 @@ async function registerYubiKey() {
         },
         timeout: 60000,
         extensions: {
-          prf: {}
+          prf: {},
+          hmacCreateSecret: true
         }
       }
     });
     const results = credential.getClientExtensionResults?.();
-    localStorage.setItem(YUBIKEY_CREDENTIAL_KEY, bytesToBase64Url(new Uint8Array(credential.rawId)));
-    updateYubiKeyUi();
-    if (results?.prf?.enabled) {
-      setYubiKeyMessage("YubiKey registered and PRF was confirmed during setup.", "success");
-    } else {
-      setYubiKeyMessage("YubiKey registered. Some browsers do not confirm PRF during setup, so GoblinPass will check PRF when you generate.", "info");
+    const prfAvailable = results?.prf?.enabled === true;
+    const hmacSecretAvailable = results?.hmacCreateSecret === true;
+    const credentialId = bytesToBase64Url(new Uint8Array(credential.rawId));
+    const capability = {
+      prfAvailable,
+      hmacSecretAvailable,
+      touchGateAvailable: true,
+      authenticatorAttachment: credential.authenticatorAttachment || "",
+      createResults: extensionSummary(results),
+      getResults: "",
+      storedCredentialIdLength: credentialId.length,
+      allowCredentialsSupplied: false,
+      prfResultReturned: false,
+      browserUserAgent: navigator.userAgent || ""
+    };
+
+    let savedMode = mode;
+    if (mode === "prf" && !prfAvailable && !hmacSecretAvailable) {
+      const ok = confirm("This key registered, but PRF/hmac-secret was not confirmed. Save it as touch unlock only instead? Touch unlock does not change generated passwords.");
+      if (!ok) {
+        setYubiKeyMessage(`Registration completed, but PRF ingredient mode was not enabled.\nCreate extension results: ${capability.createResults}\nPRF available: no\nhmac-secret available: no\nTouch-gate available: yes`, "warning");
+        return;
+      }
+      setYubiKeyMode("gate");
+      savedMode = "gate";
     }
+
+    localStorage.setItem(YUBIKEY_CREDENTIAL_KEY, credentialId);
+    setYubiKeyMessage("Registration created. Verifying the stored credential can be reused now.", "info");
+    let verified;
+    try {
+      verified = await verifyRegisteredYubiKey(credentialId, savedMode);
+    } catch (verifyError) {
+      localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+      localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
+      updateYubiKeyUi();
+      setYubiKeyMessage(`YubiKey registration could not be reused. Try normal browser mode or register again.${mobileWarning ? `\n${mobileWarning}` : ""}`, "warning");
+      return;
+    }
+
+    if (savedMode === "prf" && !verified.prfAvailable) {
+      localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+      localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
+      updateYubiKeyUi();
+      setYubiKeyMessage(`YubiKey registration could not be reused. Try normal browser mode or register again.${mobileWarning ? `\n${mobileWarning}` : ""}`, "warning");
+      return;
+    }
+
+    saveYubiKeyCapability({
+      ...capability,
+      prfAvailable: savedMode === "prf" ? verified.prfAvailable : prfAvailable,
+      hmacSecretAvailable,
+      touchGateAvailable: verified.touchGateAvailable,
+      authenticatorAttachment: verified.authenticatorAttachment || capability.authenticatorAttachment,
+      getResults: verified.getResults,
+      storedCredentialIdLength: credentialId.length,
+      allowCredentialsSupplied: verified.allowCredentialsSupplied,
+      prfResultReturned: verified.prfResultReturned,
+      browserUserAgent: navigator.userAgent || ""
+    });
+    updateYubiKeyUi();
+    const registerMessage = `${storageWarning ? `${storageWarning}\n` : ""}${mobileWarning ? `${mobileWarning}\n` : ""}${savedMode === "prf" && verified.prfAvailable
+      ? "YubiKey registered and verified for PRF ingredient mode."
+      : "YubiKey registered for touch unlock only."}`;
+    setYubiKeyMessage(yubiKeyStatusText(registerMessage), savedMode === "prf" && verified.prfAvailable ? "success" : "info");
   } catch (error) {
     setYubiKeyMessage(yubiKeyErrorMessage(error), "warning");
   }
@@ -525,6 +776,7 @@ async function registerYubiKey() {
 
 async function forgetYubiKey() {
   localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+  localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
   currentYubiKeyFactor = "";
   generatedPassword = "";
   lastGeneratedMeta = null;
@@ -554,46 +806,98 @@ async function testYubiKeyPrf() {
   const capability = await browserPrfCapabilityText();
   try {
     const salt = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("GoblinPass-PRF-test-v1")));
+    const { credential, results, output, requestShape, firstResults } = await requestYubiKeyPrf(id, salt);
+    const summary = `${capability} ${firstResults ? `First try: ${prfResultSummary(firstResults)}. ` : ""}Final try: ${prfResultSummary(results)}. Shape: ${requestShape}`;
+    const ok = output?.byteLength === 32;
+    const cap = getYubiKeyCapability();
+    saveYubiKeyCapability({
+      ...cap,
+      prfAvailable: ok || !!cap.prfAvailable,
+      hmacSecretAvailable: !!cap.hmacSecretAvailable,
+      touchGateAvailable: true,
+      authenticatorAttachment: credential.authenticatorAttachment || cap.authenticatorAttachment || "",
+      getResults: extensionSummary(results),
+      prfRequestShape: requestShape,
+      storedCredentialIdLength: id.length,
+      allowCredentialsSupplied: true,
+      prfResultReturned: ok,
+      browserUserAgent: navigator.userAgent || ""
+    });
+    setYubiKeyMessage(ok ? `PRF test passed. ${summary}` : `PRF test failed. ${summary}`, ok ? "success" : "warning");
+  } catch (error) {
+    if (isUnusableStoredCredentialError(error)) {
+      localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+      localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
+      updateYubiKeyUi();
+    }
+    setYubiKeyMessage(`PRF test failed. ${capability} ${yubiKeyErrorMessage(error)}`, "warning");
+  }
+}
+
+async function verifyRegisteredYubiKey(id, mode) {
+  if (mode === "gate") {
     const credential = await navigator.credentials.get({
       publicKey: {
         challenge: crypto.getRandomValues(new Uint8Array(32)),
         allowCredentials: [{ type: "public-key", id: base64UrlToBytes(id) }],
         userVerification: "preferred",
-        timeout: 60000,
-        extensions: {
-          prf: { eval: { first: salt } }
-        }
+        timeout: 60000
       }
     });
-    const results = credential.getClientExtensionResults?.();
-    const summary = `${capability} ${prfResultSummary(results)}`;
-    const ok = !!results?.prf?.results?.first;
-    setYubiKeyMessage(ok ? `PRF test passed. ${summary}` : `PRF test failed. ${summary}`, ok ? "success" : "warning");
-  } catch (error) {
-    setYubiKeyMessage(`PRF test failed. ${capability} ${yubiKeyErrorMessage(error)}`, "warning");
+    return {
+      prfAvailable: false,
+      hmacSecretAvailable: false,
+      touchGateAvailable: true,
+      authenticatorAttachment: credential.authenticatorAttachment || "",
+      getResults: "Immediate touch-gate verification succeeded.",
+      allowCredentialsSupplied: true,
+      prfResultReturned: false
+    };
   }
+
+  const salt = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("GoblinPass-PRF-registration-verify-v1")));
+  const { credential, results, output, requestShape, firstResults } = await requestYubiKeyPrf(id, salt);
+  if (!output || output.byteLength !== 32) throw new Error("YubiKey registration could not be reused. Try normal browser mode or register again.");
+  return {
+    prfAvailable: true,
+    hmacSecretAvailable: false,
+    touchGateAvailable: true,
+    authenticatorAttachment: credential.authenticatorAttachment || "",
+    getResults: `${firstResults ? `First try: ${extensionSummary(firstResults)}; ` : ""}Final try: ${extensionSummary(results)}`,
+    prfRequestShape: requestShape,
+    allowCredentialsSupplied: true,
+    prfResultReturned: true
+  };
 }
 
 async function getYubiKeyFactor() {
   if (!$("useYubiKey")?.checked) return "";
   const id = getYubiKeyCredentialId();
   if (!id) throw new Error("Register a YubiKey before generating a YubiKey-protected password.");
+  if (getYubiKeyMode() === "gate") {
+    await verifyYubiKeyTouchGate(id);
+    setYubiKeyMessage(yubiKeyStatusText("YubiKey touch unlock succeeded. The password was generated with the normal GoblinPass formula."), "success");
+    return "";
+  }
   if (!webAuthnPrfSupported()) throw new Error("This browser does not support WebAuthn PRF.");
   const salt = await yubiKeySalt();
   try {
-    const credential = await navigator.credentials.get({
-      publicKey: {
-        challenge: crypto.getRandomValues(new Uint8Array(32)),
-        allowCredentials: [{ type: "public-key", id: base64UrlToBytes(id) }],
-        userVerification: "preferred",
-        timeout: 60000,
-        extensions: {
-          prf: { eval: { first: salt } }
-        }
-      }
+    const { credential, results, output, requestShape, firstResults } = await requestYubiKeyPrf(id, salt);
+    const cap = getYubiKeyCapability();
+    saveYubiKeyCapability({
+      ...cap,
+      touchGateAvailable: true,
+      authenticatorAttachment: credential.authenticatorAttachment || cap.authenticatorAttachment || "",
+      getResults: `${firstResults ? `First try: ${extensionSummary(firstResults)}; ` : ""}Final try: ${extensionSummary(results)}`,
+      prfRequestShape: requestShape,
+      prfAvailable: (!!output && output.byteLength === 32) || !!cap.prfAvailable,
+      hmacSecretAvailable: !!cap.hmacSecretAvailable,
+      storedCredentialIdLength: id.length,
+      allowCredentialsSupplied: true,
+      prfResultReturned: !!output,
+      browserUserAgent: navigator.userAgent || ""
     });
-    const output = credential.getClientExtensionResults?.().prf?.results?.first;
-    if (!output) throw new Error("This browser or YubiKey did not return PRF extension data.");
+    if (!output || output.byteLength !== 32) throw new Error("This browser or YubiKey did not return PRF extension data.");
     const mixKey = await crypto.subtle.importKey(
       "raw",
       output,
@@ -603,6 +907,32 @@ async function getYubiKeyFactor() {
     );
     const mixed = await crypto.subtle.sign("HMAC", mixKey, new TextEncoder().encode("GoblinPass-YubiKey-Mix-v1"));
     return bytesToBase64Url(new Uint8Array(mixed));
+  } catch (error) {
+    throw new Error(yubiKeyErrorMessage(error));
+  }
+}
+
+async function verifyYubiKeyTouchGate(id = getYubiKeyCredentialId()) {
+  try {
+    const credential = await navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ type: "public-key", id: base64UrlToBytes(id) }],
+        userVerification: "preferred",
+        timeout: 60000
+      }
+    });
+    const cap = getYubiKeyCapability();
+    saveYubiKeyCapability({
+      ...cap,
+      touchGateAvailable: true,
+      authenticatorAttachment: credential.authenticatorAttachment || cap.authenticatorAttachment || "",
+      getResults: "Touch-gate WebAuthn get succeeded without PRF request.",
+      storedCredentialIdLength: id.length,
+      allowCredentialsSupplied: true,
+      prfResultReturned: false,
+      browserUserAgent: navigator.userAgent || ""
+    });
   } catch (error) {
     throw new Error(yubiKeyErrorMessage(error));
   }
@@ -861,11 +1191,16 @@ async function generate() {
     currentYubiKeyFactor = await getYubiKeyFactor();
   } catch (error) {
     currentYubiKeyFactor = "";
+    if (isUnusableStoredCredentialError(error)) {
+      localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+      localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
+      updateYubiKeyUi();
+    }
     setYubiKeyMessage(error.message, "warning");
     return;
   }
   generatedPassword = await deterministicPassword(style, strength);
-  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked };
+  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked, yubiKeyMode: getYubiKeyMode() };
   currentYubiKeyFactor = "";
   generatedVisible = false;
   try { await navigator.clipboard.writeText(generatedPassword); } catch {}
@@ -895,6 +1230,7 @@ function getEntryPayload(passwordHint) {
     fullLoginStored: loginStore.fullLoginStored,
     passwordHint: passwordHint || "",
     yubiKeyRequired: !!$("useYubiKey")?.checked,
+    yubiKeyMode: getYubiKeyMode(),
     memorableStrength: getMemorableStrength(),
     length: parseInt($("length").value || "16", 10),
     counter: parseInt($("counter").value || "1", 10),
@@ -967,7 +1303,8 @@ async function saveCurrent() {
   const savedStrength = getMemorableStrength();
   let pwForHint = generatedPassword;
   const usingYubiKey = !!$("useYubiKey")?.checked;
-  if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey)) {
+  const yubiKeyMode = getYubiKeyMode();
+  if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode)) {
     pwForHint = "";
   }
   if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
@@ -977,6 +1314,11 @@ async function saveCurrent() {
       currentYubiKeyFactor = await getYubiKeyFactor();
     } catch (error) {
       currentYubiKeyFactor = "";
+      if (isUnusableStoredCredentialError(error)) {
+        localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+        localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
+        updateYubiKeyUi();
+      }
       setYubiKeyMessage(error.message, "warning");
       return;
     }
@@ -1071,6 +1413,8 @@ function applyEntry(e) {
   $("nums").checked = !!e.options?.nums;
   $("symbols").checked = !!e.options?.symbols;
   $("useYubiKey").checked = !!e.yubiKeyRequired;
+  if ($("yubiKeyMode")) $("yubiKeyMode").value = e.yubiKeyMode === "gate" ? "gate" : "prf";
+  setYubiKeyMode($("yubiKeyMode")?.value || "prf");
   updateYubiKeyUi();
   updatePasswordStyleUi();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1105,7 +1449,7 @@ async function renderEntries() {
       ${site ? `<div class="entry-line">Site: ${escapeHtml(site)}</div>` : ""}
       <div class="entry-line">Login: <span data-login>${escapeHtml(getEntryLoginForDisplay(e) || "not saved")}</span>${e.fullLoginStored ? '<span class="sensitive-note">full stored</span>' : ""}</div>
       <div class="entry-line">Password hint: <span data-pwhint>${escapeHtml(maskPasswordHint(e.passwordHint))}</span></div>
-      ${e.yubiKeyRequired ? '<div class="entry-line"><span class="high-security-badge">YubiKey PRF Required</span></div>' : ""}
+      ${e.yubiKeyRequired ? `<div class="entry-line"><span class="high-security-badge">${e.yubiKeyMode === "gate" ? "YubiKey Touch Unlock" : "YubiKey PRF Required"}</span></div>` : ""}
       <div class="entry-line">Length: ${e.length} - Counter: ${e.counter}</div>
       <div class="entry-actions">
         <button data-use>Use</button>
@@ -1207,11 +1551,23 @@ document.addEventListener("DOMContentLoaded", () => {
   $("securityKey").oninput = () => {
     if (getSecurityInputMethod() === "normal") securityKeyMemory = "";
   };
-  $("useYubiKey").onchange = () => { generatedPassword = ""; updateYubiKeyUi(); };
+  $("useYubiKey").onchange = () => {
+    generatedPassword = "";
+    updateYubiKeyUi();
+    warnIfYubiKeyStorageLooksTemporary();
+  };
+  if ($("yubiKeyMode")) $("yubiKeyMode").onchange = () => {
+    setYubiKeyMode($("yubiKeyMode").value);
+    generatedPassword = "";
+    lastGeneratedMeta = null;
+    updateYubiKeyUi();
+    warnIfYubiKeyStorageLooksTemporary();
+  };
   $("registerYubiKey").onclick = registerYubiKey;
   if ($("forgetYubiKey")) $("forgetYubiKey").onclick = forgetYubiKey;
   if ($("testYubiKeyPrf")) $("testYubiKeyPrf").onclick = testYubiKeyPrf;
   updateYubiKeyUi();
+  warnIfYubiKeyStorageLooksTemporary();
   $("passwordStyle").onchange = () => {
     clearGeneratedResult();
     updatePasswordStyleUi();
