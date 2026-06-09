@@ -484,7 +484,6 @@ async function registerYubiKey() {
   }
   setYubiKeyMessage("Waiting for the browser and YubiKey. Complete any touch or PIN prompt.", "info");
   try {
-    const registrationSalt = new TextEncoder().encode("GoblinPass-YubiKey-registration-check-v1");
     const credential = await navigator.credentials.create({
       publicKey: {
         challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -505,7 +504,7 @@ async function registerYubiKey() {
         },
         timeout: 60000,
         extensions: {
-          prf: { eval: { first: registrationSalt } }
+          prf: {}
         }
       }
     });
@@ -541,7 +540,7 @@ async function getYubiKeyFactor() {
         userVerification: "preferred",
         timeout: 60000,
         extensions: {
-          prf: { evalByCredential: { [id]: { first: salt } } }
+          prf: { eval: { first: salt } }
         }
       }
     });
