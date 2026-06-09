@@ -443,6 +443,21 @@ function setYubiKeyMessage(message, type = "info") {
   el.classList.toggle("hidden", !message);
 }
 
+async function browserPrfCapabilityText() {
+  if (!window.PublicKeyCredential) return "WebAuthn is not available in this browser.";
+  if (typeof PublicKeyCredential.getClientCapabilities !== "function") {
+    return "This browser does not expose a PRF capability check. GoblinPass will test PRF during generation.";
+  }
+  try {
+    const caps = await PublicKeyCredential.getClientCapabilities("public-key");
+    return caps.extensions?.includes("prf")
+      ? "Browser reports WebAuthn PRF support."
+      : "Browser does not report WebAuthn PRF support.";
+  } catch {
+    return "GoblinPass could not read the browser PRF capability. It will test PRF during generation.";
+  }
+}
+
 function updateYubiKeyUi() {
   const enabled = !!$("useYubiKey")?.checked;
   const registered = !!getYubiKeyCredentialId();
@@ -519,6 +534,16 @@ async function registerYubiKey() {
   } catch (error) {
     setYubiKeyMessage(yubiKeyErrorMessage(error), "warning");
   }
+}
+
+async function forgetYubiKey() {
+  localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+  currentYubiKeyFactor = "";
+  generatedPassword = "";
+  lastGeneratedMeta = null;
+  updateYubiKeyUi();
+  const capability = await browserPrfCapabilityText();
+  setYubiKeyMessage(`Local key registration forgotten. Register the YubiKey again with the latest PRF setup. ${capability}`, "info");
 }
 
 async function getYubiKeyFactor() {
@@ -1185,6 +1210,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateYubiKeyUi();
   };
   $("registerYubiKey").onclick = registerYubiKey;
+  if ($("forgetYubiKey")) $("forgetYubiKey").onclick = forgetYubiKey;
   updateYubiKeyUi();
   $("passwordStyle").onchange = () => {
     clearGeneratedResult();
