@@ -439,18 +439,11 @@ function getYubiKeyCredentialId() {
 }
 
 function getYubiKeyMode() {
-  let stored = "";
-  try { stored = localStorage.getItem(YUBIKEY_MODE_KEY) || ""; } catch {}
-  const mode = stored || $("yubiKeyMode")?.value || "prf";
-  return mode === "gate" ? "gate" : "prf";
+  return "prf";
 }
 
 function setYubiKeyMode(mode) {
-  try {
-    localStorage.setItem(YUBIKEY_MODE_KEY, mode === "gate" ? "gate" : "prf");
-  } catch {
-    setYubiKeyMessage(PRIVATE_BROWSING_YUBIKEY_WARNING, "warning");
-  }
+  try { localStorage.setItem(YUBIKEY_MODE_KEY, "prf"); } catch {}
 }
 
 function getYubiKeyCapability() {
@@ -526,9 +519,7 @@ function indexedDbWorks() {
 }
 
 async function yubiKeyStorageWarning() {
-  const localOk = localStorageWorks();
-  const idbOk = await indexedDbWorks();
-  return localOk && idbOk ? "" : PRIVATE_BROWSING_YUBIKEY_WARNING;
+  return "";
 }
 
 async function warnIfYubiKeyStorageLooksTemporary() {
@@ -586,20 +577,14 @@ function yubiKeyStatusText(extra = "") {
 
 function updateYubiKeyUi() {
   const enabled = !!$("useYubiKey")?.checked;
-  const mode = getYubiKeyMode();
   const cap = getYubiKeyCapability();
-  const hasCredential = !!getYubiKeyCredentialId();
-  const registered = mode === "gate"
-    ? hasCredential && !!cap.touchGateAvailable
-    : hasCredential && !!cap.prfAvailable;
-  if ($("yubiKeyMode")) $("yubiKeyMode").value = mode;
+  if ($("yubiKeyMode")) $("yubiKeyMode").value = "prf";
   if ($("yubiKeyBox")) $("yubiKeyBox").classList.toggle("hidden", !enabled);
-  if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = registered ? "Status: Registered" : "Status: Not registered";
+  if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = cap.prfAvailable ? "Status: Last authentication worked" : "Status: Authenticates on generate";
   if (!enabled) setYubiKeyMessage("");
-  else if (mode === "gate" && registered) setYubiKeyMessage(yubiKeyStatusText("YubiKey touch unlock only is active. This mode does not change the generated password."), "info");
-  else if (mode === "prf" && registered && !cap.prfAvailable && !cap.hmacSecretAvailable) setYubiKeyMessage(yubiKeyStatusText("This registered key is not confirmed for PRF ingredient mode. Run Test PRF or register again."), "warning");
   else if (!webAuthnPrfSupported()) setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
-  else if (registered) setYubiKeyMessage(yubiKeyStatusText("YubiKey is registered for this site origin."), "success");
+  else if (cap.prfAvailable) setYubiKeyMessage(yubiKeyStatusText("Last YubiKey authentication returned a real PRF password ingredient."), "success");
+  else setYubiKeyMessage("No registration needed. When you generate, choose your physical YubiKey/security key and complete the touch or PIN prompt.", "info");
 }
 
 function webAuthnPrfSupported() {
@@ -621,7 +606,7 @@ async function yubiKeySalt() {
 function yubiKeyErrorMessage(error) {
   if (!webAuthnPrfSupported()) return "This browser does not support WebAuthn PRF.";
   const message = String(error?.message || "");
-  if (message.includes("No passkeys available") || message.includes("couldn't find") || message.includes("could not find")) return "GoblinPass could not find the saved YubiKey credential. Try clearing the saved credential and setting up again.";
+  if (message.includes("No passkeys available") || message.includes("couldn't find") || message.includes("could not find")) return "GoblinPass could not find a reusable passkey/security-key credential for this site. Make sure the YubiKey has a passkey for this site and choose it during authentication.";
   if (error?.name === "NotAllowedError") return "YubiKey prompt was cancelled, timed out, the wrong YubiKey was used, or touch/PIN was not completed.";
   if (error?.name === "InvalidStateError") return "This YubiKey may already be registered for this app.";
   if (error?.name === "NotReadableError") return "YubiKey not detected or could not be read.";
@@ -679,6 +664,24 @@ async function requestYubiKeyPrf(id, salt) {
   const secondResults = secondCredential.getClientExtensionResults?.();
   const secondOutput = getPrfOutput(secondResults, id);
   return { credential: secondCredential, results: secondResults, output: secondOutput, requestShape: "evalByCredential", firstResults };
+}
+
+async function requestYubiKeyAuthenticationPrf(salt) {
+  const credential = await navigator.credentials.get({
+    publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rpId: webAuthnRpId(),
+      userVerification: "preferred",
+      timeout: 60000,
+      hints: ["security-key"],
+      extensions: {
+        prf: { eval: { first: salt } }
+      }
+    }
+  });
+  const results = credential.getClientExtensionResults?.();
+  const output = getPrfOutput(results);
+  return { credential, results, output, requestShape: "discoverable-authentication" };
 }
 
 async function createYubiKeyCredential() {
@@ -997,34 +1000,30 @@ async function verifyRegisteredYubiKey(id, mode) {
 
 async function getYubiKeyFactor() {
   if (!$("useYubiKey")?.checked) return "";
-  const id = getYubiKeyCredentialId();
-  if (!id) throw new Error("Register a YubiKey before generating a YubiKey-protected password.");
-  if (getYubiKeyMode() === "gate") {
-    await verifyYubiKeyTouchGate(id);
-    setYubiKeyMessage(yubiKeyStatusText("YubiKey touch unlock succeeded. The password was generated with the normal GoblinPass formula."), "success");
-    return "";
-  }
   if (!webAuthnPrfSupported()) throw new Error("This browser does not support WebAuthn PRF.");
   const salt = await yubiKeySalt();
   try {
-    const { credential, results, output, requestShape, firstResults } = await requestYubiKeyPrf(id, salt);
+    setYubiKeyMessage("Authenticate with your YubiKey now. Choose the physical security key if the browser offers more than one option.", "info");
+    const { credential, results, output, requestShape } = await requestYubiKeyAuthenticationPrf(salt);
     const cap = getYubiKeyCapability();
     saveYubiKeyCapability({
       ...cap,
       touchGateAvailable: true,
       authenticatorAttachment: credential.authenticatorAttachment || cap.authenticatorAttachment || "",
-      getResults: `${firstResults ? `First try: ${extensionSummary(firstResults)}; ` : ""}Final try: ${extensionSummary(results)}`,
+      getResults: extensionSummary(results),
       prfRequestShape: requestShape,
       rpId: webAuthnRpId(),
-      prfAvailable: (!!output && output.byteLength === 32) || !!cap.prfAvailable,
+      prfAvailable: !!output && output.byteLength === 32,
       hmacSecretAvailable: !!cap.hmacSecretAvailable,
-      storedCredentialIdLength: id.length,
-      allowCredentialsSupplied: true,
+      storedCredentialIdLength: 0,
+      allowCredentialsSupplied: false,
       prfResultReturned: !!output,
       browserUserAgent: navigator.userAgent || ""
     });
     if (!output || output.byteLength !== 32) throw new Error("This browser or YubiKey did not return PRF extension data.");
-    return await mixYubiKeyPrfOutput(output);
+    const factor = await mixYubiKeyPrfOutput(output);
+    setYubiKeyMessage(yubiKeyStatusText("YubiKey authenticated and returned a real PRF password ingredient."), "success");
+    return factor;
   } catch (error) {
     throw new Error(yubiKeyErrorMessage(error));
   }
@@ -1569,7 +1568,7 @@ async function renderEntries() {
       ${site ? `<div class="entry-line">Site: ${escapeHtml(site)}</div>` : ""}
       <div class="entry-line">Login: <span data-login>${escapeHtml(getEntryLoginForDisplay(e) || "not saved")}</span>${e.fullLoginStored ? '<span class="sensitive-note">full stored</span>' : ""}</div>
       <div class="entry-line">Password hint: <span data-pwhint>${escapeHtml(maskPasswordHint(e.passwordHint))}</span></div>
-      ${e.yubiKeyRequired ? `<div class="entry-line"><span class="high-security-badge">${e.yubiKeyMode === "gate" ? "YubiKey Touch Unlock" : "YubiKey PRF Required"}</span></div>` : ""}
+      ${e.yubiKeyRequired ? `<div class="entry-line"><span class="high-security-badge">YubiKey PRF Required</span></div>` : ""}
       <div class="entry-line">Length: ${e.length} - Counter: ${e.counter}</div>
       <div class="entry-actions">
         <button data-use>Use</button>
@@ -1683,7 +1682,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateYubiKeyUi();
     warnIfYubiKeyStorageLooksTemporary();
   };
-  $("registerYubiKey").onclick = registerYubiKey;
+  if ($("registerYubiKey")) $("registerYubiKey").onclick = registerYubiKey;
   if ($("setupAndTestYubiKeyPrf")) $("setupAndTestYubiKeyPrf").onclick = setupAndTestYubiKeyPrf;
   if ($("forgetYubiKey")) $("forgetYubiKey").onclick = forgetYubiKey;
   if ($("testYubiKeyPrf")) $("testYubiKeyPrf").onclick = testYubiKeyPrf;
