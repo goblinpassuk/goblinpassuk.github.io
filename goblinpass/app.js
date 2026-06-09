@@ -18,7 +18,6 @@ const PIN_KEY = "goblinpass_mobile_pin_v1";
 const SETTINGS_KEY = "goblinpass_mobile_settings_v1";
 const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
 const YUBIKEY_CREDENTIAL_KEY = "goblinpass_yubikey_credential_id_v1";
-const YUBIKEY_MODE_KEY = "goblinpass_yubikey_mode_v1";
 const GOOGLE_CLIENT_ID = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
 
 const CHARSETS = [
@@ -426,15 +425,6 @@ function getYubiKeyCredentialId() {
   return localStorage.getItem(YUBIKEY_CREDENTIAL_KEY) || "";
 }
 
-function getYubiKeyMode() {
-  const mode = $("yubiKeyMode")?.value || localStorage.getItem(YUBIKEY_MODE_KEY) || "prf";
-  return mode === "gate" ? "gate" : "prf";
-}
-
-function setYubiKeyMode(mode) {
-  localStorage.setItem(YUBIKEY_MODE_KEY, mode === "gate" ? "gate" : "prf");
-}
-
 function setYubiKeyMessage(message, type = "info") {
   const el = $("yubiKeyMessage");
   if (!el) return;
@@ -461,12 +451,9 @@ async function browserPrfCapabilityText() {
 function updateYubiKeyUi() {
   const enabled = !!$("useYubiKey")?.checked;
   const registered = !!getYubiKeyCredentialId();
-  const mode = getYubiKeyMode();
-  if ($("yubiKeyMode")) $("yubiKeyMode").value = mode;
   if ($("yubiKeyBox")) $("yubiKeyBox").classList.toggle("hidden", !enabled);
   if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = registered ? "Status: Registered" : "Status: Not registered";
   if (!enabled) setYubiKeyMessage("");
-  else if (mode === "gate") setYubiKeyMessage("Titan-compatible mode verifies the registered security key before generation. It does not add a hidden PRF secret to the password formula.", "info");
   else if (!webAuthnPrfSupported()) setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
   else if (registered) setYubiKeyMessage("YubiKey is registered for this site origin. Keep using the same registered key to recreate YubiKey-protected passwords.", "success");
 }
@@ -546,15 +533,51 @@ async function forgetYubiKey() {
   setYubiKeyMessage(`Local key registration forgotten. Register the YubiKey again with the latest PRF setup. ${capability}`, "info");
 }
 
+function prfResultSummary(results) {
+  const prf = results?.prf;
+  const first = prf?.results?.first;
+  return [
+    `PRF object returned: ${prf ? "yes" : "no"}`,
+    `PRF enabled flag: ${typeof prf?.enabled === "boolean" ? prf.enabled : "not returned"}`,
+    `PRF result returned: ${first ? "yes" : "no"}`,
+    `PRF result bytes: ${first?.byteLength || 0}`
+  ].join(" | ");
+}
+
+async function testYubiKeyPrf() {
+  const id = getYubiKeyCredentialId();
+  if (!id) {
+    setYubiKeyMessage("Register a YubiKey before running the PRF test.", "warning");
+    return;
+  }
+  setYubiKeyMessage("Testing browser PRF support. Complete the security key prompts.", "info");
+  const capability = await browserPrfCapabilityText();
+  try {
+    const salt = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("GoblinPass-PRF-test-v1")));
+    const credential = await navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ type: "public-key", id: base64UrlToBytes(id) }],
+        userVerification: "preferred",
+        timeout: 60000,
+        extensions: {
+          prf: { eval: { first: salt } }
+        }
+      }
+    });
+    const results = credential.getClientExtensionResults?.();
+    const summary = `${capability} ${prfResultSummary(results)}`;
+    const ok = !!results?.prf?.results?.first;
+    setYubiKeyMessage(ok ? `PRF test passed. ${summary}` : `PRF test failed. ${summary}`, ok ? "success" : "warning");
+  } catch (error) {
+    setYubiKeyMessage(`PRF test failed. ${capability} ${yubiKeyErrorMessage(error)}`, "warning");
+  }
+}
+
 async function getYubiKeyFactor() {
   if (!$("useYubiKey")?.checked) return "";
   const id = getYubiKeyCredentialId();
-  if (!id) throw new Error("Register a hardware security key before generating a hardware-key-protected password.");
-  if (getYubiKeyMode() === "gate") {
-    await verifyHardwareKeyGate(id);
-    setYubiKeyMessage("Hardware key verified. Password generated using the normal GoblinPass formula.", "success");
-    return "";
-  }
+  if (!id) throw new Error("Register a YubiKey before generating a YubiKey-protected password.");
   if (!webAuthnPrfSupported()) throw new Error("This browser does not support WebAuthn PRF.");
   const salt = await yubiKeySalt();
   try {
@@ -580,21 +603,6 @@ async function getYubiKeyFactor() {
     );
     const mixed = await crypto.subtle.sign("HMAC", mixKey, new TextEncoder().encode("GoblinPass-YubiKey-Mix-v1"));
     return bytesToBase64Url(new Uint8Array(mixed));
-  } catch (error) {
-    throw new Error(yubiKeyErrorMessage(error));
-  }
-}
-
-async function verifyHardwareKeyGate(id = getYubiKeyCredentialId()) {
-  try {
-    await navigator.credentials.get({
-      publicKey: {
-        challenge: crypto.getRandomValues(new Uint8Array(32)),
-        allowCredentials: [{ type: "public-key", id: base64UrlToBytes(id) }],
-        userVerification: "preferred",
-        timeout: 60000
-      }
-    });
   } catch (error) {
     throw new Error(yubiKeyErrorMessage(error));
   }
@@ -857,7 +865,7 @@ async function generate() {
     return;
   }
   generatedPassword = await deterministicPassword(style, strength);
-  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked, yubiKeyMode: getYubiKeyMode() };
+  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked };
   currentYubiKeyFactor = "";
   generatedVisible = false;
   try { await navigator.clipboard.writeText(generatedPassword); } catch {}
@@ -887,7 +895,6 @@ function getEntryPayload(passwordHint) {
     fullLoginStored: loginStore.fullLoginStored,
     passwordHint: passwordHint || "",
     yubiKeyRequired: !!$("useYubiKey")?.checked,
-    yubiKeyMode: getYubiKeyMode(),
     memorableStrength: getMemorableStrength(),
     length: parseInt($("length").value || "16", 10),
     counter: parseInt($("counter").value || "1", 10),
@@ -960,8 +967,7 @@ async function saveCurrent() {
   const savedStrength = getMemorableStrength();
   let pwForHint = generatedPassword;
   const usingYubiKey = !!$("useYubiKey")?.checked;
-  const yubiKeyMode = getYubiKeyMode();
-  if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode)) {
+  if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey)) {
     pwForHint = "";
   }
   if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
@@ -1065,8 +1071,6 @@ function applyEntry(e) {
   $("nums").checked = !!e.options?.nums;
   $("symbols").checked = !!e.options?.symbols;
   $("useYubiKey").checked = !!e.yubiKeyRequired;
-  if ($("yubiKeyMode")) $("yubiKeyMode").value = e.yubiKeyMode === "gate" ? "gate" : "prf";
-  setYubiKeyMode($("yubiKeyMode")?.value || "prf");
   updateYubiKeyUi();
   updatePasswordStyleUi();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1101,7 +1105,7 @@ async function renderEntries() {
       ${site ? `<div class="entry-line">Site: ${escapeHtml(site)}</div>` : ""}
       <div class="entry-line">Login: <span data-login>${escapeHtml(getEntryLoginForDisplay(e) || "not saved")}</span>${e.fullLoginStored ? '<span class="sensitive-note">full stored</span>' : ""}</div>
       <div class="entry-line">Password hint: <span data-pwhint>${escapeHtml(maskPasswordHint(e.passwordHint))}</span></div>
-      ${e.yubiKeyRequired ? `<div class="entry-line"><span class="high-security-badge">${e.yubiKeyMode === "gate" ? "Security Key Gate" : "YubiKey PRF Required"}</span></div>` : ""}
+      ${e.yubiKeyRequired ? '<div class="entry-line"><span class="high-security-badge">YubiKey PRF Required</span></div>' : ""}
       <div class="entry-line">Length: ${e.length} - Counter: ${e.counter}</div>
       <div class="entry-actions">
         <button data-use>Use</button>
@@ -1204,13 +1208,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (getSecurityInputMethod() === "normal") securityKeyMemory = "";
   };
   $("useYubiKey").onchange = () => { generatedPassword = ""; updateYubiKeyUi(); };
-  if ($("yubiKeyMode")) $("yubiKeyMode").onchange = () => {
-    setYubiKeyMode($("yubiKeyMode").value);
-    generatedPassword = "";
-    updateYubiKeyUi();
-  };
   $("registerYubiKey").onclick = registerYubiKey;
   if ($("forgetYubiKey")) $("forgetYubiKey").onclick = forgetYubiKey;
+  if ($("testYubiKeyPrf")) $("testYubiKeyPrf").onclick = testYubiKeyPrf;
   updateYubiKeyUi();
   $("passwordStyle").onchange = () => {
     clearGeneratedResult();
