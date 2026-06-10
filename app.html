@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Web Tools</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260610-save" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260610-lesspass-icons" />
     <link rel="stylesheet" href="assets/css/goblinpass-app.css?v=20260608-1" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
@@ -29,6 +29,7 @@
             <div class="dropdown-menu">
               <a href="app.html">Launch App</a>
               <a href="checker.html">Password Checker</a>
+              <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
           <details class="nav-dropdown">
@@ -39,6 +40,7 @@
               <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
               <a href="security.html#security-key">Additional Secret</a>
               <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
               <a href="security.html#copy-password-only">Copy Password Only</a>
             </div>
           </details>
@@ -52,7 +54,7 @@
               <a href="lesspass.html">GoblinPass vs LessPass</a>
             </div>
           </details>
-          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+          <a class="nav-link build-link" href="app.html">Launch App</a>
         </div>
       </nav>
     </header>
@@ -114,10 +116,12 @@
                     Store full login for this entry
                   </label>
 
-                  <label>Master Password</label>
-                  <div class="input-row">
-                    <input id="master" type="password" placeholder="Never saved" autocomplete="off" autocapitalize="none" spellcheck="false">
-                    <button id="toggleMaster" class="icon-btn" type="button" aria-label="Show master password">Show</button>
+                  <div id="masterPasswordGroup">
+                    <label>Master Password</label>
+                    <div class="input-row">
+                      <input id="master" type="password" placeholder="Never saved" autocomplete="off" autocapitalize="none" spellcheck="false">
+                      <button id="toggleMaster" class="icon-btn" type="button" aria-label="Show master password">Show</button>
+                    </div>
                   </div>
 
                   <div id="securityKeyBox" class="security-key-box hidden" data-entry-mode="keyboard">
@@ -240,6 +244,12 @@
 
                     <section class="settings-card">
                       <h3>Security</h3>
+                      <label class="setting-row">
+                        <input id="useMasterPassword" type="checkbox" checked>
+                        Use Master Password
+                      </label>
+                      <p class="muted">Default on. Turning this off removes the master password from the password recipe.</p>
+                      <p id="masterPasswordWarning" class="notice hidden">Warning: without a master password, recovery depends on the remaining enabled factors. Only use this if you intentionally want Google Factor or other security methods to replace the master password.</p>
                       <label class="setting-row">
                         <input id="enableSecurityKey" type="checkbox">
                         Enable Additional Secret
@@ -426,8 +436,21 @@
       <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
     </footer>
 
-    <script src="assets/js/app.js?v=20260610-5"></script>
-    <script src="goblinpass/app.js?v=20260610-5"></script>
+    <script src="assets/js/app.js?v=20260610-master-toggle"></script>
+    <script src="goblinpass/app.js?v=20260610-master-toggle"></script>
     <script src="assets/js/goblinpass-ui-guards.js?v=20260608-1"></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+

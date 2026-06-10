@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GoblinPass - GoblinPass vs LessPass</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260610-license" />
+    <title>GoblinPass vs LessPass</title>
+    <link rel="stylesheet" href="assets/css/style.css?v=20260610-lesspass-icons" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -12,8 +12,15 @@
   <body>
     <header class="site-header">
       <nav class="nav" aria-label="Main navigation">
-        <a class="brand" href="index.html" aria-label="GoblinPass home"><span class="brand-mark" aria-hidden="true">GP</span><span>GoblinPass</span></a>
-        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>
+        <a class="brand" href="index.html" aria-label="GoblinPass home">
+          <span class="brand-mark" aria-hidden="true">GP</span>
+          <span>GoblinPass</span>
+        </a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
         <div id="navLinks" class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <details class="nav-dropdown">
@@ -21,81 +28,210 @@
             <div class="dropdown-menu">
               <a href="app.html">Launch App</a>
               <a href="checker.html">Password Checker</a>
+              <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
-          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Additional Secret</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
+          <details class="nav-dropdown">
+            <summary>Security</summary>
+            <div class="dropdown-menu">
+              <a href="security.html">Security Overview</a>
+              <a href="security-model.html">Security Model</a>
+              <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
+              <a href="security.html#security-key">Additional Secret</a>
+              <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
+              <a href="security.html#copy-password-only">Copy Password Only</a>
+            </div>
+          </details>
           <a class="nav-link" href="guide.html">Guide</a>
           <a class="nav-link" href="faq.html">FAQ</a>
-          <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a><a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
-          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+          <details class="nav-dropdown">
+            <summary>About Us</summary>
+            <div class="dropdown-menu">
+              <a href="about.html">About GoblinPass</a>
+              <a href="github.html">Why We Use GitHub</a>
+              <a href="lesspass.html">GoblinPass vs LessPass</a>
+            </div>
+          </details>
+          <a class="nav-link build-link" href="app.html">Launch App</a>
         </div>
       </nav>
     </header>
+
     <main>
-      <section class="section content-section" aria-labelledby="lesspass-title">
+      <section class="section content-section security-model-hero" aria-labelledby="lesspass-title">
         <div class="section-intro">
-          <p class="eyebrow">GoblinPass vs LessPass</p>
-          <h1 id="lesspass-title">A clear comparison of two stateless approaches</h1>
-          <p>LessPass and GoblinPass both generate repeatable passwords from inputs you control. GoblinPass adds a different workflow around Website IDs, optional local vault metadata, and optional extra factors.</p>
+          <p class="eyebrow">Stateless comparison</p>
+          <h1 id="lesspass-title">GoblinPass vs LessPass</h1>
+          <p>
+            LessPass helped popularise stateless password generation. GoblinPass
+            keeps that repeatable-password idea, then adds optional local and
+            hardware-backed layers for people who want more control.
+          </p>
         </div>
-        <div class="table-wrap" aria-label="GoblinPass versus LessPass comparison table">
-          <table class="comparison-table">
+
+        <div class="security-diagram-grid">
+          <article class="security-diagram-card">
+            <h3>LessPass style</h3>
+            <div class="layer-flow" aria-label="LessPass formula">
+              <span>Site</span>
+              <b>+</b>
+              <span>Login</span>
+              <b>+</b>
+              <span>Master Password</span>
+              <b>=</b>
+              <strong>Password</strong>
+            </div>
+          </article>
+
+          <article class="security-diagram-card featured">
+            <h3>GoblinPass</h3>
+            <div class="layer-flow goblin-flow icon-layer-flow" aria-label="GoblinPass formula">
+              <span><i class="security-feature-icon small icon-trusted-device-vector" aria-hidden="true"></i>Website ID</span>
+              <b>+</b>
+              <span><i class="security-feature-icon small icon-additional-secret-vector" aria-hidden="true"></i>Master Password</span>
+              <b>+</b>
+              <span><i class="security-feature-icon small icon-additional-secret-vector" aria-hidden="true"></i>Additional Secret</span>
+              <b>+</b>
+              <span><i class="security-feature-icon small icon-trusted-device-vector" aria-hidden="true"></i>Trusted Device ID</span>
+              <b>+</b>
+              <span><i class="security-feature-icon small icon-google-factor-vector" aria-hidden="true"></i>Google Factor</span>
+              <b>+</b>
+              <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i>YubiKey PRF</span>
+              <b>=</b>
+              <strong>Password</strong>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section content-section feature-legend-section" aria-labelledby="lesspass-legend-title">
+        <div class="feature-legend-heading">
+          <h2 id="lesspass-legend-title">Security Feature Icons</h2>
+        </div>
+        <div class="feature-legend-grid">
+          <article class="feature-legend-card legend-additional-secret" tabindex="0">
+            <i class="legend-art icon-additional-secret-vector" aria-hidden="true"></i>
+            <div>
+              <h3>Additional Secret</h3>
+              <p>Requires an extra secret phrase.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-trusted-device" tabindex="0">
+            <i class="legend-art icon-trusted-device-vector" aria-hidden="true"></i>
+            <div>
+              <h3>Trusted Device ID</h3>
+              <p>Password is tied to a trusted local device.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-copy-only" tabindex="0">
+            <i class="legend-art icon-copy-only-vector" aria-hidden="true"></i>
+            <div>
+              <h3>Copy Only</h3>
+              <p>Password is copied directly, not shown.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-google-factor" tabindex="0">
+            <i class="legend-art icon-google-factor-vector" aria-hidden="true"></i>
+            <div>
+              <h3>Google Factor</h3>
+              <p>Google account sign-in adds an extra factor.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-yubikey" tabindex="0">
+            <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
+            <div>
+              <h3>YubiKey</h3>
+              <p>Requires a physical YubiKey with PRF support.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="comparison-title">
+        <div class="section-intro">
+          <p class="eyebrow">Feature comparison</p>
+          <h2 id="comparison-title">Where GoblinPass adds extra layers</h2>
+          <p>
+            The difference is not that one idea is magic and the other is unsafe.
+            The difference is that GoblinPass gives users optional layers beyond
+            the usual site, login, and master password recipe.
+          </p>
+        </div>
+
+        <div class="table-wrap">
+          <table class="comparison-table icon-comparison-table">
             <thead>
-              <tr><th>Feature</th><th>GoblinPass</th><th>LessPass</th></tr>
+              <tr>
+                <th>Feature</th>
+                <th>LessPass</th>
+                <th>GoblinPass</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>Stateless generation</td><td>Uses a chosen Website ID, Master Password, options, and optional extra factors.</td><td>Uses site, login, master password, and options.</td></tr>
-              <tr><td>Local vault</td><td>Includes an optional local vault for IDs, aliases, counters, hints, and notes.</td><td>Primarily focuses on stateless generation rather than a local metadata vault.</td></tr>
-              <tr><td>Additional Secret</td><td>Optional full Additional Secret can be added without storing it.</td><td>Not a central feature of the standard LessPass workflow.</td></tr>
-              <tr><td>Trusted Device</td><td>Optional Trusted Device Protection can add a hidden local key with recovery export.</td><td>Not a central feature of the standard LessPass workflow.</td></tr>
               <tr>
-                <td><span class="google-mark" aria-hidden="true">G</span> Google factor</td>
-                <td>Optional Google Security Factor uses Google Identity Services sign-in and the stable Google subject ID as an extra hidden password ingredient.</td>
-                <td>Not required for the normal LessPass formula and not a central part of its standard stateless workflow.</td>
+                <td>Stateless password generation</td>
+                <td><span class="status protected">Protected</span></td>
+                <td><span class="status protected">Protected</span></td>
               </tr>
-              <tr><td>Recovery simplicity</td><td>Regeneration depends on remembering the Website ID and enabled factors; the local vault can help track metadata.</td><td>Regeneration depends on re-entering the same site, login, master password, and options.</td></tr>
-              <tr><td>Ease of use</td><td>Designed for people who prefer simple IDs, optional local notes, and a branded local app workflow.</td><td>Designed for people who prefer entering site and login inputs directly.</td></tr>
+              <tr>
+                <td>No cloud password vault required</td>
+                <td><span class="status protected">Protected</span></td>
+                <td><span class="status protected">Protected</span></td>
+              </tr>
+              <tr>
+                <td>Additional secret input</td>
+                <td><span class="status vulnerable">Not usually included</span></td>
+                <td><span class="advantage-icons" aria-label="Additional Secret"><i class="advantage-icon icon-additional-secret-vector" aria-hidden="true"></i></span></td>
+              </tr>
+              <tr>
+                <td>Trusted local device factor</td>
+                <td><span class="status vulnerable">Not usually included</span></td>
+                <td><span class="advantage-icons" aria-label="Trusted Device ID"><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i></span></td>
+              </tr>
+              <tr>
+                <td>Copy-only generated password output</td>
+                <td><span class="status partial">Varies</span></td>
+                <td><span class="advantage-icons" aria-label="Copy Only"><i class="advantage-icon icon-copy-only-vector" aria-hidden="true"></i></span></td>
+              </tr>
+              <tr>
+                <td>Google account factor</td>
+                <td><span class="status vulnerable">Not included</span></td>
+                <td><span class="advantage-icons" aria-label="Google Factor"><i class="advantage-icon icon-google-factor-vector" aria-hidden="true"></i></span></td>
+              </tr>
+              <tr>
+                <td>YubiKey PRF as a password ingredient</td>
+                <td><span class="status vulnerable">Not included</span></td>
+                <td><span class="advantage-icons" aria-label="YubiKey PRF"><i class="advantage-icon icon-yubikey-vector" aria-hidden="true"></i></span></td>
+              </tr>
+              <tr>
+                <td>Advanced-user control</td>
+                <td><span class="status partial">Partial Protection</span></td>
+                <td><span class="advantage-icons" aria-label="Additional Secret, Trusted Device ID, Google Factor, and YubiKey"><i class="advantage-icon icon-additional-secret-vector" aria-hidden="true"></i><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i><i class="advantage-icon icon-google-factor-vector" aria-hidden="true"></i><i class="advantage-icon icon-yubikey-vector" aria-hidden="true"></i></span></td>
+              </tr>
             </tbody>
           </table>
         </div>
-        <div class="content-cards two-column">
-          <article><h2>GoblinPass approach</h2><p>GoblinPass is built around a simple Website ID chosen by the user. The optional local vault can help remember which ID, alias email, counter, and hint belong to each website.</p></article>
-          <article><h2>LessPass approach</h2><p>LessPass describes itself as a stateless password manager. It computes a unique password from a site, login, master password, and options, without needing to save the generated password.</p></article>
-          <article><h2>Why GoblinPass can feel easier</h2><p>For some people, remembering or recording a small ID can be simpler than repeatedly matching exact site and login strings across devices.</p></article>
-          <article><h2>Neither removes responsibility</h2><p>A deterministic generator depends heavily on the strength of the master password and the secrecy of enabled inputs. Users still need to avoid phishing and protect their devices.</p></article>
-        </div>
-        <section class="google-advantage-panel" aria-labelledby="google-advantage-title">
-          <div>
-            <p class="eyebrow">Google Security Factor</p>
-            <h2 id="google-advantage-title">A major advantage over ordinary stateless generators</h2>
-            <p>
-              Traditional stateless generators usually rely on inputs the user
-              types, such as a site, login, and master password. GoblinPass can add
-              a Google account as an optional extra factor. That means matching
-              passwords can require the same Website ID, master password, optional
-              Additional Secret, and the same signed-in Google account.
-            </p>
-            <p>
-              The app connects through Google's Identity Services API for basic
-              sign-in only. It does not request Gmail, Drive, Calendar, or other
-              sensitive scopes. GoblinPass uses the stable Google account subject
-              ID, not the email address, as hidden input material for password
-              derivation.
-            </p>
-          </div>
-          <div class="google-signin-preview">
-            <span class="google-mark large" aria-hidden="true">G</span>
-            <div>
-              <strong>Signed in with Google</strong>
-              <span>Google Security Factor: Enabled</span>
-              <small>Subject ID is hidden and used as part of generation.</small>
-            </div>
-          </div>
-        </section>
       </section>
     </main>
-    <footer class="site-footer"><div class="footer-brand"><p><strong>GoblinPass</strong></p><p>Tiny vault. Minimal secrets.</p><p>Publicly viewable source. Local first. No password storage.</p></div><nav class="footer-links" aria-label="Footer navigation"><a href="index.html">Home</a><a href="app.html">Web Tools</a><a href="checker.html">Password Checker</a><a href="security.html">Security</a><a href="about.html">About Us</a></nav>
-      <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p></footer>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <p><strong>GoblinPass</strong></p>
+        <p>Tiny vault. Minimal secrets.</p>
+        <p>Publicly viewable source. Local first. No password storage.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="index.html">Home</a>
+        <a href="app.html">Web Tools</a>
+        <a href="checker.html">Password Checker</a>
+        <a href="security-model.html">Security Model</a>
+        <a href="guide.html">Guide</a>
+        <a href="about.html">About Us</a>
+      </nav>
+      <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
+    </footer>
+
     <script src="assets/js/app.js"></script>
   </body>
 </html>

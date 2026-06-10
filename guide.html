@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Guide</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260610-license" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260610-lesspass-icons" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -21,13 +21,15 @@
             <div class="dropdown-menu">
               <a href="app.html">Launch App</a>
               <a href="checker.html">Password Checker</a>
+              <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
-          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Additional Secret</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
+          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Additional Secret</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#yubikey-prf">YubiKey PRF</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
           <a class="nav-link" href="guide.html">Guide</a>
           <a class="nav-link" href="faq.html">FAQ</a>
-          <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a><a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
-          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+          <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a>
+              <a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
+          <a class="nav-link build-link" href="app.html">Launch App</a>
         </div>
       </nav>
     </header>
@@ -86,6 +88,129 @@
           <article><h2>2. Enter your Master Password</h2><p>Type a master password only you know. GoblinPass uses it during generation, but it does not save the master password.</p></article>
           <article><h2>3. Choose options</h2><p>Pick length, counter, character groups, and password style. Example: length <code>16</code>, counter <code>1</code>, with lowercase, uppercase, numbers, and symbols enabled.</p></article>
           <article><h2>4. Generate and copy</h2><p>Press Generate & copy. The same Website ID, Master Password, counter, and enabled optional factors will regenerate the same password later.</p></article>
+        </div>
+      </section>
+
+      <section id="yubikey-guide" class="section content-section tool-preview" aria-labelledby="yubikey-guide-title">
+        <div class="section-intro">
+          <p class="eyebrow">YubiKey PRF guide</p>
+          <h2 id="yubikey-guide-title">Set up YubiKey password generation</h2>
+          <p>
+            YubiKey mode is for high-value accounts such as email, banking,
+            GitHub, PayPal, and crypto. It requires Windows 11 and a YubiKey
+            that supports PRF/hmac-secret. GoblinPass does not use the YubiKey
+            as ordinary login-only 2FA; the PRF result becomes part of the
+            generated password.
+          </p>
+        </div>
+
+        <div class="content-cards two-column">
+          <article>
+            <h3>Before you start</h3>
+            <p>
+              Use Windows 11 with a current Chromium-based browser and a YubiKey
+              that supports PRF/hmac-secret. If PRF data is not returned,
+              GoblinPass stops instead of generating a normal fallback password.
+            </p>
+          </article>
+          <article>
+            <h3>What changes</h3>
+            <p>
+              With YubiKey enabled, the password recipe becomes Website ID,
+              Master Password, optional Additional Secret, and YubiKey PRF.
+              Without the same YubiKey PRF result, the same password cannot be
+              regenerated.
+            </p>
+          </article>
+        </div>
+
+        <div class="preview-grid yubikey-guide-grid">
+          <figure class="screen-card">
+            <figcaption>1. Enter the website details</figcaption>
+            <div class="mini-app">
+              <div class="mini-brand">
+                <span class="mini-logo">GP</span>
+                <div><strong>Goblin</strong><small>YubiKey PRF enabled</small></div>
+              </div>
+              <label class="mini-field"><span>Website ID</span><strong>22</strong></label>
+              <label class="mini-field"><span>Site (optional)</span><strong>github.com</strong></label>
+              <label class="mini-field"><span>Login (optional)</span><strong>myemail@hotmail.com</strong></label>
+              <label class="mini-field password-row">
+                <span>Master Password</span>
+                <strong>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</strong>
+                <em>Show</em>
+              </label>
+            </div>
+          </figure>
+
+          <figure class="screen-card">
+            <figcaption>2. Tick Use YubiKey</figcaption>
+            <div class="mini-vault">
+              <div class="mini-vault-head"><strong>YubiKey hardware protection</strong><span>Ready</span></div>
+              <div class="mini-yubikey-row">
+                <span class="mini-key-icon">YK</span>
+                <div>
+                  <strong>Use YubiKey</strong>
+                  <small>Recommended for banking, email, GitHub, PayPal, and crypto.</small>
+                </div>
+              </div>
+              <p>No registration is needed in GoblinPass. When you generate,
+              authenticate with your physical YubiKey/security key.</p>
+              <div class="mini-actions"><strong>Generate & copy</strong><span>Save</span></div>
+            </div>
+          </figure>
+
+          <figure class="screen-card">
+            <figcaption>3. Follow Windows 11 prompts</figcaption>
+            <div class="os-dialog-mock">
+              <div class="dialog-title">Windows Security</div>
+              <h3>Making sure it's you</h3>
+              <p>Please sign in to goblinpassuk.github.io.</p>
+              <div class="security-key-symbol">USB</div>
+              <strong>Touch your security key.</strong>
+              <p class="muted">If Windows asks for your security key PIN, enter the PIN for the YubiKey, then touch the key when prompted.</p>
+            </div>
+          </figure>
+
+          <figure class="screen-card">
+            <figcaption>4. Confirm PRF was used</figcaption>
+            <div class="mini-vault">
+              <div class="mini-vault-head"><strong>YubiKey status</strong><span>Success</span></div>
+              <div class="mini-output">YubiKey authenticated and returned a real PRF password ingredient.</div>
+              <div class="mini-output">Generated and copied: C0V********2#1n <em>Show</em></div>
+              <p>If PRF fails, GoblinPass will show a warning and will not generate the YubiKey-protected password.</p>
+            </div>
+          </figure>
+        </div>
+
+        <div class="content-cards two-column">
+          <article>
+            <h3>Windows 11 step-by-step</h3>
+            <ol class="number-list">
+              <li>Open GoblinPass on Windows 11.</li>
+              <li>Enter the Website ID, optional site/login labels, and your Master Password.</li>
+              <li>Tick <strong>Use YubiKey</strong>.</li>
+              <li>Click <strong>Generate & copy</strong>.</li>
+              <li>Follow the Windows Security prompts. Choose your physical YubiKey if Windows offers multiple options.</li>
+              <li>Enter the YubiKey PIN if asked, then touch the YubiKey.</li>
+              <li>Use the <strong>Copy</strong> button if the automatic clipboard copy is blocked after authentication.</li>
+            </ol>
+          </article>
+          <article>
+            <h3>Mobile NFC notes</h3>
+            <ol class="number-list">
+              <li>Tick <strong>Use YubiKey</strong> and press <strong>Generate & copy</strong>.</li>
+              <li>Hold the YubiKey next to the phone's NFC area.</li>
+              <li>A browser message may say no passkeys are available. Keep the YubiKey near the phone.</li>
+              <li>If an NFC reading error appears, keep holding the YubiKey and choose <strong>More options</strong>.</li>
+              <li>The physical YubiKey may then be detected and used for generation.</li>
+            </ol>
+            <p class="notice">
+              Mobile YubiKey PRF support is more inconsistent than Windows 11.
+              If the browser or phone does not return PRF data, GoblinPass will
+              stop rather than generate a fallback password.
+            </p>
+          </article>
         </div>
       </section>
 
@@ -159,7 +284,7 @@
           </div>
         </div>
         <div id="why-website-id" class="subnav-card">
-          <a href="lesspass.html">Why use a Website ID?</a>
+          <a href="security-model.html">Why use a Website ID?</a>
           <span>
             A private Website ID can reduce how much real account information is
             typed into the generator. Unlike entering exact site and login details,
@@ -353,3 +478,16 @@
     <script src="assets/js/app.js"></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+

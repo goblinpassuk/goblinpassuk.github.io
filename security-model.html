@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Security Model</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260610-license" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260610-lesspass-icons" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -28,6 +28,7 @@
             <div class="dropdown-menu">
               <a href="app.html">Launch App</a>
               <a href="checker.html">Password Checker</a>
+              <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
           <details class="nav-dropdown">
@@ -38,6 +39,7 @@
               <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
               <a href="security.html#security-key">Additional Secret</a>
               <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
               <a href="security.html#copy-password-only">Copy Password Only</a>
             </div>
           </details>
@@ -51,7 +53,7 @@
               <a href="lesspass.html">GoblinPass vs LessPass</a>
             </div>
           </details>
-          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+          <a class="nav-link build-link" href="app.html">Launch App</a>
         </div>
       </nav>
     </header>
@@ -65,6 +67,49 @@
             Understand how GoblinPass protects your passwords and how it compares
             to traditional stateless password managers.
           </p>
+        </div>
+      </section>
+
+      <section class="section content-section feature-legend-section no-icon-legend" aria-labelledby="feature-legend-title">
+        <div class="section-intro feature-legend-heading">
+          <h2 id="feature-legend-title">Security Feature Legend</h2>
+        </div>
+        <div class="feature-legend-grid" aria-label="Security feature legend">
+          <article class="feature-legend-card legend-additional-secret" tabindex="0">
+            <span class="legend-art icon-additional-secret-vector" role="img" aria-label="Additional Secret icon"></span>
+            <div>
+              <h3>Additional Secret</h3>
+              <p>Requires an extra secret phrase.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-trusted-device" tabindex="0">
+            <span class="legend-art icon-trusted-device-vector" role="img" aria-label="Trusted Device ID icon"></span>
+            <div>
+              <h3>Trusted Device ID</h3>
+              <p>Password is tied to a trusted local device.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-copy-only" tabindex="0">
+            <span class="legend-art icon-copy-only-vector" role="img" aria-label="Copy Only icon"></span>
+            <div>
+              <h3>Copy Only</h3>
+              <p>Password is copied directly, not shown.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-google-factor" tabindex="0">
+            <span class="legend-art icon-google-factor-vector" role="img" aria-label="Google Factor icon"></span>
+            <div>
+              <h3>Google Factor</h3>
+              <p>Google account sign-in adds an extra factor.</p>
+            </div>
+          </article>
+          <article class="feature-legend-card legend-yubikey" tabindex="0">
+            <span class="legend-art icon-yubikey-vector" role="img" aria-label="YubiKey icon"></span>
+            <div>
+              <h3>YubiKey</h3>
+              <p>Requires a physical YubiKey (WebAuthn).</p>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -104,6 +149,8 @@
               <b>+</b>
               <span>Trusted Device Secret</span>
               <b>+</b>
+              <span>YubiKey PRF</span>
+              <b>+</b>
               <span>Optional Google Factor</span>
               <b>=</b>
               <strong>Password</strong>
@@ -124,91 +171,102 @@
         </div>
 
         <div class="matrix-legend" aria-label="Matrix legend">
-          <span><b class="status-dot protected">🟢</b> Protected</span>
-          <span><b class="status-dot partial">🟡</b> Partial Protection</span>
-          <span><b class="status-dot vulnerable">🔴</b> Vulnerable</span>
-          <span><b class="status-dot equal">🤝</b> Equal</span>
+          <span><b class="status-dot protected" aria-hidden="true"></b> Protected</span>
+          <span><b class="status-dot partial" aria-hidden="true"></b> Partial Protection</span>
+          <span><b class="status-dot vulnerable" aria-hidden="true"></b> Vulnerable</span>
+          <span><b class="status-dot equal" aria-hidden="true"></b> Equal</span>
         </div>
 
-        <div class="matrix-wrap">
-          <table class="threat-matrix">
+        <div class="matrix-wrap premium-matrix-wrap">
+          <table class="threat-matrix premium-threat-matrix">
             <thead>
               <tr>
                 <th>Threat</th>
-                <th>LessPass</th>
+                <th>Competitor (LessPass)</th>
                 <th>GoblinPass</th>
                 <th>Advantage</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td data-label="Threat">Website Database Breach</td>
-                <td data-label="LessPass"><span class="status protected">🟢 Protected</span></td>
-                <td data-label="GoblinPass"><span class="status protected">🟢 Protected</span></td>
-                <td data-label="Advantage"><span class="status equal">🤝 Equal</span></td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5S16.1 4 12 4 4.5 5.1 4.5 6.5Z"/><path d="M4.5 6.5v5c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-5"/><path d="M4.5 11.5v5c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-5"/></svg><span>Website Database Breach</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status protected">Protected</span></td>
+                <td data-label="GoblinPass"><span class="status protected">Protected</span></td>
+                <td data-label="Advantage"><span class="advantage-copy equal">Equal</span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Cloud Vault Breach</td>
-                <td data-label="LessPass"><span class="status protected">🟢 Protected</span></td>
-                <td data-label="GoblinPass"><span class="status protected">🟢 Protected</span></td>
-                <td data-label="Advantage"><span class="status equal">🤝 Equal</span></td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 18H8a4.75 4.75 0 0 1-.7-9.45 6 6 0 0 1 11.1 2.15A3.75 3.75 0 0 1 16.5 18Z"/></svg><span>Cloud Vault Breach</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status protected">Protected</span></td>
+                <td data-label="GoblinPass"><span class="status protected">Protected</span></td>
+                <td data-label="Advantage"><span class="advantage-copy equal">Equal</span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Password Reuse</td>
-                <td data-label="LessPass"><span class="status protected">🟢 Protected</span></td>
-                <td data-label="GoblinPass"><span class="status protected">🟢 Protected</span></td>
-                <td data-label="Advantage"><span class="status equal">🤝 Equal</span></td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 7.5H20v-3.5"/><path d="M20 7.5A8 8 0 0 0 6.4 5.2"/><path d="M7.5 16.5H4v3.5"/><path d="M4 16.5a8 8 0 0 0 13.6 2.3"/></svg><span>Password Reuse</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status protected">Protected</span></td>
+                <td data-label="GoblinPass"><span class="status protected">Protected</span></td>
+                <td data-label="Advantage"><span class="advantage-copy equal">Equal</span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Keylogger Attack</td>
-                <td data-label="LessPass"><span class="status vulnerable">🔴 Vulnerable</span></td>
-                <td data-label="GoblinPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="Advantage">GoblinPass can add Additional Secret input methods and Google Factor.</td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 7.5h15a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 15V9a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M6.5 10.2h.01M9.25 10.2h.01M12 10.2h.01M14.75 10.2h.01M17.5 10.2h.01M7.5 13.8h9"/></svg><span>Keylogger Attack</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status vulnerable">Vulnerable</span></td>
+                <td data-label="GoblinPass"><span class="status protected">Protected</span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="Additional Secret and Trusted Device ID"><i class="advantage-icon icon-additional-secret-vector" aria-hidden="true"></i><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i></span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Shoulder Surfing</td>
-                <td data-label="LessPass"><span class="status vulnerable">🔴 Vulnerable</span></td>
-                <td data-label="GoblinPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="Advantage">Site IDs and hidden factors reduce what an observer can learn.</td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.4-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.4 5.5-9.5 5.5S2.5 12 2.5 12Z"/><path d="M12 14.75A2.75 2.75 0 1 0 12 9.25a2.75 2.75 0 0 0 0 5.5Z"/></svg><span>Shoulder Surfing</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status vulnerable">Vulnerable</span></td>
+                <td data-label="GoblinPass"><span class="status protected">Protected</span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="Trusted Device ID and Copy Only"><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i><i class="advantage-icon icon-copy-only-vector" aria-hidden="true"></i></span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Screen Watching</td>
-                <td data-label="LessPass"><span class="status vulnerable">🔴 Vulnerable</span></td>
-                <td data-label="GoblinPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="Advantage">Copy Password Only and masked inputs can reduce casual exposure.</td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5.5h15A1.5 1.5 0 0 1 21 7v8.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 15.5V7a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M8.5 20h7M12 17v3"/><path d="M7.5 11.25s1.6-2.25 4.5-2.25 4.5 2.25 4.5 2.25-1.6 2.25-4.5 2.25-4.5-2.25-4.5-2.25Z"/><path d="M12 12.25a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg><span>Screen Watching</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status vulnerable">Vulnerable</span></td>
+                <td data-label="GoblinPass"><span class="status protected">Protected</span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="Trusted Device ID and YubiKey"><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i><i class="advantage-icon icon-yubikey-vector" aria-hidden="true"></i></span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Clipboard Monitoring</td>
-                <td data-label="LessPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="GoblinPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="Advantage"><span class="status equal">🤝 Equal</span></td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4.5h6l.75 2h1.75A1.5 1.5 0 0 1 19 8v11A1.5 1.5 0 0 1 17.5 20.5h-11A1.5 1.5 0 0 1 5 19V8a1.5 1.5 0 0 1 1.5-1.5h1.75L9 4.5Z"/><path d="M9 6.5h6M8.5 11h7M8.5 14h7M8.5 17h4"/></svg><span>Clipboard Monitoring</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status vulnerable">Vulnerable</span></td>
+                <td data-label="GoblinPass"><span class="status protected">Protected</span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="Trusted Device ID, Google Factor, and YubiKey"><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i><i class="advantage-icon icon-google-factor-vector" aria-hidden="true"></i><i class="advantage-icon icon-yubikey-vector" aria-hidden="true"></i></span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Device Theft</td>
-                <td data-label="LessPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="GoblinPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="Advantage">Trusted Device and vault PIN add useful local friction.</td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7a4 4 0 1 1 8 0v3"/><path d="M6.5 10h11A1.5 1.5 0 0 1 19 11.5v7A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-7A1.5 1.5 0 0 1 6.5 10Z"/><path d="M12 14v2"/></svg><span>Device Theft</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status protected">Protected</span></td>
+                <td data-label="GoblinPass"><span class="status partial">Partial Protection <span class="status-help" tabindex="0" aria-label="Fully protected providing YubiKey is safe.">?</span></span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="Trusted Device ID and YubiKey"><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i><i class="advantage-icon icon-yubikey-vector" aria-hidden="true"></i></span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Lost Device</td>
-                <td data-label="LessPass"><span class="status protected">🟢 Protected</span></td>
-                <td data-label="GoblinPass"><span class="status partial">🟡 Partial Protection</span></td>
-                <td data-label="Advantage">GoblinPass recovery depends on saved recovery keys for trusted devices.</td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.75 14.25 6 18l-2-2 3.75-3.75"/><path d="M14.25 9.75 18 6l2 2-3.75 3.75"/><path d="M8 8.5a6 6 0 0 1 8 0M8 15.5a6 6 0 0 0 8 0"/><path d="M12 10.5v3"/><path d="M12 16h.01"/></svg><span>Lost Device</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status protected">Protected</span></td>
+                <td data-label="GoblinPass"><span class="status vulnerable">Vulnerable</span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="Trusted Device ID and Google Factor"><i class="advantage-icon icon-trusted-device-vector" aria-hidden="true"></i><i class="advantage-icon icon-google-factor-vector" aria-hidden="true"></i></span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Fully Compromised Computer</td>
-                <td data-label="LessPass"><span class="status vulnerable">🔴 Vulnerable</span></td>
-                <td data-label="GoblinPass"><span class="status vulnerable">🔴 Vulnerable</span></td>
-                <td data-label="Advantage"><span class="status equal">🤝 Equal</span></td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5.5h15A1.5 1.5 0 0 1 21 7v8.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 15.5V7a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M8.5 20h7M12 17v3"/><path d="m9 9 6 5M15 9l-6 5"/></svg><span>Fully Compromised Computer</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status vulnerable">Vulnerable</span></td>
+                <td data-label="GoblinPass"><span class="status partial">Partial Protection <span class="status-help" tabindex="0" aria-label="Fully protected providing YubiKey is safe.">?</span></span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="YubiKey"><i class="advantage-icon icon-yubikey-vector" aria-hidden="true"></i></span></td>
               </tr>
               <tr>
-                <td data-label="Threat">Malware Reading Memory</td>
-                <td data-label="LessPass"><span class="status vulnerable">🔴 Vulnerable</span></td>
-                <td data-label="GoblinPass"><span class="status vulnerable">🔴 Vulnerable</span></td>
-                <td data-label="Advantage"><span class="status equal">🤝 Equal</span></td>
+                <td data-label="Threat"><span class="threat-label"><svg class="hero-threat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8h8v8H8z"/><path d="M4 10h4M4 14h4M16 10h4M16 14h4M10 4v4M14 4v4M10 16v4M14 16v4"/><path d="M10.2 12h3.6"/></svg><span>Malware Reading Memory</span></span></td>
+                <td data-label="Competitor (LessPass)"><span class="status vulnerable">Vulnerable</span></td>
+                <td data-label="GoblinPass"><span class="status partial">Partial Protection <span class="status-help" tabindex="0" aria-label="Fully protected providing YubiKey is safe.">?</span></span></td>
+                <td data-label="Advantage"><span class="advantage-icons" aria-label="YubiKey"><i class="advantage-icon icon-yubikey-vector" aria-hidden="true"></i></span></td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="security-warning-card">
+          <strong>Recovery warning</strong>
+          <p>
+            If any required security method is lost, such as your master password,
+            Additional Secret, Trusted Device ID, Google Factor, or YubiKey, you may
+            be unable to re-generate the same password. Google Factor can only act
+            as a recovery path if the password recipe was intentionally created
+            with Google Factor and without using a master password.
+          </p>
         </div>
       </section>
 
@@ -228,12 +286,12 @@
             </p>
           </article>
           <article class="featured">
-            <span class="layer-count">4</span>
+            <span class="layer-count">5</span>
             <h3>GoblinPass</h3>
             <p>
-              GoblinPass can use up to four independent security layers: master
-              password, Additional Secret, Trusted Device Protection, and Google
-              Security Factor.
+              GoblinPass can use up to five independent security layers: master
+              password, Additional Secret, Trusted Device Protection, YubiKey PRF,
+              and Google Security Factor.
             </p>
           </article>
         </div>
@@ -316,6 +374,14 @@
             </p>
           </article>
           <article>
+            <h3>YubiKey PRF</h3>
+            <p>
+              A supported YubiKey can act as a hardware password ingredient. If
+              PRF data is not returned, GoblinPass stops instead of generating a
+              YubiKey-protected password without the key.
+            </p>
+          </article>
+          <article>
             <h3>Optional Google Factor</h3>
             <p>
               Google Security Factor can require the same Google account as an
@@ -347,3 +413,15 @@
     <script src="assets/js/app.js"></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+

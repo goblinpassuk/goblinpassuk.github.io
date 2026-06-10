@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Home</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260610-license" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260610-lesspass-icons" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -28,6 +28,7 @@
             <div class="dropdown-menu">
               <a href="app.html">Launch App</a>
               <a href="checker.html">Password Checker</a>
+              <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
           <details class="nav-dropdown">
@@ -38,6 +39,7 @@
               <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
               <a href="security.html#security-key">Additional Secret</a>
               <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
               <a href="security.html#copy-password-only">Copy Password Only</a>
             </div>
           </details>
@@ -51,7 +53,7 @@
               <a href="lesspass.html">GoblinPass vs LessPass</a>
             </div>
           </details>
-          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+          <a class="nav-link build-link" href="app.html">Launch App</a>
         </div>
       </nav>
     </header>
@@ -59,12 +61,13 @@
     <main id="top">
       <section class="hero product-hero section">
         <div class="hero-copy">
-          <p class="eyebrow">Local-first password security</p>
+          <p class="eyebrow">Local-first password security with YubiKey PRF</p>
           <h1>Generate Strong Passwords Without Storing Them</h1>
-          <p class="hero-subtitle">GoblinPass is a local-first/stateless password generator.</p>
+          <p class="hero-subtitle">GoblinPass is a local-first/stateless password generator with optional YubiKey password-ingredient support.</p>
           <p>
             Create unique passwords from inputs you control, keep generation on
-            your device, and use optional local privacy tools when you need them.
+            your device, and add a YubiKey PRF factor for high-value accounts
+            when supported by your browser, operating system, and hardware key.
           </p>
           <div class="hero-actions" aria-label="Primary actions">
             <a class="demo-link" href="app.html">Launch App</a>
@@ -76,7 +79,7 @@
             <span class="mini-logo">GP</span>
             <div>
               <strong>GoblinPass</strong>
-              <span>Tiny vault. Minimal secrets.</span>
+              <span>Stateless passwords. Optional YubiKey PRF.</span>
             </div>
           </div>
           <div class="app-preview-tabs" aria-label="App sections preview">
@@ -94,6 +97,13 @@
               <strong>Never saved</strong>
               <em>Show</em>
             </label>
+            <div class="mini-yubikey-row">
+              <span class="mini-key-icon">YK</span>
+              <div>
+                <strong>Use YubiKey</strong>
+                <small>PRF becomes part of the password recipe</small>
+              </div>
+            </div>
             <label class="mini-field"><span>Password Style</span><strong>Maximum Security</strong></label>
             <p class="app-preview-help">
               Memorable passwords are easier to enter on consoles, TVs, handheld
@@ -111,6 +121,7 @@
               <label class="mini-field"><span>Counter</span><strong>1</strong></label>
             </div>
             <div class="mini-actions"><strong>Generate & copy</strong><span>Save</span></div>
+            <div class="mini-output">Generated and copied: C0V********2#1n <em>Show</em></div>
           </div>
         </div>
       </section>
@@ -118,23 +129,63 @@
       <section class="section trust-strip" aria-label="GoblinPass trust points">
         <span>&#10003; Local First</span>
         <span>&#10003; No Password Storage</span>
+        <span>&#10003; YubiKey PRF Ingredient</span>
         <span>&#10003; Publicly Viewable Source</span>
         <span>&#10003; Optional Google Security Factor</span>
-        <span>&#10003; GitHub Hosted</span>
       </section>
 
-      <section class="section content-section" aria-labelledby="home-steps-title">
-        <div class="section-intro">
+      <section class="section content-section landing-process" aria-labelledby="home-steps-title">
+        <div class="section-intro landing-section-intro">
           <p class="eyebrow">Three steps</p>
           <h2 id="home-steps-title">Simple inputs, repeatable output</h2>
+          <p>GoblinPass turns the same secure inputs into the same password every time.</p>
         </div>
-        <div class="formula-card simple-steps" aria-label="GoblinPass three step process">
-          <span>Enter Site ID</span>
-          <b>&rarr;</b>
-          <span>Enter Master Password</span>
-          <b>&rarr;</b>
-          <strong>Generate Password</strong>
+        <div class="step-flow" aria-label="GoblinPass three step process">
+          <article class="step-card">
+            <span class="step-number">Step 1</span>
+            <h3>Site ID</h3>
+          </article>
+          <article class="step-card">
+            <span class="step-number">Step 2</span>
+            <h3>Master Password</h3>
+          </article>
+          <article class="step-card">
+            <span class="step-number">Step 3</span>
+            <h3>Optional YubiKey PRF</h3>
+          </article>
+          <article class="step-result-card">
+            <span class="result-label">Result</span>
+            <h3>Generated Password</h3>
+          </article>
         </div>
+      </section>
+
+      <section class="section content-section yubikey-highlight landing-yubikey" aria-labelledby="yubikey-home-title">
+        <div class="section-intro landing-section-intro">
+          <p class="eyebrow">Hardware-backed stateless password generation</p>
+          <h2 id="yubikey-home-title">YubiKey PRF becomes part of the password recipe</h2>
+          <p>
+            GoblinPass does not use YubiKey as normal two-factor login. When
+            YubiKey mode is enabled, the generated password depends on PRF data
+            returned by the physical key.
+          </p>
+        </div>
+        <div class="premium-formula-card" aria-label="YubiKey PRF password formula">
+          <div class="formula-ingredients">
+            <span>Website ID</span>
+            <span>Master Password</span>
+            <span>Optional Secret</span>
+            <span class="hardware-ingredient">YubiKey PRF</span>
+          </div>
+          <div class="formula-equals" aria-hidden="true">=</div>
+          <div class="formula-result">
+            <span>Generated Password</span>
+          </div>
+        </div>
+        <p class="small-note formula-note">
+          Best tested on Windows 11 with a PRF/hmac-secret compatible YubiKey.
+          Mobile NFC support may vary by browser and device.
+        </p>
       </section>
 
       <section class="section feature-card-grid" aria-labelledby="features-title">
@@ -167,9 +218,9 @@
           </article>
           <article class="product-card">
             <span class="card-icon" aria-hidden="true">&#128737;</span>
-            <h3>Extra Security</h3>
-            <p>Add optional security ingredients such as an Additional Secret, Trusted Device Protection, or Google Security Factor.</p>
-            <a class="card-button" href="security.html">Explore Security</a>
+            <h3>YubiKey PRF</h3>
+            <p>Use a supported YubiKey as a hardware password ingredient, so the same inputs without the key do not recreate the same password.</p>
+            <a class="card-button" href="guide.html#yubikey-guide">YubiKey Guide</a>
           </article>
         </div>
       </section>
@@ -203,3 +254,16 @@
     <script src="assets/js/app.js"></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+

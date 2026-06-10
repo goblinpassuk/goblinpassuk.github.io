@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Security Overview</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260610-license" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260610-lesspass-icons" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -28,6 +28,7 @@
             <div class="dropdown-menu">
               <a href="app.html">Launch App</a>
               <a href="checker.html">Password Checker</a>
+              <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
           <details class="nav-dropdown">
@@ -38,6 +39,7 @@
               <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
               <a href="security.html#security-key">Additional Secret</a>
               <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
               <a href="security.html#copy-password-only">Copy Password Only</a>
             </div>
           </details>
@@ -51,7 +53,7 @@
               <a href="lesspass.html">GoblinPass vs LessPass</a>
             </div>
           </details>
-          <a class="nav-link build-link" href="app.html#build-fork">Build Fork</a>
+          <a class="nav-link build-link" href="app.html">Launch App</a>
         </div>
       </nav>
     </header>
@@ -66,14 +68,26 @@
             same inputs instead of being stored in an online vault.
           </p>
         </div>
-        <div class="formula-card" aria-label="Password generation formula">
-          <span>Website ID</span>
+        <div class="formula-card security-formula-card" aria-label="Password generation formula">
+          <span class="formula-ingredient">
+            <i class="security-feature-icon small icon-trusted-device-vector" aria-hidden="true"></i>
+            Website ID
+          </span>
           <b>+</b>
-          <span>Master Password</span>
+          <span class="formula-ingredient">
+            <i class="security-feature-icon small icon-additional-secret-vector" aria-hidden="true"></i>
+            Master Password
+          </span>
           <b>+</b>
-          <span>Optional security factors</span>
+          <span class="formula-ingredient">
+            <i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i>
+            Optional security factors
+          </span>
           <b class="formula-line">=</b>
-          <strong>Generated Password</strong>
+          <strong>
+            <i class="status-dot protected" aria-hidden="true"></i>
+            Generated Password
+          </strong>
         </div>
         <p class="source-note">
           No passwords are stored on GoblinPass servers. Optional vault metadata
@@ -90,9 +104,12 @@
             user deliberately enables an extra factor and keeps using it.
           </p>
         </div>
-        <div class="content-cards two-column">
+        <div class="content-cards two-column security-icon-cards">
           <article id="trusted-device-protection">
-            <h3>Trusted Device Protection</h3>
+            <div class="feature-card-heading">
+              <i class="legend-art icon-trusted-device-vector" aria-hidden="true"></i>
+              <h3>Trusted Device Protection</h3>
+            </div>
             <p>
               Trusted Device Protection adds a hidden local key to password
               generation. Passwords created with it enabled cannot be recreated on
@@ -104,7 +121,10 @@
             </p>
           </article>
           <article id="security-key">
-            <h3>Additional Secret</h3>
+            <div class="feature-card-heading">
+              <i class="legend-art icon-additional-secret-vector" aria-hidden="true"></i>
+              <h3>Additional Secret</h3>
+            </div>
             <p>
               The optional Additional Secret is a second secret typed or selected by the
               user every time. GoblinPass does not store it, export it, or save it
@@ -116,7 +136,10 @@
             </p>
           </article>
           <article id="google-security-factor">
-            <h3>Google Security Factor</h3>
+            <div class="feature-card-heading">
+              <i class="legend-art icon-google-factor-vector" aria-hidden="true"></i>
+              <h3>Google Security Factor</h3>
+            </div>
             <p>
               When enabled, GoblinPass requires Google Sign-In and uses the stable
               Google account subject ID as an extra password ingredient. It does
@@ -127,8 +150,30 @@
               the same passwords.
             </p>
           </article>
+          <article id="yubikey-prf">
+            <div class="feature-card-heading">
+              <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
+              <h3>YubiKey PRF</h3>
+            </div>
+            <p>
+              YubiKey PRF mode uses a supported hardware key as part of the
+              password recipe. This is not normal login-only two-factor
+              authentication: the YubiKey must return PRF data before the same
+              password can be regenerated.
+            </p>
+            <p>
+              This feature is intended for Windows 11 with a YubiKey that supports
+              PRF/hmac-secret. If the browser, operating system, or key does not
+              return real PRF data, GoblinPass stops instead of silently falling
+              back to the normal formula.
+            </p>
+            <a class="card-button" href="guide.html#yubikey-guide">YubiKey setup guide</a>
+          </article>
           <article id="copy-password-only">
-            <h3>Copy Password Only</h3>
+            <div class="feature-card-heading">
+              <i class="legend-art icon-copy-only-vector" aria-hidden="true"></i>
+              <h3>Copy Password Only</h3>
+            </div>
             <p>
               Copy Password Only copies the generated password to the clipboard
               without displaying the full value on screen. This can reduce casual
@@ -153,7 +198,7 @@
           <article>
             <h3>What sign-in looks like</h3>
             <div class="google-signin-preview">
-              <span class="google-mark large" aria-hidden="true">G</span>
+              <i class="security-feature-icon icon-google-factor-vector" aria-hidden="true"></i>
               <div>
                 <strong>Signed in with Google</strong>
                 <span>Google Security Factor: Enabled</span>
@@ -224,3 +269,16 @@
     <script src="assets/js/app.js"></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+

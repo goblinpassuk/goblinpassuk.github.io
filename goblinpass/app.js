@@ -164,6 +164,7 @@ function loadSettings() {
       copyPasswordOnly: false,
       defaultPasswordStyle: "maximum",
       saveWebsiteIds: true,
+      useMasterPassword: true,
       googleSecurityFactorEnabled: false,
       ...saved
     };
@@ -176,6 +177,7 @@ function loadSettings() {
       copyPasswordOnly: false,
       defaultPasswordStyle: "maximum",
       saveWebsiteIds: true,
+      useMasterPassword: true,
       googleSecurityFactorEnabled: false
     };
   }
@@ -192,8 +194,13 @@ function saveSettings(settings) {
     copyPasswordOnly: !!next.copyPasswordOnly,
     defaultPasswordStyle: PASSWORD_STYLES.includes(next.defaultPasswordStyle) ? next.defaultPasswordStyle : "maximum",
     saveWebsiteIds: next.saveWebsiteIds !== false,
+    useMasterPassword: next.useMasterPassword !== false,
     googleSecurityFactorEnabled: !!next.googleSecurityFactorEnabled
   }));
+}
+
+function isMasterPasswordEnabled() {
+  return loadSettings().useMasterPassword !== false;
 }
 
 function isSecurityKeyEnabled() {
@@ -218,6 +225,19 @@ function clearGeneratedResult() {
   generatedVisible = false;
   lastGeneratedMeta = null;
   if ($("result")) $("result").classList.add("hidden");
+}
+
+function applyMasterPasswordSetting() {
+  const enabled = isMasterPasswordEnabled();
+  if ($("useMasterPassword")) $("useMasterPassword").checked = enabled;
+  if ($("masterPasswordGroup")) $("masterPasswordGroup").classList.toggle("hidden", !enabled);
+  if ($("masterPasswordWarning")) $("masterPasswordWarning").classList.toggle("hidden", enabled);
+  if (!enabled && $("master")) {
+    $("master").value = "";
+    $("master").type = "password";
+    if ($("toggleMaster")) $("toggleMaster").textContent = "Show";
+  }
+  clearGeneratedResult();
 }
 
 function updatePasswordStyleUi() {
@@ -654,7 +674,7 @@ function webAuthnRpId() {
 async function yubiKeySalt() {
   const siteId = $("siteId").value.trim().toLowerCase();
   const accountId = $("login").value.trim().toLowerCase();
-  const masterPassword = $("master").value;
+  const masterPassword = isMasterPasswordEnabled() ? $("master").value : "";
   const material = `GoblinPass PRF v1|${siteId}|${accountId}|${masterPassword}`;
   return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material)));
 }
@@ -876,8 +896,10 @@ async function setupAndTestYubiKeyPrf() {
     setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
     return;
   }
-  if (!$("siteId").value.trim() || !$("master").value) {
-    setYubiKeyMessage("Enter Website ID and Master Password before setup so GoblinPass can generate a PRF test password.", "warning");
+  if (!$("siteId").value.trim() || (isMasterPasswordEnabled() && !$("master").value)) {
+    setYubiKeyMessage(isMasterPasswordEnabled()
+      ? "Enter Website ID and Master Password before setup so GoblinPass can generate a PRF test password."
+      : "Enter Website ID before setup so GoblinPass can generate a PRF test password.", "warning");
     return;
   }
 
@@ -1296,7 +1318,7 @@ async function deterministicMemorablePassword(seed, strength) {
 
 function getPasswordSeedParts() {
   const siteId = $("siteId").value.trim().toLowerCase();
-  const master = $("master").value;
+  const master = isMasterPasswordEnabled() ? $("master").value : "";
   const securityKeyEnabled = isSecurityKeyEnabled();
   const securityKey = securityKeyEnabled ? getSecurityKeyInputValue() : "";
   const trustedDeviceKey = getTrustedDeviceGenerationKey();
@@ -1380,7 +1402,8 @@ async function copyGeneratedPassword() {
 }
 
 async function generate() {
-  if (!$("siteId").value.trim() || !$("master").value) return alert("Enter website ID and master password.");
+  if (!$("siteId").value.trim()) return alert("Enter website ID.");
+  if (isMasterPasswordEnabled() && !$("master").value) return alert("Enter master password, or turn it off in Settings.");
   if (isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
   if (isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before generating passwords, or turn off Google Security Factor in Settings.");
   const style = getQuickPasswordStyle();
@@ -1398,7 +1421,7 @@ async function generate() {
     return;
   }
   generatedPassword = await deterministicPassword(style, strength);
-  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked, yubiKeyMode: getYubiKeyMode() };
+  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked, yubiKeyMode: getYubiKeyMode(), useMasterPassword: isMasterPasswordEnabled() };
   currentYubiKeyFactor = "";
   generatedVisible = false;
   try { await navigator.clipboard.writeText(generatedPassword); } catch {}
@@ -1528,12 +1551,12 @@ async function saveCurrent() {
     let pwForHint = generatedPassword;
     const usingYubiKey = !!$("useYubiKey")?.checked;
     const yubiKeyMode = getYubiKeyMode();
-    if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode)) {
+    if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode || lastGeneratedMeta.useMasterPassword !== isMasterPasswordEnabled())) {
       pwForHint = "";
     }
     if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
     if (!pwForHint && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
-    if (!pwForHint && $("master").value && $("siteId").value.trim()) {
+    if (!pwForHint && $("siteId").value.trim() && (!isMasterPasswordEnabled() || $("master").value)) {
       try {
         currentYubiKeyFactor = await getYubiKeyFactor();
       } catch (error) {
@@ -1750,11 +1773,13 @@ async function importVault(file) {
 
 document.addEventListener("DOMContentLoaded", () => {
   applySecurityKeySetting();
+  applyMasterPasswordSetting();
   updateTrustedDeviceStatus();
   updateGoogleStatus();
   $("defaultPasswordStyle").value = getDefaultPasswordStyle();
   $("passwordStyle").value = getDefaultPasswordStyle();
   $("saveWebsiteIds").checked = loadSettings().saveWebsiteIds !== false;
+  if ($("useMasterPassword")) $("useMasterPassword").checked = isMasterPasswordEnabled();
   $("memorableStrength").value = "standard";
   updatePasswordStyleUi();
   $("generate").onclick = generate;
@@ -1818,6 +1843,18 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   $("saveWebsiteIds").onchange = () => {
     saveSettings({ saveWebsiteIds: $("saveWebsiteIds").checked });
+  };
+  if ($("useMasterPassword")) $("useMasterPassword").onchange = () => {
+    const enabled = $("useMasterPassword").checked;
+    if (!enabled) {
+      const ok = confirm("Warning: turning off Master Password removes it from password generation. If you lose access to your remaining enabled factors, you may not be able to regenerate the same passwords. Continue?");
+      if (!ok) {
+        $("useMasterPassword").checked = true;
+        return;
+      }
+    }
+    saveSettings({ useMasterPassword: enabled });
+    applyMasterPasswordSetting();
   };
   document.querySelectorAll("[data-page-target]").forEach(button => {
     button.onclick = () => {
