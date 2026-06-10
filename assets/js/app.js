@@ -551,7 +551,7 @@
       </section>
     </section>
   </main>
-  <footer>Powered by the GoblinPass Open Source Engine.</footer>
+  <footer>Powered by the GoblinPass Engine. Review the GoblinPass license before publishing or redistributing.</footer>
   <script src="core/security.js"></script>
   <script src="core/password-generator.js"></script>
   <script src="app.js"></script>
@@ -579,11 +579,11 @@
       </div>
     </header>
     <section class="card">
-      <p>${escapeHtml(config.aboutText || "This branded fork uses the GoblinPass Open Source Engine with separate theme settings.")}</p>
+      <p>${escapeHtml(config.aboutText || "This branded package uses the GoblinPass Engine with separate theme settings. Review the GoblinPass license before using, modifying, redistributing, or publishing it.")}</p>
       <p>The password generation engine is kept separate from branding settings. Branding lives in config.json, themes/config.json, style.css, and logo assets.</p>
     </section>
   </main>
-  <footer>Powered by the GoblinPass Open Source Engine.</footer>
+  <footer>Powered by the GoblinPass Engine. Review the GoblinPass license before publishing or redistributing.</footer>
 </body>
 </html>`;
   }
@@ -593,7 +593,7 @@
 
 ${config.tagline}
 
-This is a branded GoblinPass fork powered by the GoblinPass Open Source Engine.
+This package is powered by the GoblinPass Engine. Review the GoblinPass license before using, modifying, redistributing, or publishing it.
 
 ## Use in a browser
 
@@ -657,7 +657,7 @@ Install support depends on the mobile browser. The app includes a web manifest a
 - \`core/security.js\`
 - logo and icon files
 
-Powered by the GoblinPass Open Source Engine.
+Powered by the GoblinPass Engine. Review the GoblinPass license before publishing or redistributing.
 `;
   }
 
@@ -722,14 +722,14 @@ Powered by the GoblinPass Open Source Engine.
       </ul>
     </section>
   </main>
-  <footer>Powered by the GoblinPass Open Source Engine.</footer>
+  <footer>Powered by the GoblinPass Engine. Review the GoblinPass license before publishing or redistributing.</footer>
 </body>
 </html>`;
   }
 
   function makeGeneratedCss(config) {
     const light = config.theme === "light";
-    return `:root{--bg:${light ? "#f7fff8" : "#06100c"};--card:${config.secondaryColour};--card2:${config.secondaryColour};--border:${config.primaryColour};--border2:${config.primaryColour};--text:${light ? "#0b160f" : "#effff2"};--muted:${light ? "#4d6355" : "#9fc7aa"};--input:${light ? "#ffffff" : "#06120d"};--green:${config.primaryColour};--green2:${config.primaryColour};--danger:#ff6672;--shadow:0 14px 34px rgba(0,0,0,.38)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.app{width:min(100%,520px);margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom))}.brand{display:flex;align-items:center;gap:12px;padding:8px 4px 14px}.brand>div{flex:1}.theme-edit-toggle{width:auto;min-height:38px;padding:9px 12px}.mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}.mode-toggle button.active{background:var(--green);color:#041009;border-color:var(--green)}body.simple-mode .advanced-only{display:none!important}.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:var(--input);border:1px solid var(--green);color:var(--green);font-weight:950;box-shadow:0 0 20px rgba(116,255,157,.18);object-fit:cover}.logo-fallback{display:grid}h1{font-size:25px;line-height:1;margin:0;font-weight:950;letter-spacing:.01em}.brand p{margin:4px 0 0;color:var(--muted);font-size:12px}.app-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}.app-menu button.active{background:var(--green);color:#041009;border-color:var(--green)}.page-section{display:block}.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}.theme-editor{display:grid;gap:10px}.swatch-row{display:grid;grid-template-columns:1fr repeat(4,42px);gap:8px;align-items:center}.swatch-row input{height:42px;padding:5px}.swatch-row button{height:42px;padding:0;border-color:var(--border)}.swatch-row button[data-colour="#74ff9d"]{background:#74ff9d}.swatch-row button[data-colour="#ec4bdd"]{background:#ec4bdd}.swatch-row button[data-colour="#4da3ff"]{background:#4da3ff}.swatch-row button[data-colour="#ffd166"]{background:#ffd166}.swatch-row button[data-secondary="#09160f"]{background:#09160f}.swatch-row button[data-secondary="#161026"]{background:#161026}.swatch-row button[data-secondary="#101827"]{background:#101827}.swatch-row button[data-secondary="#f7fff8"]{background:#f7fff8}.swatch-row button[data-text="#effff2"]{background:#effff2}.swatch-row button[data-text="#0b160f"]{background:#0b160f}.swatch-row button[data-text="#ffd166"]{background:#ffd166}.swatch-row button[data-text="#ffffff"]{background:#ffffff}.swatch-row button[data-muted="#9fc7aa"]{background:#9fc7aa}.swatch-row button[data-muted="#4d6355"]{background:#4d6355}.swatch-row button[data-muted="#c7f9cc"]{background:#c7f9cc}.swatch-row button[data-muted="#f4d35e"]{background:#f4d35e}label{display:block;font-weight:800;margin:0 0 8px}input,select{width:100%;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px;outline:none;font-size:16px}select{margin-bottom:12px}input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 18%,transparent)}input::placeholder{color:var(--muted)}.card>input{margin-bottom:16px}.advanced-only{margin-bottom:16px}.advanced-only>input{margin-bottom:16px}.advanced-only>input:last-of-type{margin-bottom:10px}.input-row{display:flex;gap:9px;margin-bottom:16px}.input-row input{flex:1}.icon-btn{width:58px;min-width:58px;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;cursor:pointer}.icon-btn.small{height:42px;width:72px;min-width:72px;padding:9px 12px;white-space:nowrap}.save-full-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:6px 0 0;font-weight:750}.check{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:0;font-weight:750}.save-full-row input,.check input{width:16px;height:16px;padding:0;accent-color:var(--green2);flex:0 0 16px}.options-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}.check{justify-content:center;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:10px 6px}.number-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.button-row{display:grid;grid-template-columns:1fr .55fr;gap:9px}button,.import-label{border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px 12px;font-weight:850;cursor:pointer;text-align:center;font-size:14px}.primary{background:var(--green);color:#041009;border:0}.result{margin-top:14px;border:1px dashed var(--border2);border-radius:12px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 72px;align-items:center;gap:10px;background:var(--input);color:var(--text)}.result span{min-width:0;overflow-wrap:anywhere;line-height:1.35}.hidden{display:none!important}.security-key-box{margin-bottom:16px}.security-key-box input[readonly]{cursor:pointer}.security-input-panel{margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:15px;background:var(--input)}.security-panel-title{margin:0 0 10px;color:var(--muted);font-size:12px;font-weight:850}.security-progress{margin:0 0 10px;color:var(--text);font-size:13px;font-weight:850}.security-key-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.security-key-grid button,.security-actions button{min-height:46px;padding:10px 6px}.security-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.combo-slots{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.combo-slots button{min-height:50px;padding:10px 4px;font-size:18px}.combo-choice-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}.combo-actions{grid-template-columns:repeat(3,1fr)}.notice{margin:12px 0 0;padding:12px;border:1px solid #6a5b20;border-radius:12px;background:#1b1909;color:#ffe58a;font-size:13px}.setting-row{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--text)}.setting-row input{width:18px;height:18px;padding:0;accent-color:var(--green2);flex:0 0 18px}.status-line{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--input);color:var(--text);font-weight:800;font-size:13px}.settings-stack{display:grid;gap:12px;margin-top:12px}.settings-card{border:1px solid var(--border);border-radius:16px;background:color-mix(in srgb,var(--input) 76%,transparent);padding:14px}.settings-card h3{margin:0 0 10px;font-size:16px}.settings-reveal{margin:8px 0 14px;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--input)}.more-info{margin:8px 0;color:var(--muted);font-size:12px}.more-info summary{cursor:pointer;color:var(--green);font-weight:850}.more-info p{margin:8px 0 0}.settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.settings-actions.single-action{grid-template-columns:1fr}.settings-subtitle{margin:22px 0 8px;font-size:16px}.google-button-area{min-height:44px;display:flex;align-items:center;margin:10px 0}.google-button-area:empty{display:none}.google-account-card input:disabled{opacity:.55}.vault-head{display:flex;align-items:center;justify-content:space-between;gap:10px}h2{margin:0;font-size:18px}.muted{color:var(--muted);font-size:12px;margin:7px 0 12px}.pin-row{display:grid;grid-template-columns:1fr 96px;gap:8px}.filter{margin:4px 0 10px}.vault-actions{display:flex;gap:8px;margin-bottom:10px}.import-label{position:relative;overflow:hidden}.import-label input{position:absolute;inset:0;opacity:0}.entry{border:1px solid var(--border);border-radius:15px;padding:13px;margin-bottom:10px;background:var(--input)}.entry-title{font-weight:950;margin-bottom:7px}.entry-line{color:var(--text);font-size:13px;margin:4px 0}.entry-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.entry-actions button{padding:10px 8px}.danger{color:#ffe3e6;border-color:#70424a;background:#211014}.sensitive-note{color:var(--muted);font-size:11px;margin-left:5px}footer{width:min(100%,520px);margin:0 auto;padding:8px 12px 28px;color:var(--muted)}@media(max-width:380px){.security-key-grid{grid-template-columns:repeat(4,1fr)}.combo-slots{grid-template-columns:repeat(6,1fr)}.security-actions{grid-template-columns:1fr}.combo-actions{grid-template-columns:1fr}.options-grid{grid-template-columns:repeat(2,1fr)}.button-row{grid-template-columns:1fr}.result{grid-template-columns:1fr}.result .icon-btn.small{width:100%}.settings-actions{grid-template-columns:1fr}}`;
+    return `:root{--bg:${light ? "#f7fff8" : "#06100c"};--card:${config.secondaryColour};--card2:${config.secondaryColour};--border:${config.primaryColour};--border2:${config.primaryColour};--text:${light ? "#0b160f" : "#effff2"};--muted:${light ? "#4d6355" : "#9fc7aa"};--input:${light ? "#ffffff" : "#06120d"};--green:${config.primaryColour};--green2:${config.primaryColour};--danger:#ff6672;--shadow:0 14px 34px rgba(0,0,0,.38)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.app{width:min(100%,520px);margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom))}.brand{display:flex;align-items:center;gap:12px;padding:8px 4px 14px}.brand>div{flex:1}.theme-edit-toggle{width:auto;min-height:38px;padding:9px 12px}.mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}.mode-toggle button.active{background:var(--green);color:#041009;border-color:var(--green)}body.simple-mode .advanced-only{display:none!important}.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:var(--input);border:1px solid var(--green);color:var(--green);font-weight:950;box-shadow:0 0 20px rgba(116,255,157,.18);object-fit:cover}.logo-fallback{display:grid}h1{font-size:25px;line-height:1;margin:0;font-weight:950;letter-spacing:.01em}.brand p{margin:4px 0 0;color:var(--muted);font-size:12px}.app-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}.app-menu button.active{background:var(--green);color:#041009;border-color:var(--green)}.page-section{display:block}.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}.theme-editor{display:grid;gap:10px}.swatch-row{display:grid;grid-template-columns:1fr repeat(4,42px);gap:8px;align-items:center}.swatch-row input{height:42px;padding:5px}.swatch-row button{height:42px;padding:0;border-color:var(--border)}.swatch-row button[data-colour="#74ff9d"]{background:#74ff9d}.swatch-row button[data-colour="#ec4bdd"]{background:#ec4bdd}.swatch-row button[data-colour="#4da3ff"]{background:#4da3ff}.swatch-row button[data-colour="#ffd166"]{background:#ffd166}.swatch-row button[data-secondary="#09160f"]{background:#09160f}.swatch-row button[data-secondary="#161026"]{background:#161026}.swatch-row button[data-secondary="#101827"]{background:#101827}.swatch-row button[data-secondary="#f7fff8"]{background:#f7fff8}.swatch-row button[data-text="#effff2"]{background:#effff2}.swatch-row button[data-text="#0b160f"]{background:#0b160f}.swatch-row button[data-text="#ffd166"]{background:#ffd166}.swatch-row button[data-text="#ffffff"]{background:#ffffff}.swatch-row button[data-muted="#9fc7aa"]{background:#9fc7aa}.swatch-row button[data-muted="#4d6355"]{background:#4d6355}.swatch-row button[data-muted="#c7f9cc"]{background:#c7f9cc}.swatch-row button[data-muted="#f4d35e"]{background:#f4d35e}label{display:block;font-weight:800;margin:0 0 8px}input,select{width:100%;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px;outline:none;font-size:16px}select{margin-bottom:12px}input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 18%,transparent)}input::placeholder{color:var(--muted)}.card>input{margin-bottom:16px}.advanced-only{margin-bottom:16px}.advanced-only>input{margin-bottom:16px}.advanced-only>input:last-of-type{margin-bottom:10px}.input-row{display:flex;gap:9px;margin-bottom:16px}.input-row input{flex:1}.icon-btn{width:58px;min-width:58px;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;cursor:pointer}.icon-btn.small{height:42px;width:72px;min-width:72px;padding:9px 12px;white-space:nowrap}.save-full-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:6px 0 0;font-weight:750}.check{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:0;font-weight:750}.save-full-row input,.check input{width:16px;height:16px;padding:0;accent-color:var(--green2);flex:0 0 16px}.options-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}.check{justify-content:center;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:10px 6px}.number-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.button-row{display:grid;grid-template-columns:1fr .55fr;gap:9px}button,.import-label{border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:12px;padding:13px 12px;font-weight:850;cursor:pointer;text-align:center;font-size:14px}.primary{background:var(--green);color:#041009;border:0}.result{margin-top:14px;border:1px dashed var(--border2);border-radius:12px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 72px 72px;align-items:center;gap:10px;background:var(--input);color:var(--text)}.result span{min-width:0;overflow-wrap:anywhere;line-height:1.35}.hidden{display:none!important}.security-key-box{margin-bottom:16px}.security-key-box input[readonly]{cursor:pointer}.security-input-panel{margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:15px;background:var(--input)}.security-panel-title{margin:0 0 10px;color:var(--muted);font-size:12px;font-weight:850}.security-progress{margin:0 0 10px;color:var(--text);font-size:13px;font-weight:850}.security-key-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.security-key-grid button,.security-actions button{min-height:46px;padding:10px 6px}.security-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.combo-slots{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.combo-slots button{min-height:50px;padding:10px 4px;font-size:18px}.combo-choice-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}.combo-actions{grid-template-columns:repeat(3,1fr)}.notice{margin:12px 0 0;padding:12px;border:1px solid #6a5b20;border-radius:12px;background:#1b1909;color:#ffe58a;font-size:13px}.setting-row{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--text)}.setting-row input{width:18px;height:18px;padding:0;accent-color:var(--green2);flex:0 0 18px}.status-line{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--input);color:var(--text);font-weight:800;font-size:13px}.settings-stack{display:grid;gap:12px;margin-top:12px}.settings-card{border:1px solid var(--border);border-radius:16px;background:color-mix(in srgb,var(--input) 76%,transparent);padding:14px}.settings-card h3{margin:0 0 10px;font-size:16px}.settings-reveal{margin:8px 0 14px;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--input)}.more-info{margin:8px 0;color:var(--muted);font-size:12px}.more-info summary{cursor:pointer;color:var(--green);font-weight:850}.more-info p{margin:8px 0 0}.settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.settings-actions.single-action{grid-template-columns:1fr}.settings-subtitle{margin:22px 0 8px;font-size:16px}.google-button-area{min-height:44px;display:flex;align-items:center;margin:10px 0}.google-button-area:empty{display:none}.google-account-card input:disabled{opacity:.55}.vault-head{display:flex;align-items:center;justify-content:space-between;gap:10px}h2{margin:0;font-size:18px}.muted{color:var(--muted);font-size:12px;margin:7px 0 12px}.pin-row{display:grid;grid-template-columns:1fr 96px;gap:8px}.filter{margin:4px 0 10px}.vault-actions{display:flex;gap:8px;margin-bottom:10px}.import-label{position:relative;overflow:hidden}.import-label input{position:absolute;inset:0;opacity:0}.entry{border:1px solid var(--border);border-radius:15px;padding:13px;margin-bottom:10px;background:var(--input)}.entry-title{font-weight:950;margin-bottom:7px}.entry-line{color:var(--text);font-size:13px;margin:4px 0}.entry-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.entry-actions button{padding:10px 8px}.danger{color:#ffe3e6;border-color:#70424a;background:#211014}.sensitive-note{color:var(--muted);font-size:11px;margin-left:5px}footer{width:min(100%,520px);margin:0 auto;padding:8px 12px 28px;color:var(--muted)}@media(max-width:380px){.security-key-grid{grid-template-columns:repeat(4,1fr)}.combo-slots{grid-template-columns:repeat(6,1fr)}.security-actions{grid-template-columns:1fr}.combo-actions{grid-template-columns:1fr}.options-grid{grid-template-columns:repeat(2,1fr)}.button-row{grid-template-columns:1fr}.result{grid-template-columns:1fr}.result .icon-btn.small{width:100%}.settings-actions{grid-template-columns:1fr}}`;
   }
 
   function makeGeneratedStyleFallback(config) {
@@ -1349,6 +1349,15 @@ function previewPassword(pw) {
   if (pw.length <= 8) return pw[0] + "****" + pw.slice(-1);
   return pw.slice(0, 4) + "********" + pw.slice(-4);
 }
+function showResultMessage(message, allowShow = false) {
+  if (!$("result") || !$("resultText")) return;
+  $("resultText").textContent = message;
+  $("result").classList.remove("hidden");
+  if ($("toggleGenerated")) {
+    $("toggleGenerated").classList.toggle("hidden", !allowShow);
+    if (allowShow) $("toggleGenerated").textContent = generatedVisible ? "Hide" : "Show";
+  }
+}
 async function copyGeneratedPassword() {
   if (!generatedPassword) return alert("Generate a password first.");
   try {
@@ -1521,47 +1530,53 @@ async function generate() {
   $("result").classList.remove("hidden");
 }
 async function saveCurrent() {
-  if (!vaultUnlocked && !(await verifyPin("Save requires your vault PIN."))) return;
-  if (!$("siteId").value.trim()) return alert("Enter website ID before saving.");
-  const savedStyle = getQuickPasswordStyle();
-  const savedStrength = getMemorableStrength();
-  let pw = generatedPassword;
-  if (pw && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength)) pw = "";
-  if (!pw && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
-  if (!pw && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
-  if (!pw && $("master").value) pw = await deterministicPassword(savedStyle, savedStrength);
-  const login = $("login").value.trim();
-  const settings = loadSettings();
-  const siteId = $("siteId").value.trim().toLowerCase();
-  const entry = {
-    entryKey: "entry-" + bytesToBase64Url(crypto.getRandomValues(new Uint8Array(12))),
-    siteId: settings.saveWebsiteIds ? siteId : "",
-    idSaved: settings.saveWebsiteIds,
-    site: $("site").value.trim().toLowerCase(),
-    maskedLogin: maskText(login),
-    fullLogin: $("storeFullLogin").checked ? login : "",
-    fullLoginStored: $("storeFullLogin").checked,
-    passwordHint: pw ? pw.slice(0, 5) : "",
-    memorableStrength: getMemorableStrength(),
-    length: parseInt($("length").value || "16", 10),
-    counter: parseInt($("counter").value || "1", 10),
-    options: {
-      lower: $("lower").checked,
-      upper: $("upper").checked,
-      nums: $("nums").checked,
-      symbols: $("symbols").checked
-    },
-    updated: new Date().toISOString()
-  };
-  const entries = await loadEntries();
-  const existing = settings.saveWebsiteIds ? entries.findIndex(item => item.siteId === siteId) : -1;
-  if (existing >= 0) {
-    entry.entryKey = entries[existing].entryKey || entry.entryKey;
-    entries[existing] = entry;
+  try {
+    if (!vaultUnlocked && !(await verifyPin("Save requires your vault PIN."))) return;
+    if (!$("siteId").value.trim()) return alert("Enter website ID before saving.");
+    const savedStyle = getQuickPasswordStyle();
+    const savedStrength = getMemorableStrength();
+    let pw = generatedPassword;
+    if (pw && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength)) pw = "";
+    if (!pw && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
+    if (!pw && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
+    if (!pw && $("master").value) pw = await deterministicPassword(savedStyle, savedStrength);
+    const login = $("login").value.trim();
+    const settings = loadSettings();
+    const siteId = $("siteId").value.trim().toLowerCase();
+    const entry = {
+      entryKey: "entry-" + bytesToBase64Url(crypto.getRandomValues(new Uint8Array(12))),
+      siteId: settings.saveWebsiteIds ? siteId : "",
+      idSaved: settings.saveWebsiteIds,
+      site: $("site").value.trim().toLowerCase(),
+      maskedLogin: maskText(login),
+      fullLogin: $("storeFullLogin").checked ? login : "",
+      fullLoginStored: $("storeFullLogin").checked,
+      passwordHint: pw ? pw.slice(0, 5) : "",
+      memorableStrength: getMemorableStrength(),
+      length: parseInt($("length").value || "16", 10),
+      counter: parseInt($("counter").value || "1", 10),
+      options: {
+        lower: $("lower").checked,
+        upper: $("upper").checked,
+        nums: $("nums").checked,
+        symbols: $("symbols").checked
+      },
+      updated: new Date().toISOString()
+    };
+    const entries = await loadEntries();
+    const existing = settings.saveWebsiteIds ? entries.findIndex(item => item.siteId === siteId) : -1;
+    const updatedExisting = existing >= 0;
+    if (updatedExisting) {
+      entry.entryKey = entries[existing].entryKey || entry.entryKey;
+      entries[existing] = entry;
+    }
+    else entries.unshift(entry);
+    await saveEntries(entries);
+    renderEntries();
+    showResultMessage(updatedExisting ? "Updated vault entry." : "Saved to vault.", !!generatedPassword && !loadSettings().copyPasswordOnly);
+  } catch (error) {
+    alert("Could not save to vault: " + (error.message || error));
   }
-  else entries.unshift(entry);
-  await saveEntries(entries);
-  renderEntries();
 }
 async function setOrUnlockPin() {
   const pin = $("vaultPin").value.trim();

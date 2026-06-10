@@ -54,3 +54,23 @@ The page includes:
 - `assets/js/app.js`
 - `README.md`
 - `goblinpass/`
+
+## License
+
+Copyright (c) 2026 Carl Hatton
+
+GoblinPass is a project created and maintained by Carl Hatton.
+
+All rights reserved.
+
+This project is publicly viewable for personal and educational purposes only.
+
+Modification, redistribution, commercial use, and derivative works are prohibited without prior written permission.
+
+See the LICENSE file for full terms.
+
+## Support the Project
+
+If you find GoblinPass useful and would like to support future development, testing hardware, hosting costs, and new features, voluntary tips are appreciated.
+
+Tips are optional and do not grant any additional rights to use, modify, redistribute, or commercialize the software.

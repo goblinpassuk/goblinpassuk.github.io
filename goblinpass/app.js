@@ -1356,6 +1356,16 @@ function maskPasswordHint(hint) {
   return hint ? "*****" : "not saved";
 }
 
+function showResultMessage(message, allowShow = false) {
+  if (!$("result") || !$("resultText")) return;
+  $("resultText").textContent = message;
+  $("result").classList.remove("hidden");
+  if ($("toggleGenerated")) {
+    $("toggleGenerated").classList.toggle("hidden", !allowShow);
+    if (allowShow) $("toggleGenerated").textContent = generatedVisible ? "Hide" : "Show";
+  }
+}
+
 async function copyGeneratedPassword() {
   if (!generatedPassword) return alert("Generate a password first.");
   try {
@@ -1510,50 +1520,56 @@ async function ensureVaultUnlocked(message) {
 }
 
 async function saveCurrent() {
-  if (!(await ensureVaultUnlocked("Save requires your vault PIN."))) return;
+  try {
+    if (!(await ensureVaultUnlocked("Save requires your vault PIN."))) return;
 
-  const savedStyle = getQuickPasswordStyle();
-  const savedStrength = getMemorableStrength();
-  let pwForHint = generatedPassword;
-  const usingYubiKey = !!$("useYubiKey")?.checked;
-  const yubiKeyMode = getYubiKeyMode();
-  if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode)) {
-    pwForHint = "";
-  }
-  if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
-  if (!pwForHint && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
-  if (!pwForHint && $("master").value && $("siteId").value.trim()) {
-    try {
-      currentYubiKeyFactor = await getYubiKeyFactor();
-    } catch (error) {
-      currentYubiKeyFactor = "";
-      if (isUnusableStoredCredentialError(error)) {
-        localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
-        localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
-        updateYubiKeyUi();
-      }
-      setYubiKeyMessage(error.message, "warning");
-      return;
+    const savedStyle = getQuickPasswordStyle();
+    const savedStrength = getMemorableStrength();
+    let pwForHint = generatedPassword;
+    const usingYubiKey = !!$("useYubiKey")?.checked;
+    const yubiKeyMode = getYubiKeyMode();
+    if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode)) {
+      pwForHint = "";
     }
-    pwForHint = await deterministicPassword(savedStyle, savedStrength);
-    currentYubiKeyFactor = "";
+    if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
+    if (!pwForHint && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
+    if (!pwForHint && $("master").value && $("siteId").value.trim()) {
+      try {
+        currentYubiKeyFactor = await getYubiKeyFactor();
+      } catch (error) {
+        currentYubiKeyFactor = "";
+        if (isUnusableStoredCredentialError(error)) {
+          localStorage.removeItem(YUBIKEY_CREDENTIAL_KEY);
+          localStorage.removeItem(YUBIKEY_CAPABILITY_KEY);
+          updateYubiKeyUi();
+        }
+        setYubiKeyMessage(error.message, "warning");
+        return;
+      }
+      pwForHint = await deterministicPassword(savedStyle, savedStrength);
+      currentYubiKeyFactor = "";
+    }
+
+    const entry = getEntryPayload(pwForHint ? pwForHint.slice(0, 5) : "");
+    if (!$("siteId").value.trim()) return alert("Enter website ID before saving.");
+
+    const entries = await loadEntries();
+    const idx = loadSettings().saveWebsiteIds
+      ? entries.findIndex(e => getEntryId(e) === $("siteId").value.trim().toLowerCase())
+      : -1;
+    const updatedExisting = idx >= 0;
+    if (updatedExisting) {
+      if (!entry.passwordHint && entries[idx].passwordHint) entry.passwordHint = entries[idx].passwordHint;
+      entry.entryKey = entries[idx].entryKey || entry.entryKey;
+      entries[idx] = entry;
+    } else entries.unshift(entry);
+
+    await saveEntries(entries);
+    renderEntries();
+    showResultMessage(updatedExisting ? "Updated vault entry." : "Saved to vault.", !!generatedPassword && !loadSettings().copyPasswordOnly);
+  } catch (error) {
+    alert(`Could not save to vault: ${error.message || error}`);
   }
-
-  const entry = getEntryPayload(pwForHint ? pwForHint.slice(0, 5) : "");
-  if (!$("siteId").value.trim()) return alert("Enter website ID before saving.");
-
-  const entries = await loadEntries();
-  const idx = loadSettings().saveWebsiteIds
-    ? entries.findIndex(e => getEntryId(e) === $("siteId").value.trim().toLowerCase())
-    : -1;
-  if (idx >= 0) {
-    if (!entry.passwordHint && entries[idx].passwordHint) entry.passwordHint = entries[idx].passwordHint;
-    entry.entryKey = entries[idx].entryKey || entry.entryKey;
-    entries[idx] = entry;
-  } else entries.unshift(entry);
-
-  await saveEntries(entries);
-  renderEntries();
 }
 
 async function setOrUnlockPin() {

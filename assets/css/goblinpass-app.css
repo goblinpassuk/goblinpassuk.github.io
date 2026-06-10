@@ -270,7 +270,7 @@
 
 .embedded-goblin-app .result {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px;
+  grid-template-columns: minmax(0, 1fr) 72px 72px;
   align-items: center;
   gap: 10px;
   margin-top: 14px;
