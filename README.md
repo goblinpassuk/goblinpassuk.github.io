@@ -1,6 +1,6 @@
-# GoblinPass Strength Checker
+# GoblinPass 
 
-GoblinPass Strength Checker is a simple local-only password strength checker and password safety guide built with HTML, CSS, and vanilla JavaScript.
+GoblinPass is a Stateless Password Generator with added Security Tools & Helpful Tools
 
 ## How to use
 
