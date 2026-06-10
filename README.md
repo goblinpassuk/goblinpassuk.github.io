@@ -10,9 +10,9 @@ Open `index.html` directly in a web browser. No install step is needed.
 
 The password checker runs entirely in your browser. Password data entered into the checker is not sent, saved, stored, logged, placed in localStorage, written to cookies, written to sessionStorage, or sent to any external service.
 
-The included GoblinPass app under `goblinpass/` is a separate local-first ID-based vault app. If a user chooses to save vault entries, that app stores vault metadata in the browser's localStorage. It does not save the master password or full generated passwords.
+The included GoblinPass app under `goblinpass/` is a separate local-first ID-based vault app. If a user chooses to save vault entries, that app encrypts vault metadata in the browser's localStorage using a key derived from the vault PIN. It does not save the master password or full generated passwords.
 
-GoblinPass also includes an optional Security Key setting. When disabled, existing users keep generating the same passwords as before. When enabled, the full Security Key is added during generation as a second secret, but the key itself is not saved in the vault, exported, transmitted, or stored. Users can enter it with a normal keyboard, a desktop shuffled on-screen keyboard, or a mobile combination lock. GoblinPass does not use partial or random character prompts for the Security Key.
+GoblinPass also includes an optional Additional Secret setting. When disabled, existing users keep generating the same passwords as before. When enabled, the full Additional Secret is added during generation as a second secret, but the key itself is not saved in the vault, exported, transmitted, or stored. Users can enter it with a normal keyboard, a desktop shuffled on-screen keyboard, or a mobile combination lock. GoblinPass does not use partial or random character prompts for the Additional Secret.
 
 GoblinPass supports two password styles. Maximum Security is the default and keeps existing complex password generation unchanged. Memorable Password mode is optional and generates deterministic word-based passwords, with Easy, Standard, and Strong strength choices.
 
@@ -38,7 +38,7 @@ The page includes:
 - GoblinPass vault preview screens
 - A link to the live GoblinPass demo
 - An included GoblinPass mobile PWA under `goblinpass/`
-- Optional Security Key settings for the included app and generated forks
+- Optional Additional Secret settings for the included app and generated forks
 - Optional Memorable Password mode for the included app and generated forks
 - A link to the GoblinPass GitHub repository
 - Master password and regeneration guidance

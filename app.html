@@ -34,7 +34,7 @@
               <a href="security.html">Security Overview</a>
               <a href="security-model.html">Security Model</a>
               <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
-              <a href="security.html#security-key">Security Key</a>
+              <a href="security.html#security-key">Additional Secret</a>
               <a href="security.html#google-security-factor">Google Security Factor</a>
               <a href="security.html#copy-password-only">Copy Password Only</a>
             </div>
@@ -118,9 +118,9 @@
                   </div>
 
                   <div id="securityKeyBox" class="security-key-box hidden" data-entry-mode="keyboard">
-                    <label>Security Key</label>
+                    <label>Additional Secret</label>
                     <input id="securityKey" type="password" placeholder="Example: GP4837" autocomplete="off" autocapitalize="characters" spellcheck="false">
-                    <p class="muted">The full Security Key is required every time. GoblinPass does not store it.</p>
+                    <p class="muted">The full Additional Secret is required every time. GoblinPass does not store it.</p>
                     <div id="securityInputPanel" class="security-input-panel hidden" aria-live="polite"></div>
                   </div>
 
@@ -179,6 +179,7 @@
 
                   <div id="result" class="result hidden">
                     <span id="resultText"></span>
+                    <button id="copyGenerated" class="icon-btn small" type="button" aria-label="Copy generated password">Copy</button>
                     <button id="toggleGenerated" class="icon-btn small" type="button" aria-label="Show generated password">Show</button>
                   </div>
                 </section>
@@ -190,10 +191,10 @@
                     <h2>Vault</h2>
                     <button id="vaultBtn" type="button">Show vault</button>
                   </div>
-                  <p class="muted">Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+                  <p class="muted">Saved encrypted on this device. Your vault PIN is required to decrypt saved entries.</p>
 
                   <div id="pinBox" class="pin-box hidden">
-                    <p class="muted">Create or enter your vault PIN.</p>
+                    <p class="muted">Create or enter your vault PIN to decrypt your local vault.</p>
                     <div class="pin-row">
                       <input id="vaultPin" type="password" maxlength="4" inputmode="numeric" placeholder="Vault PIN">
                       <button id="setOrUnlockPin" type="button">Unlock</button>
@@ -238,10 +239,10 @@
                       <h3>Security</h3>
                       <label class="setting-row">
                         <input id="enableSecurityKey" type="checkbox">
-                        Enable Security Key
+                        Enable Additional Secret
                       </label>
                       <div id="securityKeyMethodGroup" class="settings-reveal hidden">
-                        <label for="securityKeyInputMethod">Security Key Input Method</label>
+                        <label for="securityKeyInputMethod">Additional Secret Input Method</label>
                         <select id="securityKeyInputMethod">
                           <option value="normal">Normal Keyboard</option>
                           <option value="desktop-shuffled">Desktop Shuffled Keyboard</option>
@@ -251,7 +252,7 @@
                           <summary>More info</summary>
                           <p>Recommended formats include G48372, DOG123, CAT456, or GP4837. Suggested format: 2 letters + 4 digits, for example GP4837.</p>
                         </details>
-                        <p id="securityKeyWarning" class="notice">The Security Key adds an extra secret to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
+                        <p id="securityKeyWarning" class="notice">The Additional Secret adds another private input to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
                       </div>
 
                       <label class="setting-row">
@@ -421,8 +422,8 @@
       </nav>
     </footer>
 
-    <script src="assets/js/app.js?v=20260608-2"></script>
-    <script src="goblinpass/app.js?v=20260609-10"></script>
+    <script src="assets/js/app.js?v=20260610-3"></script>
+    <script src="goblinpass/app.js?v=20260610-3"></script>
     <script src="assets/js/goblinpass-ui-guards.js?v=20260608-1"></script>
   </body>
 </html>

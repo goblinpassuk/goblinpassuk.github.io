@@ -383,9 +383,9 @@
       </div>
 
       <div id="securityKeyBox" class="security-key-box hidden" data-entry-mode="keyboard">
-        <label>Security Key</label>
+        <label>Additional Secret</label>
         <input id="securityKey" type="password" placeholder="Example: GP4837" autocomplete="off" autocapitalize="characters" spellcheck="false">
-        <p class="muted">The full Security Key is required every time. ${escapeHtml(config.siteName)} does not store it.</p>
+        <p class="muted">The full Additional Secret is required every time. ${escapeHtml(config.siteName)} does not store it.</p>
         <div id="securityInputPanel" class="security-input-panel hidden" aria-live="polite"></div>
       </div>
 
@@ -429,6 +429,7 @@
 
       <div id="result" class="result hidden">
         <span id="resultText"></span>
+        <button id="copyGenerated" class="icon-btn small" type="button" aria-label="Copy generated password">Copy</button>
         <button id="toggleGenerated" class="icon-btn small" type="button" aria-label="Show generated password">Show</button>
       </div>
     </section>
@@ -440,10 +441,10 @@
         <h2>Vault</h2>
         <button id="vaultBtn" type="button">Show vault</button>
       </div>
-      <p class="muted">Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+      <p class="muted">Saved encrypted on this device. Your vault PIN is required to decrypt saved entries.</p>
 
       <div id="pinBox" class="pin-box hidden">
-        <p class="muted">Create or enter your vault PIN.</p>
+        <p class="muted">Create or enter your vault PIN to decrypt your local vault.</p>
         <div class="pin-row">
           <input id="vaultPin" type="password" maxlength="4" inputmode="numeric" placeholder="Vault PIN">
           <button id="setOrUnlockPin" type="button">Unlock</button>
@@ -486,10 +487,10 @@
             <h3>Security</h3>
             <label class="setting-row">
               <input id="enableSecurityKey" type="checkbox">
-              Enable Security Key
+              Enable Additional Secret
             </label>
             <div id="securityKeyMethodGroup" class="settings-reveal hidden">
-              <label for="securityKeyInputMethod">Security Key Input Method</label>
+              <label for="securityKeyInputMethod">Additional Secret Input Method</label>
               <select id="securityKeyInputMethod">
                 <option value="normal">Normal Keyboard</option>
                 <option value="desktop-shuffled">Desktop Shuffled Keyboard</option>
@@ -499,7 +500,7 @@
                 <summary>More info</summary>
                 <p>Recommended formats include G48372, DOG123, CAT456, or GP4837. Suggested format: 2 letters + 4 digits, for example GP4837.</p>
               </details>
-              <p id="securityKeyWarning" class="notice">The Security Key adds an extra secret to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
+              <p id="securityKeyWarning" class="notice">The Additional Secret adds another private input to password generation. It may reduce risk from basic keyloggers, but it cannot protect against a fully compromised device, screen recording, or advanced malware.</p>
             </div>
             <label class="setting-row">
               <input id="enableTrustedDevice" type="checkbox">
@@ -625,9 +626,9 @@ Install support depends on the mobile browser. The app includes a web manifest a
 - Full generated passwords are not saved.
 - If you use the vault, saved ID/site/login metadata is stored locally in the browser.
 - Optional full login storage may expose the email or username you used for an entry.
-- The optional Security Key setting is saved locally, but the Security Key itself is never saved, exported, or transmitted.
-- The Security Key input method preference is saved locally. The actual Security Key is cleared on refresh, app close, or Clear.
-- The full Security Key is required every time. This fork does not use partial or random character prompts for the Security Key.
+- The optional Additional Secret setting is saved locally, but the Additional Secret itself is never saved, exported, or transmitted.
+- The Additional Secret input method preference is saved locally. The actual Additional Secret is cleared on refresh, app close, or Clear.
+- The full Additional Secret is required every time. This fork does not use partial or random character prompts for the Additional Secret.
 - Maximum Security is the default password style and keeps existing complex generation unchanged.
 - Memorable Password mode is optional and creates deterministic word-based passwords with Easy, Standard, and Strong choices.
 - The vault can optionally avoid saving Website IDs. If Website ID saving is off, users must remember or enter the ID themselves when regenerating a password.
@@ -638,7 +639,7 @@ Install support depends on the mobile browser. The app includes a web manifest a
 - Google Security Factor is separate and optional. When enabled, it requires Google Sign-In and adds the stable Google account subject ID, not the email address, to password generation.
 - The Google Subject ID is kept in memory for generation and is not saved in plain text.
 - If you lose access to the chosen Google account, passwords made with Google Security Factor may not be recoverable.
-- If Security Key is disabled, password generation remains compatible with standard mode.
+- If Additional Secret is disabled, password generation remains compatible with standard mode.
 - The password engine lives in \`/core\`; branding files should not need to modify it.
 
 ## Files
@@ -703,9 +704,9 @@ Powered by the GoblinPass Open Source Engine.
         <li>The master password is not saved.</li>
         <li>Full generated passwords are not saved.</li>
         <li>Vault metadata is saved locally only if you use the vault.</li>
-        <li>The optional Security Key setting is saved locally, but the Security Key itself is never saved or exported.</li>
-        <li>The Security Key input method preference is saved locally. The actual Security Key is cleared on refresh, app close, or Clear.</li>
-        <li>The full Security Key is required every time. This fork does not use partial or random character prompts.</li>
+        <li>The optional Additional Secret setting is saved locally, but the Additional Secret itself is never saved or exported.</li>
+        <li>The Additional Secret input method preference is saved locally. The actual Additional Secret is cleared on refresh, app close, or Clear.</li>
+        <li>The full Additional Secret is required every time. This fork does not use partial or random character prompts.</li>
         <li>Maximum Security is the default password style and keeps existing complex generation unchanged.</li>
         <li>Memorable Password mode is optional and creates deterministic word-based passwords with Easy, Standard, and Strong choices.</li>
         <li>The vault can optionally avoid saving Website IDs. If Website ID saving is off, users must remember or enter the ID themselves when regenerating a password.</li>
@@ -716,7 +717,7 @@ Powered by the GoblinPass Open Source Engine.
         <li>Google Security Factor is separate and optional. When enabled, it requires Google Sign-In and adds the stable Google account subject ID, not the email address, to password generation.</li>
         <li>The Google Subject ID is kept in memory for generation and is not saved in plain text.</li>
         <li>If you lose access to the chosen Google account, passwords made with Google Security Factor may not be recoverable.</li>
-        <li>When Security Key is disabled, standard password generation remains unchanged.</li>
+        <li>When Additional Secret is disabled, standard password generation remains unchanged.</li>
         <li>The password engine lives in /core.</li>
       </ul>
     </section>
@@ -869,6 +870,7 @@ const $ = (id) => document.getElementById(id);
 let generatedPassword = "";
 let generatedVisible = false;
 let vaultUnlocked = false;
+let vaultCryptoKey = null;
 let securityKeyMemory = "";
 let securityKeyRevealTimer = 0;
 let securityKeyRevealVisible = false;
@@ -877,6 +879,8 @@ let googleScriptPromise = null;
 let lastGeneratedMeta = null;
 const STORAGE_KEY = "goblinpass_mobile_entries_v1";
 const PIN_KEY = "goblinpass_mobile_pin_v1";
+const VAULT_ENCRYPTION_VERSION = "vault-aes-gcm-v1";
+const VAULT_KDF_ITERATIONS = 250000;
 const THEME_KEY = "goblinpass_brand_theme_v1";
 const MODE_KEY = "goblinpass_interface_mode_v1";
 const SETTINGS_KEY = "goblinpass_mobile_settings_v1";
@@ -1047,6 +1051,53 @@ function bytesToBase64Url(bytes) {
   bytes.forEach(byte => { binary += String.fromCharCode(byte); });
   return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
 }
+function base64UrlToBytes(value) {
+  const padded = String(value || "").replace(/-/g, "+").replace(/_/g, "/") + "===".slice((String(value || "").length + 3) % 4);
+  return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+}
+function randomSalt() {
+  return [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+async function deriveVaultKey(pin, salt) {
+  const baseKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(pin), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode(\`GOBLINPASS-VAULT-v1|\${salt}\`),
+      iterations: VAULT_KDF_ITERATIONS,
+      hash: "SHA-256"
+    },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+async function encryptVaultEntries(entries) {
+  if (!vaultCryptoKey) throw new Error("Vault is locked.");
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plaintext = new TextEncoder().encode(JSON.stringify(entries || []));
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, vaultCryptoKey, plaintext);
+  return {
+    version: VAULT_ENCRYPTION_VERSION,
+    alg: "AES-GCM",
+    kdf: "PBKDF2-SHA256",
+    iterations: VAULT_KDF_ITERATIONS,
+    iv: bytesToBase64Url(iv),
+    data: bytesToBase64Url(new Uint8Array(ciphertext)),
+    updated: new Date().toISOString()
+  };
+}
+async function decryptVaultEntries(record) {
+  if (!vaultCryptoKey) throw new Error("Vault is locked.");
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64UrlToBytes(record.iv || "") },
+    vaultCryptoKey,
+    base64UrlToBytes(record.data || "")
+  );
+  const entries = JSON.parse(new TextDecoder().decode(plaintext));
+  return Array.isArray(entries) ? entries : [];
+}
 function createTrustedDeviceKey() {
   return bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)));
 }
@@ -1092,7 +1143,7 @@ function updateTrustedDeviceStatus() {
 async function showRecoveryKey() {
   const settings = loadSettings();
   if (!settings.trustedDeviceEnabled) return alert("Enable Trusted Device Protection first.");
-  const ok = confirm("Anyone with this recovery key, your master password, and your security key can recreate your passwords. Store it safely offline.");
+  const ok = confirm("Anyone with this recovery key, your master password, and your Additional Secret can recreate your passwords. Store it safely offline.");
   if (!ok) return;
   const recoveryKey = recoveryKeyFromTrustedKey(ensureTrustedDeviceKey());
   try { await navigator.clipboard.writeText(recoveryKey); } catch {}
@@ -1208,7 +1259,7 @@ function openDesktopSecurityKeyboard() {
   const panel = $("securityInputPanel");
   const keys = shuffleValues("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""));
   panel.innerHTML = \`
-    <p class="security-panel-title">Enter the full Security Key</p>
+    <p class="security-panel-title">Enter the full Additional Secret</p>
     <p class="security-progress" data-security-progress>\${getSecurityProgressText()}</p>
     <div class="security-key-grid">
       \${keys.map(key => \`<button type="button" data-security-key="\${key}">\${key}</button>\`).join("")}
@@ -1298,12 +1349,38 @@ function previewPassword(pw) {
   if (pw.length <= 8) return pw[0] + "****" + pw.slice(-1);
   return pw.slice(0, 4) + "********" + pw.slice(-4);
 }
+async function copyGeneratedPassword() {
+  if (!generatedPassword) return alert("Generate a password first.");
+  try {
+    await navigator.clipboard.writeText(generatedPassword);
+    const visibleText = generatedVisible && !loadSettings().copyPasswordOnly ? generatedPassword : previewPassword(generatedPassword);
+    $("resultText").textContent = "Copied: " + visibleText;
+  } catch {
+    alert("Clipboard copy was blocked. Use Show and copy it manually.");
+  }
+}
 function getEntryId(entry) { return entry.siteId || ""; }
 function getEntryKey(entry) { return entry.entryKey || entry.siteId || entry.site || entry.maskedLogin || entry.updated || ""; }
 function getEntryTitle(entry) { return getEntryId(entry) || entry.site || getEntryLogin(entry) || "Saved entry"; }
 function getEntryLogin(entry) { return entry.fullLogin || entry.maskedLogin || ""; }
-async function loadEntries() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
-async function saveEntries(entries) { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+async function loadEntries() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  if (Array.isArray(parsed)) {
+    if (vaultCryptoKey) await saveEntries(parsed);
+    return parsed;
+  }
+  if (parsed?.version === VAULT_ENCRYPTION_VERSION) return await decryptVaultEntries(parsed);
+  if (Array.isArray(parsed?.entries)) {
+    if (vaultCryptoKey) await saveEntries(parsed.entries);
+    return parsed.entries;
+  }
+  return [];
+}
+async function saveEntries(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(await encryptVaultEntries(entries)));
+}
 function getLogoInitials(value) {
   const words = String(value || "").trim().split(/\\s+/).filter(Boolean);
   if (!words.length) return "GP";
@@ -1363,11 +1440,42 @@ function saveMode(mode) {
   localStorage.setItem(MODE_KEY, mode);
   applyMode(mode);
 }
-async function hashPin(pin) { return await sha256Hex("GOBLINPASS-PIN-v1|" + pin); }
-async function getPinHash() { return localStorage.getItem(PIN_KEY) || ""; }
-async function setPin(pin) { localStorage.setItem(PIN_KEY, await hashPin(pin)); }
+async function hashPin(pin, salt) { return await sha256Hex("GOBLINPASS-PIN-v1|" + pin + "|" + salt); }
+async function getPinRecord() {
+  const raw = localStorage.getItem(PIN_KEY) || "";
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.salt && parsed?.hash) return parsed;
+  } catch {}
+  return { legacyHash: raw };
+}
+async function savePinRecord(record) { localStorage.setItem(PIN_KEY, JSON.stringify(record)); }
+async function setPin(pin) {
+  const salt = randomSalt();
+  const hash = await hashPin(pin, salt);
+  await savePinRecord({ salt, hash, created: new Date().toISOString() });
+  vaultCryptoKey = await deriveVaultKey(pin, salt);
+}
+async function checkPin(pin, record = null) {
+  const saved = record || await getPinRecord();
+  if (!saved) return false;
+  if (saved.legacyHash) {
+    const ok = await sha256Hex("GOBLINPASS-PIN-v1|" + pin) === saved.legacyHash;
+    if (ok) {
+      const salt = randomSalt();
+      const hash = await hashPin(pin, salt);
+      await savePinRecord({ salt, hash, migrated: new Date().toISOString() });
+      vaultCryptoKey = await deriveVaultKey(pin, salt);
+    }
+    return ok;
+  }
+  const ok = await hashPin(pin, saved.salt) === saved.hash;
+  if (ok) vaultCryptoKey = await deriveVaultKey(pin, saved.salt);
+  return ok;
+}
 async function verifyPin(message) {
-  const saved = await getPinHash();
+  const saved = await getPinRecord();
   if (!saved) {
     alert("Create a vault PIN first.");
     showPage("vaultPage");
@@ -1376,7 +1484,7 @@ async function verifyPin(message) {
   }
   const pin = prompt(message || "Enter vault PIN:");
   if (pin === null) return false;
-  const ok = await hashPin(pin) === saved;
+  const ok = await checkPin(pin, saved);
   if (!ok) alert("Wrong PIN.");
   return ok;
 }
@@ -1394,7 +1502,7 @@ async function deterministicPassword(style = getQuickPasswordStyle(), strength =
 }
 async function generate() {
   if (!$("siteId").value.trim() || !$("master").value) return alert("Enter website ID and master password.");
-  if (isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
+  if (isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
   if (isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before generating passwords, or turn off Google Security Factor in Settings.");
   const style = getQuickPasswordStyle();
   const strength = getMemorableStrength();
@@ -1419,7 +1527,7 @@ async function saveCurrent() {
   const savedStrength = getMemorableStrength();
   let pw = generatedPassword;
   if (pw && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength)) pw = "";
-  if (!pw && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
+  if (!pw && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
   if (!pw && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
   if (!pw && $("master").value) pw = await deterministicPassword(savedStyle, savedStrength);
   const login = $("login").value.trim();
@@ -1458,16 +1566,18 @@ async function saveCurrent() {
 async function setOrUnlockPin() {
   const pin = $("vaultPin").value.trim();
   if (!/^\\d{4}$/.test(pin)) return alert("Use a 4 digit PIN.");
-  const saved = await getPinHash();
+  const saved = await getPinRecord();
   if (!saved) {
     const confirmPin = prompt("Confirm new vault PIN:");
     if (confirmPin !== pin) return alert("PINs did not match.");
     await setPin(pin);
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (Array.isArray(existing)) await saveEntries(existing);
     vaultUnlocked = true;
     openVault();
     return;
   }
-  if (await hashPin(pin) !== saved) return alert("Wrong PIN.");
+  if (!(await checkPin(pin, saved))) return alert("Wrong PIN.");
   vaultUnlocked = true;
   openVault();
 }
@@ -1481,6 +1591,7 @@ function openVault() {
 async function showVault() {
   if (vaultUnlocked) {
     vaultUnlocked = false;
+    vaultCryptoKey = null;
     $("vaultArea").classList.add("hidden");
     $("pinBox").classList.add("hidden");
     $("vaultBtn").textContent = "Show vault";
@@ -1489,7 +1600,7 @@ async function showVault() {
   $("vaultArea").classList.add("hidden");
   $("pinBox").classList.remove("hidden");
   $("vaultBtn").textContent = "Cancel";
-  $("setOrUnlockPin").textContent = await getPinHash() ? "Unlock" : "Set PIN";
+  $("setOrUnlockPin").textContent = await getPinRecord() ? "Unlock" : "Set PIN";
 }
 function applyEntry(entry) {
   $("siteId").value = entry.siteId || "";
@@ -1590,6 +1701,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("resultText").textContent = generatedVisible ? "Generated and copied: " + generatedPassword : "Generated and copied: " + previewPassword(generatedPassword);
     $("toggleGenerated").textContent = generatedVisible ? "Hide" : "Show";
   };
+  if ($("copyGenerated")) $("copyGenerated").onclick = copyGeneratedPassword;
   $("toggleMaster").onclick = () => {
     const visible = $("master").type === "password";
     $("master").type = visible ? "text" : "password";

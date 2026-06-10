@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 let generatedPassword = "";
 let generatedVisible = false;
 let vaultUnlocked = false;
+let vaultCryptoKey = null;
 let pinFailCount = 0;
 let pinLockedUntil = 0;
 let securityKeyMemory = "";
@@ -15,6 +16,8 @@ let currentYubiKeyFactor = "";
 
 const STORAGE_KEY = "goblinpass_mobile_entries_v1";
 const PIN_KEY = "goblinpass_mobile_pin_v1";
+const VAULT_ENCRYPTION_VERSION = "vault-aes-gcm-v1";
+const VAULT_KDF_ITERATIONS = 250000;
 const SETTINGS_KEY = "goblinpass_mobile_settings_v1";
 const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
 const YUBIKEY_CREDENTIAL_KEY = "goblinpass_yubikey_credential_id_v1";
@@ -58,7 +61,13 @@ function randomSalt() {
 }
 
 async function getPinRecord() {
-  return JSON.parse(localStorage.getItem(PIN_KEY) || "null");
+  const raw = localStorage.getItem(PIN_KEY) || "";
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.salt && parsed?.hash) return parsed;
+  } catch {}
+  return { legacyHash: raw };
 }
 
 async function savePinRecord(record) {
@@ -67,6 +76,53 @@ async function savePinRecord(record) {
 
 async function hashPin(pin, salt) {
   return await sha256Hex("GOBLINPASS-PIN-v1|" + pin + "|" + salt);
+}
+
+async function deriveVaultKey(pin, salt) {
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pin),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode(`GOBLINPASS-VAULT-v1|${salt}`),
+      iterations: VAULT_KDF_ITERATIONS,
+      hash: "SHA-256"
+    },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptVaultEntries(entries) {
+  if (!vaultCryptoKey) throw new Error("Vault is locked.");
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plaintext = new TextEncoder().encode(JSON.stringify(entries || []));
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, vaultCryptoKey, plaintext);
+  return {
+    version: VAULT_ENCRYPTION_VERSION,
+    alg: "AES-GCM",
+    kdf: "PBKDF2-SHA256",
+    iterations: VAULT_KDF_ITERATIONS,
+    iv: bytesToBase64Url(iv),
+    data: bytesToBase64Url(new Uint8Array(ciphertext)),
+    updated: new Date().toISOString()
+  };
+}
+
+async function decryptVaultEntries(record) {
+  if (!vaultCryptoKey) throw new Error("Vault is locked.");
+  const iv = base64UrlToBytes(record.iv || "");
+  const data = base64UrlToBytes(record.data || "");
+  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, vaultCryptoKey, data);
+  const entries = JSON.parse(new TextDecoder().decode(plaintext));
+  return Array.isArray(entries) ? entries : [];
 }
 
 function maskText(s) {
@@ -322,7 +378,7 @@ function updateTrustedDeviceStatus() {
 async function showRecoveryKey() {
   const settings = loadSettings();
   if (!settings.trustedDeviceEnabled) return alert("Enable Trusted Device Protection first.");
-  const ok = confirm("Anyone with this recovery key, your master password, and your security key can recreate your passwords. Store it safely offline.");
+  const ok = confirm("Anyone with this recovery key, your master password, and your Additional Secret can recreate your passwords. Store it safely offline.");
   if (!ok) return;
   const recoveryKey = recoveryKeyFromTrustedKey(ensureTrustedDeviceKey());
   try { await navigator.clipboard.writeText(recoveryKey); } catch {}
@@ -1077,7 +1133,7 @@ function openDesktopSecurityKeyboard() {
   const panel = $("securityInputPanel");
   const keys = shuffleValues("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""));
   panel.innerHTML = `
-    <p class="security-panel-title">Enter the full Security Key</p>
+    <p class="security-panel-title">Enter the full Additional Secret</p>
     <p class="security-progress" data-security-progress>${getSecurityProgressText()}</p>
     <div class="security-key-grid">
       ${keys.map(key => `<button type="button" data-security-key="${key}">${key}</button>`).join("")}
@@ -1300,9 +1356,22 @@ function maskPasswordHint(hint) {
   return hint ? "*****" : "not saved";
 }
 
+async function copyGeneratedPassword() {
+  if (!generatedPassword) return alert("Generate a password first.");
+  try {
+    await navigator.clipboard.writeText(generatedPassword);
+    const visibleText = generatedVisible && !loadSettings().copyPasswordOnly
+      ? generatedPassword
+      : previewPassword(generatedPassword);
+    $("resultText").textContent = "Copied: " + visibleText;
+  } catch {
+    alert("Clipboard copy was blocked. Use Show and copy it manually.");
+  }
+}
+
 async function generate() {
   if (!$("siteId").value.trim() || !$("master").value) return alert("Enter website ID and master password.");
-  if (isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
+  if (isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
   if (isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before generating passwords, or turn off Google Security Factor in Settings.");
   const style = getQuickPasswordStyle();
   const strength = getMemorableStrength();
@@ -1364,11 +1433,24 @@ function getEntryPayload(passwordHint) {
 }
 
 async function loadEntries() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  if (Array.isArray(parsed)) {
+    if (vaultCryptoKey) await saveEntries(parsed);
+    return parsed;
+  }
+  if (parsed?.version === VAULT_ENCRYPTION_VERSION) return await decryptVaultEntries(parsed);
+  if (Array.isArray(parsed?.entries)) {
+    if (vaultCryptoKey) await saveEntries(parsed.entries);
+    return parsed.entries;
+  }
+  return [];
 }
 
 async function saveEntries(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  const encrypted = await encryptVaultEntries(entries);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(encrypted));
 }
 
 async function checkPin(pin) {
@@ -1381,7 +1463,19 @@ async function checkPin(pin) {
     return false;
   }
 
-  const ok = (await hashPin(pin, record.salt)) === record.hash;
+  let ok = false;
+  if (record.legacyHash) {
+    ok = (await sha256Hex("GOBLINPASS-PIN-v1|" + pin)) === record.legacyHash;
+    if (ok) {
+      const salt = randomSalt();
+      const hash = await hashPin(pin, salt);
+      await savePinRecord({ salt, hash, migrated: new Date().toISOString() });
+      vaultCryptoKey = await deriveVaultKey(pin, salt);
+    }
+  } else {
+    ok = (await hashPin(pin, record.salt)) === record.hash;
+    if (ok) vaultCryptoKey = await deriveVaultKey(pin, record.salt);
+  }
   if (ok) {
     pinFailCount = 0;
     pinLockedUntil = 0;
@@ -1426,7 +1520,7 @@ async function saveCurrent() {
   if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode)) {
     pwForHint = "";
   }
-  if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Security Key, or turn it off in Settings.");
+  if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
   if (!pwForHint && isGoogleSecurityFactorEnabled() && !getGoogleSubjectForGeneration()) return alert("Sign in with Google before saving this entry, or turn off Google Security Factor in Settings.");
   if (!pwForHint && $("master").value && $("siteId").value.trim()) {
     try {
@@ -1472,9 +1566,12 @@ async function setOrUnlockPin() {
     if (confirmPin !== pin) return alert("PINs did not match.");
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
+    vaultCryptoKey = await deriveVaultKey(pin, salt);
     await savePinRecord({ salt, hash, created: new Date().toISOString() });
     vaultUnlocked = true;
     $("vaultPin").value = "";
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (Array.isArray(existing)) await saveEntries(existing);
     openUnlockedVault();
     return;
   }
@@ -1502,6 +1599,7 @@ function openUnlockedVault() {
 async function showVault() {
   if (vaultUnlocked) {
     vaultUnlocked = false;
+    vaultCryptoKey = null;
     $("vaultArea").classList.add("hidden");
     $("pinBox").classList.add("hidden");
     $("vaultBtn").textContent = "Show vault";
@@ -1661,6 +1759,7 @@ document.addEventListener("DOMContentLoaded", () => {
       : "Generated and copied: " + previewPassword(generatedPassword);
     $("toggleGenerated").textContent = generatedVisible ? "Hide" : "Show";
   };
+  if ($("copyGenerated")) $("copyGenerated").onclick = copyGeneratedPassword;
   $("toggleMaster").onclick = () => {
     const visible = $("master").type === "password";
     $("master").type = visible ? "text" : "password";

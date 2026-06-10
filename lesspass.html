@@ -20,7 +20,7 @@
               <a href="checker.html">Password Checker</a>
             </div>
           </details>
-          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Security Key</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
+          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Additional Secret</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
           <a class="nav-link" href="guide.html">Guide</a>
           <a class="nav-link" href="faq.html">FAQ</a>
           <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a><a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
@@ -43,7 +43,7 @@
             <tbody>
               <tr><td>Stateless generation</td><td>Uses a chosen Website ID, Master Password, options, and optional extra factors.</td><td>Uses site, login, master password, and options.</td></tr>
               <tr><td>Local vault</td><td>Includes an optional local vault for IDs, aliases, counters, hints, and notes.</td><td>Primarily focuses on stateless generation rather than a local metadata vault.</td></tr>
-              <tr><td>Security Key</td><td>Optional full Security Key can be added without storing it.</td><td>Not a central feature of the standard LessPass workflow.</td></tr>
+              <tr><td>Additional Secret</td><td>Optional full Additional Secret can be added without storing it.</td><td>Not a central feature of the standard LessPass workflow.</td></tr>
               <tr><td>Trusted Device</td><td>Optional Trusted Device Protection can add a hidden local key with recovery export.</td><td>Not a central feature of the standard LessPass workflow.</td></tr>
               <tr>
                 <td><span class="google-mark" aria-hidden="true">G</span> Google factor</td>
@@ -70,7 +70,7 @@
               types, such as a site, login, and master password. GoblinPass can add
               a Google account as an optional extra factor. That means matching
               passwords can require the same Website ID, master password, optional
-              Security Key, and the same signed-in Google account.
+              Additional Secret, and the same signed-in Google account.
             </p>
             <p>
               The app connects through Google's Identity Services API for basic

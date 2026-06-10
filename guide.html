@@ -20,7 +20,7 @@
               <a href="checker.html">Password Checker</a>
             </div>
           </details>
-          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Security Key</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
+          <details class="nav-dropdown"><summary>Security</summary><div class="dropdown-menu"><a href="security.html">Security Overview</a><a href="security-model.html">Security Model</a><a href="security.html#trusted-device-protection">Trusted Device Protection</a><a href="security.html#security-key">Additional Secret</a><a href="security.html#google-security-factor">Google Security Factor</a><a href="security.html#copy-password-only">Copy Password Only</a></div></details>
           <a class="nav-link" href="guide.html">Guide</a>
           <a class="nav-link" href="faq.html">FAQ</a>
           <details class="nav-dropdown"><summary>About Us</summary><div class="dropdown-menu"><a href="about.html">About GoblinPass</a><a href="github.html">Why We Use GitHub</a><a href="lesspass.html">GoblinPass vs LessPass</a></div></details>
@@ -56,7 +56,7 @@
             <figcaption>Vault</figcaption>
             <div class="mini-vault">
               <div class="mini-vault-head"><strong>Vault</strong><span>Lock vault</span></div>
-              <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+              <p>Saved encrypted on this device. Your vault PIN is required to decrypt saved entries.</p>
               <div class="mini-search">Filter vault...</div>
               <div class="mini-entry">
                 <strong>22</strong>
@@ -71,10 +71,10 @@
             <figcaption>Settings</figcaption>
             <div class="mini-vault">
               <div class="mini-vault-head"><strong>Settings</strong><span>Local</span></div>
-              <div class="mini-check"><span></span>Enable Security Key</div>
+              <div class="mini-check"><span></span>Enable Additional Secret</div>
               <div class="mini-check"><span></span>Copy Password Only</div>
               <div class="mini-search">Default Password Style: Maximum Security</div>
-              <div class="mini-search">Security Key Input Method: Mobile Combination Lock</div>
+              <div class="mini-search">Additional Secret Input Method: Mobile Combination Lock</div>
             </div>
           </figure>
         </div>
@@ -216,7 +216,7 @@
             <figcaption>2. Step-by-step vault setup</figcaption>
             <div class="mini-vault">
               <div class="mini-vault-head"><strong>Vault</strong><span>Cancel</span></div>
-              <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+              <p>Saved encrypted on this device. Your vault PIN is required to decrypt saved entries.</p>
               <p>Create a permanent 4 digit vault PIN. This PIN will be required to view saved IDs.</p>
               <div class="mini-pin"><span>Vault PIN</span><strong>Set PIN</strong></div>
             </div>
@@ -226,7 +226,7 @@
             <figcaption>3. Example saved entry</figcaption>
             <div class="mini-vault">
               <div class="mini-vault-head"><strong>Vault</strong><span>Lock vault</span></div>
-              <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+              <p>Saved encrypted on this device. Your vault PIN is required to decrypt saved entries.</p>
               <div class="mini-search">Filter vault...</div>
               <div class="mini-entry">
                 <strong>22</strong>
@@ -243,7 +243,7 @@
             <figcaption>4. Hint reveals only the first part</figcaption>
             <div class="mini-vault">
               <div class="mini-vault-head"><strong>Vault</strong><span>Lock vault</span></div>
-              <p>Saved locally on this device. Only the ID and options are needed to regenerate.</p>
+              <p>Saved encrypted on this device. Your vault PIN is required to decrypt saved entries.</p>
               <div class="mini-search">Filter vault...</div>
               <div class="mini-entry">
                 <strong>22</strong>
@@ -285,18 +285,18 @@
             Settings let you choose optional behaviour once, then keep using the
             generator without ticking the same boxes every time. Preferences are
             saved locally in the browser, but private secrets such as the master
-            password and Security Key are not saved.
+            password and Additional Secret are not saved.
           </p>
         </div>
         <div class="preview-grid">
           <figure class="screen-card">
-            <figcaption>1. Security Key settings</figcaption>
+            <figcaption>1. Additional Secret settings</figcaption>
             <div class="mini-vault">
               <div class="mini-vault-head"><strong>Settings</strong><span>Generator</span></div>
-              <p><strong>Security Key</strong></p>
-              <div class="mini-check"><span></span>Enable Security Key</div>
-              <div class="mini-search">Security Key Input Method: Desktop Shuffled Keyboard</div>
-              <p>The Security Key adds an extra secret to generation. It is required in full when enabled and is not stored by GoblinPass.</p>
+              <p><strong>Additional Secret</strong></p>
+              <div class="mini-check"><span></span>Enable Additional Secret</div>
+              <div class="mini-search">Additional Secret Input Method: Desktop Shuffled Keyboard</div>
+              <p>The Additional Secret adds an extra secret to generation. It is required in full when enabled and is not stored by GoblinPass.</p>
             </div>
           </figure>
           <figure class="screen-card">
