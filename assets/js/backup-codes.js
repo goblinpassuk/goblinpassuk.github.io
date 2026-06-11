@@ -8,9 +8,9 @@
   const decoder = new TextDecoder();
 
   const setupButton = document.getElementById("setupBackupKey");
+  const signInButton = document.getElementById("signInBackupKey");
   const saveButton = document.getElementById("saveBackupCodes");
   const unlockButton = document.getElementById("unlockBackupCodes");
-  const hideButton = document.getElementById("hideBackupCodes");
   const deleteButton = document.getElementById("deleteBackupCodes");
   const clearButton = document.getElementById("clearBackupInput");
   const removeUsedButton = document.getElementById("removeUsedCodes");
@@ -18,7 +18,9 @@
   const output = document.getElementById("backupCodesOutput");
   const codeList = document.getElementById("backupCodeList");
   const status = document.getElementById("backupKeyStatus");
+  const hoverHint = document.getElementById("encryptedHoverHint");
   let unlockedCodes = [];
+  let sessionKey = null;
 
   if (!setupButton) return;
 
@@ -71,7 +73,7 @@
   }
 
   function updateSetupButton() {
-    setupButton.textContent = getCredentialId() ? "Test YubiKey sign-in" : "Set up YubiKey";
+    setupButton.textContent = "Register YubiKey";
   }
 
   function getOrCreateUserId() {
@@ -105,7 +107,7 @@
   async function requestPrfWithStoredCredential() {
     requireWebAuthnPrf();
     const credentialId = getCredentialId();
-    if (!credentialId) throw new Error("No saved YubiKey credential found in this browser. Set up the YubiKey once, then future saves and unlocks will use sign-in/authentication.");
+    if (!credentialId) return requestPrfWithDiscoverableCredential();
     const idBytes = base64UrlToBytes(credentialId);
     const salt = await prfSalt();
 
@@ -135,6 +137,26 @@
     outputBytes = prfOutputFromResults(results, credentialId);
     if (outputBytes?.byteLength !== 32) {
       throw new Error(`Your browser or YubiKey did not return PRF data. ${extensionSummary(results)}`);
+    }
+    return new Uint8Array(outputBytes);
+  }
+
+  async function requestPrfWithDiscoverableCredential() {
+    const salt = await prfSalt();
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge: randomBytes(32),
+        rpId: rpId(),
+        userVerification: "preferred",
+        extensions: { prf: { eval: { first: salt } } }
+      }
+    });
+    const discoveredId = bytesToBase64Url(new Uint8Array(assertion.rawId));
+    if (discoveredId) saveCredentialId(discoveredId);
+    const results = assertion.getClientExtensionResults?.();
+    const outputBytes = prfOutputFromResults(results, discoveredId);
+    if (outputBytes?.byteLength !== 32) {
+      throw new Error(`YubiKey sign-in worked, but this browser/key did not return PRF data. ${extensionSummary(results)}`);
     }
     return new Uint8Array(outputBytes);
   }
@@ -193,9 +215,22 @@
     });
   }
 
+  function setOutputMode(mode, text) {
+    output.classList.toggle("is-sealed", mode === "sealed");
+    output.classList.toggle("is-unlocked", mode === "unlocked");
+    if (hoverHint) hoverHint.classList.toggle("hidden", mode !== "sealed");
+    output.textContent = text;
+  }
+
+  async function getSessionKey() {
+    if (sessionKey) return sessionKey;
+    await signInYubiKey({ autoUnlock: false });
+    if (!sessionKey) throw new Error("YubiKey sign-in did not create an encryption key.");
+    return sessionKey;
+  }
+
   async function encryptAndStoreCodes(codes) {
-    const prfOutput = await requestPrfWithStoredCredential();
-    const key = await deriveAesKey(prfOutput);
+    const key = await getSessionKey();
     const iv = randomBytes(12);
     const payload = {
       label: "Google backup codes",
@@ -214,14 +249,25 @@
     }));
   }
 
+  async function decryptStoredCodes(key) {
+    const record = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    if (!record?.data || !record?.iv) throw new Error("No encrypted backup codes are saved in this browser.");
+    if (record.credentialId && record.credentialId !== getCredentialId()) saveCredentialId(record.credentialId);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64UrlToBytes(record.iv) },
+      key,
+      base64UrlToBytes(record.data)
+    );
+    const payload = JSON.parse(decoder.decode(plaintext));
+    return codesToLines(payload.codes);
+  }
+
   async function setupYubiKey() {
     try {
       requireWebAuthnPrf();
       if (getCredentialId()) {
-        setStatus("Status: signing in with your saved YubiKey credential. Follow the browser prompt.", "info");
-        await requestPrfWithStoredCredential();
-        setStatus("Status: YubiKey sign-in worked. This saved credential can encrypt and decrypt backup codes.", "success");
-        return;
+        const ok = confirm("Registering a new YubiKey will replace the saved credential for this browser. Existing encrypted codes may not decrypt unless they were encrypted with the same key. Continue?");
+        if (!ok) return;
       }
       setStatus("Status: creating YubiKey credential. Follow the browser prompt.", "info");
       const credential = await navigator.credentials.create({
@@ -251,11 +297,32 @@
       saveCredentialId(credentialId);
       const createResults = credential.getClientExtensionResults?.();
       setStatus(`Status: credential saved. Testing PRF now. ${extensionSummary(createResults)}`, "info");
-      await requestPrfWithStoredCredential();
-      setStatus("Status: YubiKey ready. Future saves and unlocks will use sign-in/authentication, not setup.", "success");
+      sessionKey = null;
+      await signInYubiKey({ autoUnlock: false });
+      setStatus("Status: YubiKey registered and signed in. You can now encrypt or show saved codes.", "success");
     } catch (error) {
       setStatus(`Status: ${error.message}`, "warning");
     }
+  }
+
+  async function signInYubiKey(options = {}) {
+    const autoUnlock = options.autoUnlock !== false;
+    setStatus(getCredentialId()
+      ? "Status: signing in with your saved YubiKey credential. Follow the browser prompt."
+      : "Status: no local credential ID found. Trying to sign in with the discoverable credential on your YubiKey.", "info");
+    const prfOutput = await requestPrfWithStoredCredential();
+    sessionKey = await deriveAesKey(prfOutput);
+    const record = localStorage.getItem(STORAGE_KEY);
+    if (record && autoUnlock) {
+      const lines = await decryptStoredCodes(sessionKey);
+      setOutputMode("unlocked", lines.length ? linesToCodes(lines) : "No codes found in encrypted record.");
+      renderCodeList(lines);
+      setStatus("Status: signed in. Saved backup codes unlocked automatically.", "success");
+      return;
+    }
+    setOutputMode("sealed", record ? "Signed in. Encrypted backup codes are saved locally. Press Show Codes to reveal them." : "Signed in. No encrypted backup codes are saved yet.");
+    renderCodeList([]);
+    setStatus("Status: signed in. Paste codes and press Encrypt when ready.", "success");
   }
 
   async function saveCodes() {
@@ -265,10 +332,10 @@
       return;
     }
     try {
-      setStatus("Status: touch or unlock your YubiKey to encrypt backup codes.", "info");
+      setStatus("Status: sign in with your YubiKey to encrypt backup codes.", "info");
       await encryptAndStoreCodes(linesToCodes(codesToLines(codes)));
       input.value = "";
-      output.textContent = "Backup codes encrypted and saved locally.";
+      setOutputMode("sealed", "Backup codes are encrypted and stored locally. Sign in and press Show Codes to reveal them.");
       renderCodeList([]);
       setStatus("Status: encrypted backup codes saved in this browser.", "success");
     } catch (error) {
@@ -278,39 +345,22 @@
 
   async function unlockCodes() {
     try {
-      const record = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      if (!record?.data || !record?.iv) throw new Error("No encrypted backup codes are saved in this browser.");
-      if (record.credentialId && record.credentialId !== getCredentialId()) saveCredentialId(record.credentialId);
-      setStatus("Status: touch or unlock your YubiKey to decrypt backup codes.", "info");
-      const prfOutput = await requestPrfWithStoredCredential();
-      const key = await deriveAesKey(prfOutput);
-      const plaintext = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: base64UrlToBytes(record.iv) },
-        key,
-        base64UrlToBytes(record.data)
-      );
-      const payload = JSON.parse(decoder.decode(plaintext));
-      const lines = codesToLines(payload.codes);
-      output.textContent = lines.length ? linesToCodes(lines) : "No codes found in encrypted record.";
+      const key = await getSessionKey();
+      const lines = await decryptStoredCodes(key);
+      setOutputMode("unlocked", lines.length ? linesToCodes(lines) : "No codes found in encrypted record.");
       renderCodeList(lines);
-      setStatus("Status: decrypted locally. Hide the codes when you are finished.", "success");
+      setStatus("Status: decrypted locally. Keep the screen private while the codes are visible.", "success");
     } catch (error) {
-      output.textContent = "Encrypted backup codes will appear here after YubiKey unlock.";
+      setOutputMode("", "Encrypted backup codes will appear here after YubiKey sign-in.");
       renderCodeList([]);
       setStatus(`Status: ${error.message}`, "warning");
     }
   }
 
-  function hideCodes() {
-    output.textContent = "Encrypted backup codes will appear here after YubiKey unlock.";
-    renderCodeList([]);
-    setStatus(getCredentialId() ? "Status: YubiKey credential saved. Codes hidden." : "Status: not set up.");
-  }
-
   async function removeUsedCodes() {
     try {
       if (!unlockedCodes.length) {
-        setStatus("Status: unlock your backup codes before removing used codes.", "warning");
+        setStatus("Status: sign in and show your backup codes before removing used codes.", "warning");
         return;
       }
       const selected = Array.from(codeList.querySelectorAll("input[type='checkbox']:checked"))
@@ -323,9 +373,9 @@
       const remaining = unlockedCodes.filter((_, index) => !selectedSet.has(index));
       const ok = confirm(`Remove ${selected.length} used backup code${selected.length === 1 ? "" : "s"} and re-save ${remaining.length} remaining code${remaining.length === 1 ? "" : "s"}?`);
       if (!ok) return;
-      setStatus("Status: touch or unlock your YubiKey to re-encrypt the remaining codes.", "info");
+      setStatus("Status: sign in with your YubiKey to re-encrypt the remaining codes.", "info");
       await encryptAndStoreCodes(linesToCodes(remaining));
-      output.textContent = remaining.length ? linesToCodes(remaining) : "All backup codes have been marked used and removed.";
+      setOutputMode("unlocked", remaining.length ? linesToCodes(remaining) : "All backup codes have been marked used and removed.");
       renderCodeList(remaining);
       setStatus("Status: selected used codes removed and remaining codes re-encrypted locally.", "success");
     } catch (error) {
@@ -334,18 +384,20 @@
   }
 
   function deleteCodes() {
-    const ok = confirm("Delete encrypted backup codes from this browser? This cannot be undone.");
+    const ok = confirm("Purge all encrypted backup codes from this browser? This cannot be undone.");
     if (!ok) return;
     localStorage.removeItem(STORAGE_KEY);
-    output.textContent = "Encrypted backup codes will appear here after YubiKey unlock.";
+    setOutputMode("", "Encrypted backup codes will appear here after YubiKey sign-in.");
     renderCodeList([]);
-    setStatus("Status: encrypted backup codes deleted from this browser.", "warning");
+    setStatus("Status: encrypted backup codes purged from this browser.", "warning");
   }
 
   setupButton.addEventListener("click", setupYubiKey);
+  signInButton.addEventListener("click", () => {
+    signInYubiKey().catch(error => setStatus(`Status: ${error.message}`, "warning"));
+  });
   saveButton.addEventListener("click", saveCodes);
   unlockButton.addEventListener("click", unlockCodes);
-  hideButton.addEventListener("click", hideCodes);
   deleteButton.addEventListener("click", deleteCodes);
   clearButton.addEventListener("click", () => { input.value = ""; });
   removeUsedButton.addEventListener("click", removeUsedCodes);
@@ -354,6 +406,6 @@
   const savedCredential = getCredentialId();
   updateSetupButton();
   if (!window.isSecureContext) setStatus("Status: WebAuthn may not work from a local file. Use the HTTPS GitHub Pages page.", "warning");
-  else if (savedCredential && savedRecord) setStatus("Status: encrypted backup codes found. Unlock with your YubiKey.", "success");
+  else if (savedCredential && savedRecord) setStatus("Status: encrypted backup codes found. Sign in with your YubiKey to unlock them.", "success");
   else if (savedCredential) setStatus("Status: YubiKey set up. No backup codes saved yet.", "info");
 })();
