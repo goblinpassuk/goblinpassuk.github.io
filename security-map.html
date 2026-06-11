@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Security Map</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260611-security-map" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260611-security-map-table-layout" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -129,8 +129,7 @@
             <p class="eyebrow">Spreadsheet</p>
             <h2>Encrypted local table</h2>
           </div>
-          <div class="backup-actions">
-            <button id="addSecurityMapRow" class="primary-button" type="button" disabled>Add row</button>
+          <div class="backup-actions security-map-file-actions">
             <button id="deleteSecurityMapRow" class="danger-button" type="button" disabled>Delete selected row</button>
             <button id="exportSecurityMap" class="secondary-button" type="button">Export encrypted JSON</button>
             <button id="importSecurityMap" class="secondary-button" type="button">Import encrypted JSON</button>
@@ -138,12 +137,24 @@
           <input type="file" id="securityMapFileInput" accept="application/json,.json,.enc" hidden>
         </div>
 
-        <div class="security-map-picker" aria-label="Security Method icon picker">
-          <div class="security-map-picker-heading">
-            <p class="eyebrow">Legend picker</p>
-            <p id="securityMapPickerHint">Select a row, then click icons to add them to Security Method.</p>
+        <div id="securityMapStateFilePanel" class="security-map-state-file" hidden>
+          <div>
+            <p class="eyebrow">State file</p>
+            <p id="securityMapStateFileStatus">No state file opened.</p>
           </div>
-          <div id="securityMapIconPicker" class="security-map-icon-picker"></div>
+          <div class="backup-actions">
+            <button id="openSecurityMapStateFile" class="secondary-button" type="button">Open state file</button>
+            <button id="reconnectSecurityMapStateFile" class="secondary-button" type="button" hidden>Reconnect</button>
+            <button id="saveSecurityMapStateFile" class="primary-button" type="button" disabled>Save to opened state file</button>
+            <button id="saveAsSecurityMapStateFile" class="secondary-button" type="button" disabled>Save as new state file</button>
+          </div>
+        </div>
+
+        <div class="security-map-picker" aria-label="Security Method icon picker">
+          <div class="section-intro feature-legend-heading security-map-legend-heading">
+            <h2 id="security-map-feature-legend-title">Security Feature Legend</h2>
+          </div>
+          <div id="securityMapIconPicker" class="security-map-icon-picker" aria-labelledby="security-map-feature-legend-title"></div>
         </div>
 
         <div class="security-map-table-wrap">
@@ -154,17 +165,16 @@
                 <th scope="col">ID</th>
                 <th scope="col">Site</th>
                 <th scope="col">Security Method</th>
+                <th scope="col">Add</th>
               </tr>
             </thead>
             <tbody id="securityMapTableBody">
               <tr class="security-map-empty-row">
-                <td colspan="4">Locked. Unlock or import an encrypted map to edit rows.</td>
+                <td colspan="5">Locked. Unlock or import an encrypted map to edit rows.</td>
               </tr>
             </tbody>
           </table>
         </div>
-
-        <div id="securityMapLegend" class="security-map-legend" aria-label="Security Method legend"></div>
       </section>
     </main>
 
@@ -186,6 +196,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/security-map.js?v=20260611-security-map"></script>
+    <script src="assets/js/security-map.js?v=20260611-security-map-table-layout"></script>
   </body>
 </html>

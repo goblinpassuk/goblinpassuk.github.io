@@ -6,10 +6,12 @@
       this.dbName = "GoblinPassSecurityMapDB";
       this.storeName = "encryptedSecurityMap";
       this.recordId = "main";
+      this.fileHandleId = "state-file-handle";
       this.localStorageKey = "goblinpass_security_map_encrypted_record";
       this.credentialStorageKey = "goblinpass_security_map_prf_credential";
       this.backupCodesCredentialKey = "goblinpass_backup_codes_yubikey_prf_meta";
       this.exportType = "goblinpass-security-map";
+      this.stateFileName = "goblinpass-security-map-state.enc.json";
       this.dataVersion = 1;
       this.db = null;
       this.rows = [];
@@ -17,6 +19,8 @@
       this.credentialId = null;
       this.cryptoKey = null;
       this.isUnlocked = false;
+      this.fileSystemAccessSupported = "showOpenFilePicker" in window && "showSaveFilePicker" in window;
+      this.stateFileHandle = null;
 
       this.icons = [
         { id: "google-factor", label: "Google factor", title: "Google factor", className: "icon-google-factor-vector" },
@@ -24,33 +28,34 @@
         { id: "additional-secret", label: "Additional secret", title: "Additional secret", className: "icon-additional-secret-vector" },
         { id: "trusted-device-id", label: "Trusted device ID", title: "Trusted device ID", className: "icon-trusted-device-vector" },
         { id: "copy-password-only", label: "Copy password only", title: "Copy password only", className: "icon-copy-only-vector" },
-        { id: "protected", label: "Protected", title: "Protected", className: "status-dot protected" },
-        { id: "vulnerable", label: "Vulnerable", title: "Vulnerable", className: "status-dot vulnerable" },
-        { id: "partial-protection", label: "Partial protection", title: "Partial protection", className: "status-dot partial" }
+        { id: "protected", label: "Protected", title: "Protected", className: "status-dot protected" }
       ];
 
       this.setupButton = document.getElementById("setupSecurityMapKey");
       this.unlockButton = document.getElementById("unlockSecurityMap");
       this.saveButton = document.getElementById("saveSecurityMap");
       this.lockButton = document.getElementById("lockSecurityMap");
-      this.addRowButton = document.getElementById("addSecurityMapRow");
       this.deleteRowButton = document.getElementById("deleteSecurityMapRow");
       this.exportButton = document.getElementById("exportSecurityMap");
       this.importButton = document.getElementById("importSecurityMap");
       this.fileInput = document.getElementById("securityMapFileInput");
+      this.stateFilePanel = document.getElementById("securityMapStateFilePanel");
+      this.stateFileStatus = document.getElementById("securityMapStateFileStatus");
+      this.openStateFileButton = document.getElementById("openSecurityMapStateFile");
+      this.reconnectStateFileButton = document.getElementById("reconnectSecurityMapStateFile");
+      this.saveStateFileButton = document.getElementById("saveSecurityMapStateFile");
+      this.saveAsStateFileButton = document.getElementById("saveAsSecurityMapStateFile");
       this.status = document.getElementById("securityMapStatus");
       this.lockIndicator = document.getElementById("securityMapLockIndicator");
       this.rowCount = document.getElementById("securityMapRowCount");
       this.tableBody = document.getElementById("securityMapTableBody");
       this.iconPicker = document.getElementById("securityMapIconPicker");
-      this.legend = document.getElementById("securityMapLegend");
-      this.pickerHint = document.getElementById("securityMapPickerHint");
 
-      this.initDatabase();
+      this.dbReady = this.initDatabase();
       this.renderIconPicker();
-      this.renderLegend();
       this.bindEvents();
       this.refreshInitialState();
+      this.initStateFileControls();
     }
 
     async initDatabase() {
@@ -75,7 +80,6 @@
       this.unlockButton.addEventListener("click", () => this.unlockAndLoad());
       this.saveButton.addEventListener("click", () => this.saveEncryptedLocalState());
       this.lockButton.addEventListener("click", () => this.lock());
-      this.addRowButton.addEventListener("click", () => this.addRow());
       this.deleteRowButton.addEventListener("click", () => this.deleteSelectedRow());
       this.exportButton.addEventListener("click", () => this.exportEncryptedJson());
       this.importButton.addEventListener("click", () => this.fileInput.click());
@@ -84,6 +88,12 @@
         if (file) this.importEncryptedJson(file);
         this.fileInput.value = "";
       });
+      if (this.fileSystemAccessSupported) {
+        this.openStateFileButton.addEventListener("click", () => this.openStateFile());
+        this.reconnectStateFileButton.addEventListener("click", () => this.reconnectStateFile());
+        this.saveStateFileButton.addEventListener("click", () => this.saveToOpenedStateFile());
+        this.saveAsStateFileButton.addEventListener("click", () => this.saveAsNewStateFile());
+      }
     }
 
     refreshInitialState() {
@@ -109,14 +119,70 @@
       this.lockIndicator.className = `lock-indicator ${this.isUnlocked ? "unlocked" : "locked"}`;
       this.saveButton.disabled = !this.isUnlocked;
       this.lockButton.disabled = !this.isUnlocked;
-      this.addRowButton.disabled = !this.isUnlocked;
       this.deleteRowButton.disabled = !this.isUnlocked || !this.selectedRowKey;
+      if (this.fileSystemAccessSupported) {
+        this.saveStateFileButton.disabled = !this.isUnlocked || !this.stateFileHandle;
+        this.saveAsStateFileButton.disabled = !this.isUnlocked;
+      }
       this.rowCount.textContent = String(this.rows.length);
-      this.pickerHint.textContent = this.isUnlocked
-        ? "Select a row, then click icons to add them to Security Method."
-        : "Unlock the map before inserting Security Method icons.";
       this.iconPicker.querySelectorAll("button").forEach(button => {
         button.disabled = !this.isUnlocked;
+      });
+    }
+
+    async initStateFileControls() {
+      if (!this.fileSystemAccessSupported) {
+        this.stateFilePanel.hidden = true;
+        return;
+      }
+
+      this.stateFilePanel.hidden = false;
+      await this.dbReady;
+      this.stateFileHandle = await this.loadRememberedFileHandle();
+      if (this.stateFileHandle) {
+        this.stateFileStatus.textContent = "Previous state file remembered. Click Reconnect to continue.";
+        this.reconnectStateFileButton.hidden = false;
+      } else {
+        this.stateFileStatus.textContent = "No state file opened.";
+        this.reconnectStateFileButton.hidden = true;
+      }
+      this.updateUI();
+    }
+
+    async ensureFilePermission(handle, mode) {
+      if (!handle) throw new Error("No state file is open.");
+      const options = { mode };
+      if (await handle.queryPermission(options) === "granted") return true;
+      if (await handle.requestPermission(options) === "granted") return true;
+      throw new Error(`${mode === "readwrite" ? "Write" : "Read"} permission was not granted for the state file.`);
+    }
+
+    async saveRememberedFileHandle(handle) {
+      if (!this.db) await this.initDatabase();
+      if (!this.db) return false;
+      try {
+        return new Promise(resolve => {
+          const transaction = this.db.transaction([this.storeName], "readwrite");
+          const request = transaction.objectStore(this.storeName).put({
+            id: this.fileHandleId,
+            fileHandle: handle,
+            updated: Date.now()
+          });
+          request.onsuccess = () => resolve(true);
+          request.onerror = () => resolve(false);
+        });
+      } catch {
+        return false;
+      }
+    }
+
+    async loadRememberedFileHandle() {
+      if (!this.db) return null;
+      return new Promise(resolve => {
+        const transaction = this.db.transaction([this.storeName], "readonly");
+        const request = transaction.objectStore(this.storeName).get(this.fileHandleId);
+        request.onsuccess = () => resolve(request.result?.fileHandle || null);
+        request.onerror = () => resolve(null);
       });
     }
 
@@ -395,6 +461,37 @@
       return stored ? JSON.parse(stored) : null;
     }
 
+    exportPayloadFromRecord(encryptedRecord) {
+      return {
+        type: this.exportType,
+        exportedAt: new Date().toISOString(),
+        encryptedRecord
+      };
+    }
+
+    async encryptedExportPayloadFromCurrentRows() {
+      if (!this.isUnlocked) throw new Error("Unlock the map before saving a state file.");
+      this.captureRowsFromDom();
+      const encryptedRecord = await this.encryptedRecordFromRows();
+      return this.exportPayloadFromRecord(encryptedRecord);
+    }
+
+    async applyEncryptedExportPayload(parsed, saveLocalRecord = true) {
+      if (parsed.type !== this.exportType || !parsed.encryptedRecord) {
+        throw new Error("This file is not a GoblinPass Security Map export.");
+      }
+      const encryptedRecord = parsed.encryptedRecord;
+      const credentialId = this.base64ToBytes(encryptedRecord.credentialId);
+      await this.unlockWithCredential(credentialId);
+      const payload = await this.decryptRecord(encryptedRecord);
+      this.rows = this.cleanRows(payload.rows);
+      this.selectedRowKey = this.rows[0]?.key || null;
+      if (saveLocalRecord) await this.saveEncryptedRecord(encryptedRecord);
+      this.storeCredentialId(credentialId);
+      this.renderRows();
+      return encryptedRecord;
+    }
+
     async unlockAndLoad() {
       try {
         const encryptedRecord = await this.loadEncryptedRecord();
@@ -437,11 +534,7 @@
           this.showStatus("Status: nothing encrypted to export yet.", "warning");
           return;
         }
-        const exportPayload = {
-          type: this.exportType,
-          exportedAt: new Date().toISOString(),
-          encryptedRecord
-        };
+        const exportPayload = this.exportPayloadFromRecord(encryptedRecord);
         const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -460,26 +553,100 @@
     async importEncryptedJson(file) {
       try {
         const parsed = JSON.parse(await file.text());
-        if (parsed.type !== this.exportType || !parsed.encryptedRecord) {
-          throw new Error("This file is not a GoblinPass Security Map export.");
-        }
-        const encryptedRecord = parsed.encryptedRecord;
-        const credentialId = this.base64ToBytes(encryptedRecord.credentialId);
         this.showStatus("Status: touch the matching YubiKey to import.", "info");
-        await this.unlockWithCredential(credentialId);
-        const payload = await this.decryptRecord(encryptedRecord);
-        this.rows = this.cleanRows(payload.rows);
-        this.selectedRowKey = this.rows[0]?.key || null;
-        await this.saveEncryptedRecord(encryptedRecord);
-        this.storeCredentialId(credentialId);
-        this.renderRows();
+        await this.applyEncryptedExportPayload(parsed, true);
         this.showStatus("Status: imported, decrypted, and saved encrypted locally.", "success");
       } catch (error) {
         this.showStatus(`Status: import failed: ${error.message}`, "warning");
       }
     }
 
-    addRow() {
+    async openStateFile() {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{
+            description: "GoblinPass Security Map encrypted JSON",
+            accept: { "application/json": [".json", ".enc", ".enc.json"] }
+          }]
+        });
+        await this.loadStateFileHandle(handle, true);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        this.showStatus(`Status: open state file failed: ${error.message}`, "warning");
+      }
+    }
+
+    async reconnectStateFile() {
+      try {
+        if (!this.stateFileHandle) this.stateFileHandle = await this.loadRememberedFileHandle();
+        if (!this.stateFileHandle) throw new Error("No remembered state file handle was found.");
+        await this.loadStateFileHandle(this.stateFileHandle, false);
+      } catch (error) {
+        this.showStatus(`Status: reconnect failed: ${error.message}`, "warning");
+      }
+    }
+
+    async loadStateFileHandle(handle, rememberHandle) {
+      await this.ensureFilePermission(handle, "read");
+      const file = await handle.getFile();
+      const parsed = JSON.parse(await file.text());
+      this.showStatus("Status: touch the matching YubiKey to open the state file.", "info");
+      await this.applyEncryptedExportPayload(parsed, true);
+      this.stateFileHandle = handle;
+      if (rememberHandle) await this.saveRememberedFileHandle(handle);
+      this.stateFileStatus.textContent = `Opened state file: ${file.name || this.stateFileName}`;
+      this.reconnectStateFileButton.hidden = true;
+      this.updateUI();
+      this.showStatus("Status: state file opened and decrypted.", "success");
+    }
+
+    async saveToOpenedStateFile() {
+      try {
+        if (!this.stateFileHandle) throw new Error("Open or reconnect a state file first.");
+        await this.ensureFilePermission(this.stateFileHandle, "readwrite");
+        const exportPayload = await this.encryptedExportPayloadFromCurrentRows();
+        await this.writeExportPayloadToHandle(this.stateFileHandle, exportPayload);
+        await this.saveEncryptedRecord(exportPayload.encryptedRecord);
+        this.stateFileStatus.textContent = "Saved to opened state file.";
+        this.showStatus("Status: saved encrypted JSON to opened state file.", "success");
+      } catch (error) {
+        this.showStatus(`Status: state file save failed: ${error.message}`, "warning");
+      }
+    }
+
+    async saveAsNewStateFile() {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: this.stateFileName,
+          types: [{
+            description: "GoblinPass Security Map encrypted JSON",
+            accept: { "application/json": [".json", ".enc", ".enc.json"] }
+          }]
+        });
+        await this.ensureFilePermission(handle, "readwrite");
+        const exportPayload = await this.encryptedExportPayloadFromCurrentRows();
+        await this.writeExportPayloadToHandle(handle, exportPayload);
+        await this.saveEncryptedRecord(exportPayload.encryptedRecord);
+        this.stateFileHandle = handle;
+        await this.saveRememberedFileHandle(handle);
+        this.stateFileStatus.textContent = "Saved as new state file.";
+        this.reconnectStateFileButton.hidden = true;
+        this.updateUI();
+        this.showStatus("Status: saved encrypted JSON as a new state file.", "success");
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        this.showStatus(`Status: save as failed: ${error.message}`, "warning");
+      }
+    }
+
+    async writeExportPayloadToHandle(handle, exportPayload) {
+      const writable = await handle.createWritable();
+      await writable.write(JSON.stringify(exportPayload, null, 2));
+      await writable.close();
+    }
+
+    addRow(afterRowKey = null) {
       if (!this.isUnlocked) return;
       this.captureRowsFromDom();
       const row = {
@@ -488,7 +655,12 @@
         site: "",
         securityMethods: []
       };
-      this.rows.push(row);
+      if (afterRowKey) {
+        const index = this.rows.findIndex(item => item.key === afterRowKey);
+        this.rows.splice(index >= 0 ? index + 1 : this.rows.length, 0, row);
+      } else {
+        this.rows.push(row);
+      }
       this.selectedRowKey = row.key;
       this.renderRows();
       this.showStatus("Status: row added.", "info");
@@ -599,25 +771,8 @@
         button.dataset.iconId = icon.id;
         const rendered = this.renderIcon(icon.id);
         if (rendered) button.appendChild(rendered);
-        const label = document.createElement("span");
-        label.textContent = icon.label;
-        button.appendChild(label);
         button.addEventListener("click", () => this.insertIcon(icon.id));
         this.iconPicker.appendChild(button);
-      });
-    }
-
-    renderLegend() {
-      this.legend.innerHTML = "";
-      this.icons.forEach(icon => {
-        const item = document.createElement("span");
-        item.className = "security-map-legend-item";
-        const rendered = this.renderIcon(icon.id);
-        if (rendered) item.appendChild(rendered);
-        const label = document.createElement("span");
-        label.textContent = icon.label;
-        item.appendChild(label);
-        this.legend.appendChild(item);
       });
     }
 
@@ -626,7 +781,7 @@
       if (!this.isUnlocked) {
         const row = document.createElement("tr");
         row.className = "security-map-empty-row";
-        row.innerHTML = "<td colspan=\"4\">Locked. Unlock or import an encrypted map to edit rows.</td>";
+        row.innerHTML = "<td colspan=\"5\">Locked. Unlock or import an encrypted map to edit rows.</td>";
         this.tableBody.appendChild(row);
         this.updateUI();
         return;
@@ -634,7 +789,15 @@
       if (!this.rows.length) {
         const row = document.createElement("tr");
         row.className = "security-map-empty-row";
-        row.innerHTML = "<td colspan=\"4\">Unlocked. Add a row to begin.</td>";
+        const cell = document.createElement("td");
+        cell.colSpan = 5;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "security-map-row-add";
+        button.textContent = "Add row";
+        button.addEventListener("click", () => this.addRow());
+        cell.appendChild(button);
+        row.appendChild(cell);
         this.tableBody.appendChild(row);
         this.updateUI();
         return;
@@ -697,7 +860,21 @@
         }
         methodCell.appendChild(methodList);
 
-        tableRow.append(selectCell, idCell, siteCell, methodCell);
+        const addCell = document.createElement("td");
+        addCell.className = "security-map-row-add-cell";
+        const addButton = document.createElement("button");
+        addButton.type = "button";
+        addButton.className = "security-map-row-add";
+        addButton.textContent = "+";
+        addButton.title = "Add row below";
+        addButton.setAttribute("aria-label", "Add row below");
+        addButton.addEventListener("click", event => {
+          event.stopPropagation();
+          this.addRow(row.key);
+        });
+        addCell.appendChild(addButton);
+
+        tableRow.append(selectCell, idCell, siteCell, methodCell, addCell);
         tableRow.addEventListener("click", event => {
           if (event.target.closest(".security-map-method-icon")) return;
           if (this.selectedRowKey !== row.key) {
