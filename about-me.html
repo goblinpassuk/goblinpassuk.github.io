@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - About Carl Hatton</title>
+    <link rel="stylesheet" href="assets/css/style.css?v=20260611-about-me" />
+    <meta name="author" content="Carl Hatton">
+    <meta name="copyright" content="Carl Hatton">
+    <meta name="application-name" content="GoblinPass">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home">
+          <span class="brand-mark" aria-hidden="true">GP</span>
+          <span>GoblinPass</span>
+        </a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Launch App</a>
+              <a href="checker.html">Password Checker</a>
+              <a href="app.html#build-fork">Build Fork</a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>Security</summary>
+            <div class="dropdown-menu">
+              <a href="security.html">Security Overview</a>
+              <a href="security-model.html">Security Model</a>
+              <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
+              <a href="security.html#security-key">Additional Secret</a>
+              <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
+              <a href="security.html#copy-password-only">Copy Password Only</a>
+            </div>
+          </details>
+          <a class="nav-link" href="guide.html">Guide</a>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <details class="nav-dropdown">
+            <summary>About Us</summary>
+            <div class="dropdown-menu">
+              <a href="about-me.html">About Me</a>
+              <a href="about.html">About GoblinPass</a>
+              <a href="github.html">Why We Use GitHub</a>
+              <a href="lesspass.html">GoblinPass vs LessPass</a>
+            </div>
+          </details>
+          <a class="nav-link build-link" href="goblinpass/index.html">Launch App</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section about-me-hero" aria-labelledby="about-me-title">
+        <div class="about-me-hero-copy">
+          <p class="eyebrow">Founder story</p>
+          <h1 id="about-me-title">About Carl Hatton</h1>
+          <p class="hero-subtitle">I don't really code. I spot problems, explain ideas, and build tools anyway.</p>
+          <p>
+            My name is Carl Hatton. I was born in 1988, and for as long as I can
+            remember I've been fascinated by computers, websites, and the
+            internet.
+          </p>
+        </div>
+        <aside class="about-me-id-card" aria-label="Carl Hatton summary">
+          <span class="brand-mark about-me-mark" aria-hidden="true">GP</span>
+          <h2>Carl Hatton</h2>
+          <p>Problem solver. Tinkerer. Businessman. Not a traditional software developer.</p>
+          <div class="about-me-stats">
+            <span><strong>37</strong> years old</span>
+            <span><strong>1997</strong> first PC build</span>
+            <span><strong>2026</strong> GoblinPass begins</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section content-section" aria-labelledby="intro-title">
+        <div class="story-card">
+          <h2 id="intro-title">The machine was always interesting</h2>
+          <p>
+            I built my first PC when I was around seven years old, back when AGP
+            graphics cards were considered cutting-edge technology. While most
+            kids were playing games, I was just as interested in what was inside
+            the machine as I was in using it. That curiosity never really went
+            away.
+          </p>
+          <p>
+            One thing I discovered early on is that although I love technology,
+            coding never came naturally to me. I could spend hours explaining
+            how something should work, designing systems in my head, and
+            spotting problems that needed solving, but I struggled to translate
+            those ideas into code myself.
+          </p>
+          <p>
+            Because of that, much of my life has involved working with
+            programmers, explaining ideas, refining concepts, and turning
+            problems into practical tools.
+          </p>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="timeline-title">
+        <div class="section-intro">
+          <p class="eyebrow">Timeline</p>
+          <h2 id="timeline-title">Ideas, tools, mistakes, and a few lucky swings</h2>
+          <p>
+            This is not a polished corporate biography. It is the path that led
+            to GoblinPass.
+          </p>
+        </div>
+
+        <div class="story-timeline">
+          <article class="timeline-item">
+            <span class="timeline-year">1997</span>
+            <div>
+              <h3>Curiosity started early</h3>
+              <p>
+                I built my first PC when I was around seven years old. I was
+                fascinated by what was inside the machine, not just what it could
+                do. That curiosity became the thread running through everything
+                that came later.
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <span class="timeline-year">2006</span>
+            <div>
+              <h3>The first real project</h3>
+              <p>
+                Around 2006, the internet looked very different.
+                File-sharing communities were huge, and websites often relied on
+                services like RapidShare to host content. Users would upload
+                collections consisting of dozens, sometimes hundreds, of download
+                links.
+              </p>
+              <p>
+                The problem was simple: if even one file disappeared, entire
+                downloads became useless. People spent hours posting messages
+                asking uploaders to re-upload missing files.
+              </p>
+              <p>
+                I looked at the situation and thought: surely there must be a
+                better way.
+              </p>
+              <p>
+                I paid a programmer $40 to build a website called
+                Rapid-Hook.com. Users could paste a collection of RapidShare
+                links into a form, and the website would automatically check
+                which files were still available and which had been deleted.
+              </p>
+              <p>
+                It saved people a huge amount of time. To my surprise, the
+                website became popular very quickly, reaching around 4,000 visits
+                per day. Eventually I sold it for $400.
+              </p>
+              <p class="story-note">
+                Looking back, selling it for ten times what I paid felt like a
+                fantastic deal. Today I'd probably have held onto it longer.
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <span class="timeline-year">2007</span>
+            <div>
+              <h3>Learning business through proxy websites</h3>
+              <p>
+                Around 2007, after moving away from file-sharing communities, I discovered a
+                webmaster forum called DigitalPoint. At the time, proxy websites
+                were everywhere. Schools blocked websites, social media, and
+                games, while students searched for ways around those
+                restrictions.
+              </p>
+              <p>
+                The business model was surprisingly straightforward: buy a cheap
+                domain, buy hosting, install a proxy script, advertise it, build
+                traffic, add advertising, and sell the website.
+              </p>
+              <p>
+                I started with one site. Then three. Then ten. Then twenty. Each
+                project made a small profit, and I reinvested everything into the
+                next one.
+              </p>
+              <p>
+                More importantly, I was learning about traffic, advertising,
+                websites, automation, buying, selling, and most importantly,
+                spotting opportunities.
+              </p>
+              <p>
+                I also learned another lesson that would follow me throughout my
+                life: a good idea only stays unique for so long. Eventually
+                competition increased, profits dropped, and the market changed.
+                But by then I had already caught the entrepreneurial bug.
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <span class="timeline-year">2012</span>
+            <div>
+              <h3>The t-shirt years</h3>
+              <p>
+                In 2012, after college and university, I found myself working for a
+                t-shirt printing company. Within three weeks I was thinking: I
+                could probably do this myself.
+              </p>
+              <p>
+                So that's exactly what I tried to do. I spent a year learning the
+                trade, saving money, and buying equipment. Eventually I launched
+                my own t-shirt printing business.
+              </p>
+              <p>
+                The biggest challenge wasn't printing. It was Amazon. Creating
+                product listings was painfully slow. Every design needed mockups.
+                Every variation needed images. Every listing needed titles,
+                descriptions, keywords, and pricing.
+              </p>
+              <p>
+                It was repetitive, frustrating, and incredibly time-consuming. So
+                I contacted the same programmer I had worked with years earlier.
+                Together we built an online mockup and listing generator.
+              </p>
+              <p>
+                Instead of manually creating everything, I could upload artwork,
+                position it once, enter product information, and generate
+                complete Amazon-ready listings in seconds. What used to take
+                hours now took minutes.
+              </p>
+              <p class="story-note">
+                We started in October. By January 2013, the business had
+                generated approximately £260,000 in turnover.
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <span class="timeline-year">2016</span>
+            <div>
+              <h3>Building automation before AI</h3>
+              <p>
+                Around 2016, as the business grew, I hit another bottleneck. I could upload
+                around 100 designs per day. That wasn't enough. I wanted to
+                upload 100 designs per hour.
+              </p>
+              <p>
+                So we rebuilt the system from scratch. Instead of creating
+                listings individually, I could upload hundreds of designs at
+                once. The software automatically resized artwork, generated
+                listing data, applied keyword rules, and prepared everything for
+                publishing.
+              </p>
+              <p>
+                This was years before AI image generation and AI content tools
+                became mainstream. Today it sounds normal. Back then it felt like
+                magic.
+              </p>
+              <p>
+                The new system allowed me to upload more than 1,000 designs per
+                day. The only problem was finding enough artwork to keep up with
+                the machine.
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <span class="timeline-year">2020</span>
+            <div>
+              <h3>Lockdown demand exploded</h3>
+              <p>
+                During lockdown in 2020, demand exploded. At our peak, we were selling
+                around 1,000 t-shirts every single day.
+              </p>
+              <p>
+                For a while, everything felt unstoppable. Years of
+                experimentation, automation, failures, lessons, and improvements
+                had finally come together.
+              </p>
+              <p>
+                But business has a habit of changing when you least expect it.
+                Amazon gradually shifted towards promoting more of its own
+                catalogue and products. Visibility became harder to achieve.
+                Listings that had once performed well slowly disappeared into the
+                background.
+              </p>
+              <p>
+                By 2023, the business I had spent years building had effectively
+                come to an end.
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <span class="timeline-year">2023+</span>
+            <div>
+              <h3>Not exactly glamorous</h3>
+              <p>
+                From 2023 onwards, the years after that weren't particularly glamorous. Today I'm a
+                full-time delivery driver.
+              </p>
+              <p>
+                Life hasn't always gone the way I expected. Bad decisions, bad
+                timing, and bad relationships have all played their part.
+              </p>
+              <p>
+                But life has a funny way of surprising you. In 2026 I met
+                someone new, and she's awesome. Sometimes the best things arrive
+                when you're not looking for them.
+              </p>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <span class="timeline-year">2026</span>
+            <div>
+              <h3>Why GoblinPass exists</h3>
+              <p>
+                I've always been security-conscious. Over the years I've been
+                hacked more than once, and every experience reinforced the same
+                lesson: convenience and security are rarely the same thing.
+              </p>
+              <p>
+                I've used password managers, looked at countless security tools,
+                and experimented with different systems. And while I genuinely
+                like LessPass, I always found myself wanting something more.
+              </p>
+              <p>
+                Something with more flexibility. More security options. More
+                control. Something built the way I would build it.
+              </p>
+              <p>
+                On 11 June 2026, GoblinPass was only about a week old. The
+                difference this time is that instead of hiring a freelance
+                programmer, I used AI.
+              </p>
+              <p>
+                For the first time in my life, I could sit down, explain an
+                idea, refine it, redesign it, test it, and watch it come to life
+                almost immediately.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="goblinpass-exists-title">
+        <div class="final-callout-card">
+          <p class="eyebrow">Why it exists</p>
+          <h2 id="goblinpass-exists-title">GoblinPass is the result of everything I've learned over the last twenty years.</h2>
+          <p>
+            Finding problems. Building solutions. Automating repetitive work.
+            Questioning assumptions. And refusing to accept that "good enough"
+            is actually good enough.
+          </p>
+          <p>
+            I'm not a traditional software developer. I'm a problem solver. A
+            tinkerer. A businessman. A guy who has spent most of his life asking:
+            there has to be a better way of doing this.
+          </p>
+          <p>
+            Sometimes there is. And sometimes that better way becomes a project.
+          </p>
+          <p>
+            Inspired by LessPass, built with AI, and created by someone who has
+            spent a lifetime turning ideas into tools - GoblinPass was made.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-button" href="app.html">Launch GoblinPass</a>
+            <a class="secondary-button" href="security-model.html">View Security Model</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <p><strong>GoblinPass</strong></p>
+        <p>Tiny vault. Minimal secrets.</p>
+        <p>Publicly viewable source. Local first. No password storage.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="index.html">Home</a>
+        <a href="app.html">Web Tools</a>
+        <a href="checker.html">Password Checker</a>
+        <a href="security.html">Security</a>
+        <a href="about.html">About GoblinPass</a>
+      </nav>
+      <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>
