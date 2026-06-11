@@ -100,7 +100,7 @@
             <button id="signInBackupKey" class="secondary-button" type="button">Sign in</button>
           </div>
           <p id="backupKeyStatus" class="backup-status">Status: not set up.</p>
-          <p class="small-note">Register once per browser. Backup Codes verifies the returned passkey belongs to the Backup Codes tool before using it.</p>
+          <p class="small-note">Register once per browser. Backup Codes only accepts the saved physical YubiKey/security-key credential.</p>
         </article>
 
         <article class="backup-tool-card backup-manager-card">
@@ -173,9 +173,9 @@
           <p>
             Private or incognito windows may not share the saved Backup Codes
             credential ID or encrypted entries from your normal browser session.
-            For safety, this tool rejects passkeys that do not match the Backup
-            Codes user. Register or import the Backup Codes credential record in
-            that browser session first.
+            For safety, this tool does not accept Windows Hello, password
+            manager passkeys, or another GoblinPass passkey. It only uses the
+            registered Backup Codes physical security key.
           </p>
           <p>
             No cryptography here protects against a fully compromised device that
@@ -202,6 +202,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/backup-codes.js?v=20260611-backup-no-auto-signin"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-backup-yubikey-only"></script>
   </body>
 </html>

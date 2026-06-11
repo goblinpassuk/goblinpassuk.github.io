@@ -173,64 +173,38 @@
     const idBytes = base64UrlToBytes(credentialId);
     const salt = prfSalt();
 
-    let firstAssertion;
     let results;
     let outputBytes;
-    let strictError;
 
-    try {
-      firstAssertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: randomBytes(32),
-          rpId: rpId(),
-          userVerification: "preferred",
-          allowCredentials: [physicalKeyDescriptor(idBytes)],
-          hints: ["security-key"],
-          extensions: { prf: { eval: { first: salt } } }
-        }
-      });
-      assertExpectedCredential(firstAssertion, credentialId);
-      results = firstAssertion.getClientExtensionResults?.();
-      outputBytes = prfOutputFromResults(results, credentialId);
-      if (outputBytes?.byteLength === 32) return new Uint8Array(outputBytes);
-
-      const secondAssertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: randomBytes(32),
-          rpId: rpId(),
-          userVerification: "preferred",
-          allowCredentials: [physicalKeyDescriptor(idBytes)],
-          hints: ["security-key"],
-          extensions: { prf: { evalByCredential: { [credentialId]: { first: salt } } } }
-        }
-      });
-      assertExpectedCredential(secondAssertion, credentialId);
-      results = secondAssertion.getClientExtensionResults?.();
-      outputBytes = prfOutputFromResults(results, credentialId);
-    } catch (error) {
-      strictError = error;
-    }
-
-    if (outputBytes?.byteLength !== 32) {
-      setStatus("Status: exact Backup Codes credential was not accepted. Trying Backup Codes discoverable sign-in.", "warning");
-      const discoverableAssertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: randomBytes(32),
-          rpId: rpId(),
-          userVerification: "preferred",
-          hints: ["security-key"],
-          extensions: { prf: { eval: { first: salt } } }
-        }
-      });
-      assertBackupUserHandle(discoverableAssertion);
-      const discoveredId = bytesToBase64Url(new Uint8Array(discoverableAssertion.rawId));
-      saveCredentialId(discoveredId);
-      results = discoverableAssertion.getClientExtensionResults?.();
-      outputBytes = prfOutputFromResults(results, discoveredId);
-      if (outputBytes?.byteLength !== 32 && strictError) {
-        throw new Error(`Backup Codes YubiKey sign-in failed. ${strictError.message}`);
+    setStatus("Status: use the registered Backup Codes YubiKey. Windows Hello or other passkeys are not accepted.", "info");
+    const firstAssertion = await navigator.credentials.get({
+      publicKey: {
+        challenge: randomBytes(32),
+        rpId: rpId(),
+        userVerification: "preferred",
+        allowCredentials: [physicalKeyDescriptor(idBytes)],
+        hints: ["security-key"],
+        extensions: { prf: { eval: { first: salt } } }
       }
-    }
+    });
+    assertExpectedCredential(firstAssertion, credentialId);
+    results = firstAssertion.getClientExtensionResults?.();
+    outputBytes = prfOutputFromResults(results, credentialId);
+    if (outputBytes?.byteLength === 32) return new Uint8Array(outputBytes);
+
+    const secondAssertion = await navigator.credentials.get({
+      publicKey: {
+        challenge: randomBytes(32),
+        rpId: rpId(),
+        userVerification: "preferred",
+        allowCredentials: [physicalKeyDescriptor(idBytes)],
+        hints: ["security-key"],
+        extensions: { prf: { evalByCredential: { [credentialId]: { first: salt } } } }
+      }
+    });
+    assertExpectedCredential(secondAssertion, credentialId);
+    results = secondAssertion.getClientExtensionResults?.();
+    outputBytes = prfOutputFromResults(results, credentialId);
 
     if (outputBytes?.byteLength !== 32) {
       throw new Error(`Your browser or YubiKey did not return PRF data. ${extensionSummary(results)}`);
