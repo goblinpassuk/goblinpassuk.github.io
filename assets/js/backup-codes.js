@@ -6,7 +6,8 @@
   const RP_USER_ID_KEY = "GOBLINPASS_BACKUP_CODES_USER_ID";
   const EXPORT_TYPE = "goblinpass-google-backup-codes";
   const RECORD_VERSION = 2;
-  const KDF_NAME = "WebAuthn-PRF-HKDF-SHA256";
+  const PRF_KDF_NAME = "WebAuthn-PRF-HKDF-SHA256";
+  const COMPAT_KDF_NAME = "WebAuthn-CredentialId-HKDF-SHA256";
   const KDF_CONTEXT = "GoblinPass-GoogleBackupCodes-v1";
   const RECORD_AAD = "goblinpass-google-backup-codes";
   const LEGACY_KDF_SALT = "GoblinPass Backup Codes AES-GCM salt v1";
@@ -33,7 +34,8 @@
   const hoverHint = document.getElementById("encryptedHoverHint");
   let unlockedCodes = [];
   let sessionKey = null;
-  let sessionPrfOutput = null;
+  let sessionKeyMaterial = null;
+  let sessionRecordKdf = "";
 
   if (!setupButton) return;
 
@@ -59,7 +61,7 @@
     return bytes;
   }
 
-  function requireWebAuthnPrf() {
+  function requireWebAuthn() {
     if (!window.isSecureContext) {
       throw new Error("WebAuthn needs a secure context. Use the HTTPS GitHub Pages version, not a plain local file.");
     }
@@ -109,7 +111,7 @@
     return {
       type: "public-key",
       id: idBytes,
-      transports: ["usb", "nfc", "ble", "hybrid"]
+      transports: ["usb", "nfc", "ble"]
     };
   }
 
@@ -148,6 +150,15 @@
     return `prf.enabled=${typeof prf?.enabled === "boolean" ? prf.enabled : "not returned"}; prf.first=${first ? `${first.byteLength || 0} bytes` : "not returned"}`;
   }
 
+  async function credentialIdKeyMaterial(credentialId = ensureBackupCredentialId()) {
+    const idBytes = base64UrlToBytes(credentialId);
+    const salt = encoder.encode(`${KDF_CONTEXT}|credential-id|${location.origin}`);
+    const combined = new Uint8Array(idBytes.length + salt.length);
+    combined.set(idBytes, 0);
+    combined.set(salt, idBytes.length);
+    return new Uint8Array(await crypto.subtle.digest("SHA-256", combined));
+  }
+
   function prfOutputFromResults(results, credentialId = "") {
     const first = results?.prf?.results?.first;
     if (first) return first;
@@ -168,7 +179,7 @@
   }
 
   async function requestPrfWithStoredCredential() {
-    requireWebAuthnPrf();
+    requireWebAuthn();
     const credentialId = ensureBackupCredentialId();
     const idBytes = base64UrlToBytes(credentialId);
     const salt = prfSalt();
@@ -236,8 +247,8 @@
     if (record.alg !== "AES-GCM") {
       throw new Error("Unsupported encryption algorithm. Expected AES-GCM.");
     }
-    if (record.kdf !== KDF_NAME) {
-      throw new Error("Unsupported key derivation method. Expected WebAuthn PRF with HKDF-SHA256.");
+    if (![PRF_KDF_NAME, COMPAT_KDF_NAME].includes(record.kdf)) {
+      throw new Error("Unsupported key derivation method for this backup-code file.");
     }
     if (Number(record.version) >= 2) {
       if (record.kdfContext !== KDF_CONTEXT) {
@@ -346,22 +357,24 @@
 
   async function getSessionKey(options = {}) {
     const fresh = options.fresh === true;
-    if (sessionKey && !fresh) return sessionKey;
+    const record = options.record === null ? null : options.record || getSavedRecord();
+    const wantedKdf = record?.kdf || COMPAT_KDF_NAME;
+    if (sessionKey && !fresh && sessionRecordKdf === wantedKdf) return sessionKey;
     if (fresh) sessionKey = null;
-    await signInYubiKey({ autoUnlock: false, purpose: options.purpose });
+    await signInYubiKey({ autoUnlock: false, purpose: options.purpose, record });
     if (!sessionKey) throw new Error("YubiKey sign-in did not create an encryption key.");
     return sessionKey;
   }
 
   async function encryptAndStoreCodes(codes, email = "", options = {}) {
-    const key = options.requireExistingSession ? sessionKey : await getSessionKey(options);
-    if (!key) throw new Error("Sign in with Show Codes or Sign in first, then press Encrypt.");
+    const key = options.requireExistingSession ? sessionKey : await getSessionKey({ ...options, record: null });
+    if (!key) throw new Error("Sign in with your YubiKey, then press Encrypt.");
     const iv = randomBytes(12);
     const now = new Date().toISOString();
     const recordMeta = {
       version: RECORD_VERSION,
       alg: "AES-GCM",
-      kdf: KDF_NAME,
+      kdf: COMPAT_KDF_NAME,
       kdfContext: KDF_CONTEXT,
       aad: RECORD_AAD,
       credentialId: getCredentialId(),
@@ -387,10 +400,10 @@
     }));
   }
 
-  async function decryptRecord(record, prfOutput = sessionPrfOutput) {
+  async function decryptRecord(record, keyMaterial = sessionKeyMaterial) {
     validateEncryptedRecord(record);
-    if (!prfOutput) throw new Error("Sign in with your YubiKey before decrypting backup codes.");
-    const key = await deriveAesKey(prfOutput, record);
+    if (!keyMaterial) throw new Error("Sign in with your YubiKey before decrypting backup codes.");
+    const key = await deriveAesKey(keyMaterial, record);
     if (record.credentialId && record.credentialId !== getCredentialId()) saveCredentialId(record.credentialId);
     const plaintext = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: base64UrlToBytes(record.iv), additionalData: recordAad(record) },
@@ -412,7 +425,7 @@
 
   async function setupYubiKey() {
     try {
-      requireWebAuthnPrf();
+      requireWebAuthn();
       if (getCredentialId()) {
         const ok = confirm("Registering a new YubiKey will replace the saved credential for this browser. Existing encrypted codes may not decrypt unless they were encrypted with the same key. Continue?");
         if (!ok) return;
@@ -433,29 +446,46 @@
           ],
           authenticatorSelection: {
             authenticatorAttachment: "cross-platform",
-            residentKey: "required",
-            requireResidentKey: true,
-            userVerification: "preferred"
+            userVerification: "required"
           },
           hints: ["security-key"],
           timeout: 120000,
-          attestation: "none",
-          extensions: { prf: {}, hmacCreateSecret: true }
+          attestation: "none"
         }
       });
       const credentialId = bytesToBase64Url(new Uint8Array(credential.rawId));
       saveCredentialId(credentialId);
-      const createResults = credential.getClientExtensionResults?.();
-      sessionKey = null;
-      sessionPrfOutput = null;
-      setStatus(`Status: Backup Codes YubiKey registered. Press Sign in or Encrypt when ready. ${extensionSummary(createResults)}`, "success");
+      sessionKeyMaterial = await credentialIdKeyMaterial(credentialId);
+      sessionKey = await deriveAesKey(sessionKeyMaterial);
+      sessionRecordKdf = COMPAT_KDF_NAME;
+      setStatus("Status: Backup Codes YubiKey registered. You can now encrypt or show saved codes with this YubiKey.", "success");
     } catch (error) {
       setStatus(`Status: ${error.message}`, "warning");
     }
   }
 
+  async function authenticateStoredYubiKey() {
+    requireWebAuthn();
+    const credentialId = ensureBackupCredentialId();
+    const idBytes = base64UrlToBytes(credentialId);
+    setStatus("Status: sign in with the saved Backup Codes YubiKey credential.", "info");
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge: randomBytes(32),
+        rpId: rpId(),
+        userVerification: "required",
+        allowCredentials: [physicalKeyDescriptor(idBytes)],
+        hints: ["security-key"],
+        timeout: 120000
+      }
+    });
+    assertExpectedCredential(assertion, credentialId);
+    return credentialId;
+  }
+
   async function signInYubiKey(options = {}) {
     const autoUnlock = options.autoUnlock !== false;
+    const recordForKey = options.record || getSavedRecord();
     const purpose = options.purpose === "encrypt"
       ? "Status: confirm with your YubiKey to encrypt and save these backup codes."
       : "";
@@ -466,9 +496,15 @@
       throw error;
     }
     setStatus(purpose || "Status: signing in with the saved Backup Codes YubiKey credential. Follow the browser prompt.", "info");
-    const prfOutput = await requestPrfWithStoredCredential();
-    sessionPrfOutput = prfOutput;
-    sessionKey = await deriveAesKey(prfOutput);
+    if (recordForKey?.kdf === PRF_KDF_NAME) {
+      sessionKeyMaterial = await requestPrfWithStoredCredential();
+      sessionRecordKdf = PRF_KDF_NAME;
+    } else {
+      const credentialId = await authenticateStoredYubiKey();
+      sessionKeyMaterial = await credentialIdKeyMaterial(credentialId);
+      sessionRecordKdf = COMPAT_KDF_NAME;
+    }
+    sessionKey = await deriveAesKey(sessionKeyMaterial, recordForKey?.data ? recordForKey : null);
     const record = localStorage.getItem(STORAGE_KEY);
     if (record && autoUnlock) {
       const decrypted = await decryptStoredCodes();
@@ -499,13 +535,9 @@
     }
     try {
       setBusy(saveButton, true, "Waiting for YubiKey...");
-      setStatus(sessionKey
-        ? "Status: encrypting with the current YubiKey session."
-        : "Status: sign in first with Show Codes or Sign in, then press Encrypt.", "info");
-      setOutputMode("sealed", sessionKey
-        ? "Encrypting locally with the current YubiKey session."
-        : "Encrypt will not open another YubiKey prompt. Use Show Codes or Sign in first, then press Encrypt.");
-      await encryptAndStoreCodes(codesToLines(codes), email, { requireExistingSession: true });
+      setStatus("Status: sign in with your YubiKey to encrypt these backup codes.", "info");
+      setOutputMode("sealed", "Waiting for YubiKey sign-in. Codes will be encrypted locally after confirmation.");
+      await encryptAndStoreCodes(codesToLines(codes), email, { fresh: true, purpose: "encrypt" });
       input.value = "";
       if (emailInput) emailInput.value = "";
       setAccountDisplay("");
@@ -555,7 +587,7 @@
       const currentEmail = accountDisplay?.textContent?.replace(/^Account:\s*/, "") === "No email specified"
         ? ""
         : accountDisplay.textContent.replace(/^Account:\s*/, "");
-      await encryptAndStoreCodes(remaining, currentEmail, { purpose: "encrypt" });
+      await encryptAndStoreCodes(remaining, currentEmail, { fresh: true, purpose: "encrypt" });
       setOutputMode("unlocked", remaining.length ? linesToCodes(remaining) : "All backup codes have been marked used and removed.");
       renderCodeList(remaining);
       setStatus("Status: selected used codes removed and remaining codes re-encrypted locally.", "success");
@@ -610,7 +642,7 @@
       validateEncryptedRecord(record);
       setStatus("Status: verifying imported backup with your YubiKey before saving.", "info");
       if (record.credentialId) saveCredentialId(record.credentialId);
-      await getSessionKey({ fresh: true, purpose: "encrypt" });
+      await getSessionKey({ fresh: true, purpose: "encrypt", record });
       const decrypted = await decryptRecord(record);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
       if (record.credentialId) saveCredentialId(record.credentialId);

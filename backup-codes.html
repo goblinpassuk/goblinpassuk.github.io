@@ -66,13 +66,14 @@
           <p class="eyebrow">Local Web Tool</p>
           <h1 id="backup-title">Google Backup Codes Vault</h1>
           <p>
-            Store Google backup codes locally in your browser, encrypted with a
-            key derived from your YubiKey. No server, no account, no cloud sync.
+            Store Google backup codes locally in your browser, protected by
+            YubiKey sign-in and local encryption. No server, no account, no
+            cloud sync.
           </p>
         </div>
         <div class="backup-trust-row" aria-label="Privacy promises">
           <span><b class="status-dot protected" aria-hidden="true"></b> Local only</span>
-          <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i> YubiKey PRF</span>
+          <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i> YubiKey protected</span>
           <span><i class="security-feature-icon small icon-copy-only-vector" aria-hidden="true"></i> Encrypted storage</span>
         </div>
       </section>
@@ -87,9 +88,9 @@
             </div>
           </div>
           <p>
-            This tool uses WebAuthn PRF/hmac-secret. A normal WebAuthn login is
-            not enough, because the YubiKey must return key material for local
-            encryption and decryption.
+            This tool uses WebAuthn with a saved physical security-key credential.
+            Sign-in with that same YubiKey is required before codes can be shown
+            or re-encrypted.
           </p>
           <p class="backup-choice-note">
             If Windows shows a passkey picker, choose <strong>Security key</strong>,
@@ -166,7 +167,7 @@
             you control.
           </p>
           <p>
-            WebAuthn PRF support varies by browser, operating system, and hardware
+            WebAuthn support varies by browser, operating system, and hardware
             key. GitHub Pages over HTTPS is suitable; opening this page directly
             from a local file may not allow WebAuthn.
           </p>
@@ -202,6 +203,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/backup-codes.js?v=20260611-backup-encrypt-unlocked-only"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-backup-yubikey-compatible"></script>
   </body>
 </html>

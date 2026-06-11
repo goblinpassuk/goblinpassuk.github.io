@@ -560,6 +560,21 @@ function setYubiKeyMessage(message, type = "info") {
   el.classList.toggle("hidden", !message);
 }
 
+function setYubiKeyDebug(details = {}) {
+  const el = $("yubiKeyDebug");
+  if (!el) return;
+  const hasDetails = Object.keys(details).length > 0;
+  el.textContent = hasDetails ? [
+    "Temporary YubiKey PRF debug",
+    `PRF data present: ${details.prfPresent ? "yes" : "no"}`,
+    `PRF result length: ${details.prfLength || 0} bytes`,
+    `PRF result used in password generation: ${details.prfUsed ? "yes" : "no"}`,
+    `Request shape: ${details.requestShape || "not tested"}`,
+    `Result source: ${details.resultSource || "not found"}`
+  ].join("\n") : "";
+  el.classList.toggle("hidden", !hasDetails);
+}
+
 function localStorageWorks() {
   try {
     const key = "goblinpass_storage_test";
@@ -699,9 +714,19 @@ function isUnusableStoredCredentialError(error) {
     message.includes("not reusable");
 }
 
-function getPrfOutput(results, credentialId = "") {
+function getPrfOutputDetails(results, credentialId = "") {
   const prfResults = results?.prf?.results;
-  return prfResults?.first || (credentialId ? prfResults?.[credentialId]?.first : null) || null;
+  const directFirst = prfResults?.first;
+  if (directFirst) return { output: directFirst, source: "prf.results.first" };
+  const keyedFirst = credentialId ? prfResults?.[credentialId]?.first : null;
+  if (keyedFirst) return { output: keyedFirst, source: "prf.results[credentialId].first" };
+  const directSecond = prfResults?.second;
+  if (directSecond) return { output: null, source: "prf.results.second present but ignored" };
+  return { output: null, source: "not found" };
+}
+
+function getPrfOutput(results, credentialId = "") {
+  return getPrfOutputDetails(results, credentialId).output;
 }
 
 async function requestYubiKeyPrf(id, salt) {
@@ -756,8 +781,8 @@ async function requestYubiKeyAuthenticationPrf(salt) {
     }
   });
   const results = credential.getClientExtensionResults?.();
-  const output = getPrfOutput(results);
-  return { credential, results, output, requestShape: "discoverable-authentication" };
+  const details = getPrfOutputDetails(results);
+  return { credential, results, output: details.output, resultSource: details.source, requestShape: "discoverable-authentication" };
 }
 
 async function createYubiKeyCredential() {
@@ -1082,7 +1107,9 @@ async function getYubiKeyFactor() {
   const salt = await yubiKeySalt();
   try {
     setYubiKeyMessage("Authenticate with your YubiKey now. Choose the physical security key if the browser offers more than one option.", "info");
-    const { credential, results, output, requestShape } = await requestYubiKeyAuthenticationPrf(salt);
+    setYubiKeyDebug({ prfPresent: false, prfLength: 0, prfUsed: false, requestShape: "starting", resultSource: "waiting for authenticator" });
+    const { credential, results, output, requestShape, resultSource } = await requestYubiKeyAuthenticationPrf(salt);
+    const prfLength = output?.byteLength || 0;
     const cap = getYubiKeyCapability();
     saveYubiKeyCapability({
       ...cap,
@@ -1098,11 +1125,14 @@ async function getYubiKeyFactor() {
       prfResultReturned: !!output,
       browserUserAgent: navigator.userAgent || ""
     });
+    setYubiKeyDebug({ prfPresent: !!output, prfLength, prfUsed: false, requestShape, resultSource });
     if (!output || output.byteLength !== 32) throw new Error("This browser or YubiKey did not return PRF extension data.");
     const factor = await mixYubiKeyPrfOutput(output);
+    setYubiKeyDebug({ prfPresent: true, prfLength, prfUsed: true, requestShape, resultSource });
     setYubiKeyMessage(yubiKeyStatusText("YubiKey authenticated and returned a real PRF password ingredient."), "success");
     return factor;
   } catch (error) {
+    setYubiKeyDebug({ prfPresent: false, prfLength: 0, prfUsed: false, requestShape: "failed", resultSource: "not used" });
     throw new Error(yubiKeyErrorMessage(error));
   }
 }
@@ -1418,6 +1448,11 @@ async function generate() {
       updateYubiKeyUi();
     }
     setYubiKeyMessage(error.message, "warning");
+    return;
+  }
+  if ($("useYubiKey")?.checked && !currentYubiKeyFactor) {
+    setYubiKeyDebug({ prfPresent: false, prfLength: 0, prfUsed: false, requestShape: "generation aborted", resultSource: "missing factor" });
+    setYubiKeyMessage("YubiKey is enabled, but no PRF password ingredient was created. Password generation stopped.", "warning");
     return;
   }
   generatedPassword = await deterministicPassword(style, strength);
