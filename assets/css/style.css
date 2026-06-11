@@ -1008,6 +1008,154 @@ input:focus {
   font-size: 1.05rem;
 }
 
+.backup-hero {
+  padding: 72px 0 28px;
+}
+
+.backup-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.backup-trust-row span {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(119, 240, 90, 0.22);
+  border-radius: 999px;
+  background: rgba(119, 240, 90, 0.07);
+  color: var(--text);
+  font-weight: 850;
+  padding: 0 14px;
+}
+
+.backup-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.backup-tool-card {
+  border: 1px solid rgba(119, 240, 90, 0.18);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(119, 240, 90, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(119, 240, 90, 0.055), transparent 56%),
+    rgba(10, 22, 15, 0.86);
+  padding: 24px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.backup-tool-card label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.backup-tool-card textarea {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  border: 1px solid rgba(119, 240, 90, 0.36);
+  border-radius: 8px;
+  outline: none;
+  background: #061009;
+  color: var(--text);
+  font: inherit;
+  padding: 14px;
+}
+
+.backup-tool-card textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(119, 240, 90, 0.1);
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.backup-status {
+  min-height: 48px;
+  border: 1px dashed rgba(119, 240, 90, 0.22);
+  border-radius: 8px;
+  background: rgba(5, 12, 8, 0.48);
+  color: var(--muted);
+  padding: 12px;
+}
+
+.backup-status[data-kind="success"] {
+  border-color: rgba(119, 240, 90, 0.46);
+  color: #caffc8;
+}
+
+.backup-status[data-kind="warning"] {
+  border-color: rgba(255, 209, 102, 0.5);
+  color: #ffe9a9;
+  background: rgba(255, 209, 102, 0.08);
+}
+
+.backup-output {
+  min-height: 210px;
+  overflow: auto;
+  border: 1px solid rgba(119, 240, 90, 0.22);
+  border-radius: 8px;
+  background: #061009;
+  color: #dfffe7;
+  font-size: 1rem;
+  white-space: pre-wrap;
+  padding: 14px;
+}
+
+.backup-warning-card {
+  border-color: rgba(255, 209, 102, 0.32);
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 209, 102, 0.11), transparent 36%),
+    rgba(16, 20, 12, 0.86);
+}
+
+.backup-code-icon {
+  width: 58px;
+  height: 58px;
+  display: inline-grid;
+  flex: 0 0 58px;
+  place-items: center;
+  border: 1px solid rgba(119, 240, 90, 0.5);
+  border-radius: 12px;
+  color: #051009;
+  background: linear-gradient(135deg, var(--accent), #b8ff7d);
+  box-shadow: 0 0 28px rgba(119, 240, 90, 0.22);
+  font-weight: 950;
+}
+
+.danger-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  border: 1px solid rgba(255, 107, 107, 0.44);
+  border-radius: 8px;
+  color: #ffe2e2;
+  background: rgba(255, 107, 107, 0.08);
+  cursor: pointer;
+  font-weight: 900;
+  padding: 0 14px;
+}
+
+.danger-button:hover,
+.danger-button:focus-visible {
+  border-color: rgba(255, 107, 107, 0.8);
+  background: rgba(255, 107, 107, 0.16);
+  outline: none;
+}
+
 .source-note {
   margin: 18px 0 0;
   color: var(--muted);
@@ -4084,6 +4232,7 @@ input:focus {
   .info-grid,
   .info-list,
   .mistake-list,
+  .backup-tool-grid,
   .product-cards,
   .guide-tab-preview,
   .app-embed-card,
