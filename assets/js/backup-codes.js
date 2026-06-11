@@ -4,13 +4,15 @@
   class YubiKeyBackupCodesVault {
     constructor() {
       this.encryptionKey = null;
-      this.credentialId = null;
+      this.credentialMeta = null;
       this.isUnlocked = false;
       this.dbName = "GoblinPassBackupCodesDB";
       this.storeName = "encryptedBackupCodes";
       this.db = null;
-      this.credentialStorageKey = "goblinpass_backup_codes_yubikey_credential_id";
+      this.credentialStorageKey = "goblinpass_backup_codes_yubikey_prf_meta";
+      this.legacyCredentialStorageKey = "goblinpass_backup_codes_yubikey_credential_id";
       this.localStorageKey = "goblinpass_backup_codes_encrypted_backup";
+      this.prfLabel = "GoblinPass Backup Codes PRF vault";
 
       this.status = document.getElementById("status");
       this.setupButton = document.getElementById("setupBtn");
@@ -21,13 +23,10 @@
       this.exportButton = document.getElementById("exportBtn");
       this.importButton = document.getElementById("importBtn");
       this.purgeButton = document.getElementById("purgeBtn");
-      this.removeUsedButton = document.getElementById("removeUsedBtn");
       this.fileInput = document.getElementById("fileInput");
-      this.emailInput = document.getElementById("accountEmail");
       this.noteContent = document.getElementById("noteContent");
       this.lockIndicator = document.getElementById("lockIndicator");
       this.lastSaved = document.getElementById("lastSaved");
-      this.codeList = document.getElementById("backupCodeList");
 
       this.initDatabase();
       this.bindEvents();
@@ -57,11 +56,10 @@
     bindEvents() {
       this.setupButton.addEventListener("click", () => this.setupYubiKey());
       this.unlockButton.addEventListener("click", () => this.unlockAndLoad());
-      this.saveButton.addEventListener("click", () => this.saveToLocalStorage());
+      this.saveButton.addEventListener("click", () => this.saveBackupCodes());
       this.lockButton.addEventListener("click", () => this.lock());
       this.clearButton.addEventListener("click", () => {
         this.noteContent.value = "";
-        this.renderCodeList([]);
       });
       this.exportButton.addEventListener("click", () => this.exportBackup());
       this.importButton.addEventListener("click", () => this.fileInput.click());
@@ -71,16 +69,14 @@
         this.fileInput.value = "";
       });
       this.purgeButton.addEventListener("click", () => this.purgeEntries());
-      this.removeUsedButton.addEventListener("click", () => this.removeSelectedCodes());
-      this.noteContent.addEventListener("input", () => this.renderCodeList(this.codesFromText(this.noteContent.value)));
     }
 
     refreshInitialState() {
-      if (localStorage.getItem(this.credentialStorageKey)) {
+      if (this.loadLocalCredentialMeta()) {
         this.setupButton.textContent = "Replace YubiKey";
-        this.showStatus("Status: YubiKey is registered. Sign in to show or save backup codes.", "success");
+        this.showStatus("Status: YubiKey PRF vault is registered. Sign in to show or save backup codes.", "success");
       } else {
-        this.showStatus("Status: ready. Register your YubiKey first.", "info");
+        this.showStatus("Status: ready. Register a PRF-capable YubiKey first.", "info");
       }
       this.updateUI();
     }
@@ -97,11 +93,9 @@
       this.saveButton.disabled = !unlocked;
       this.lockButton.disabled = !unlocked;
       this.clearButton.disabled = !unlocked;
-      this.removeUsedButton.disabled = !unlocked;
       this.noteContent.disabled = !unlocked;
-      this.emailInput.disabled = !unlocked;
       this.noteContent.placeholder = unlocked
-        ? "Paste your Google backup codes here. They will be encrypted before saving."
+        ? "Paste your Google backup codes here. They will be encrypted with your YubiKey PRF secret."
         : "Locked - sign in with your YubiKey first";
     }
 
@@ -118,22 +112,66 @@
       return window.location.hostname || "localhost";
     }
 
+    randomBytes(length) {
+      return Array.from(crypto.getRandomValues(new Uint8Array(length)));
+    }
+
+    loadLocalCredentialMeta() {
+      try {
+        const stored = localStorage.getItem(this.credentialStorageKey);
+        if (!stored) return null;
+        const meta = JSON.parse(stored);
+        return this.normalizeCredentialMeta(meta);
+      } catch {
+        return null;
+      }
+    }
+
+    saveLocalCredentialMeta(meta) {
+      const normalized = this.normalizeCredentialMeta(meta);
+      localStorage.setItem(this.credentialStorageKey, JSON.stringify(normalized));
+      this.credentialMeta = normalized;
+      return normalized;
+    }
+
+    normalizeCredentialMeta(meta) {
+      if (!meta) return null;
+      const credentialId = Array.isArray(meta) ? meta : meta.credentialId;
+      const prfSalt = meta.prfSalt;
+      if (!Array.isArray(credentialId) || !credentialId.length) return null;
+      if (!Array.isArray(prfSalt) || prfSalt.length !== 32) return null;
+      return {
+        keyMode: "webauthn-prf",
+        credentialId,
+        prfSalt,
+        rpId: meta.rpId || this.rpId(),
+        created: meta.created || new Date().toISOString()
+      };
+    }
+
+    encryptedMeta(encryptedData) {
+      return this.normalizeCredentialMeta({
+        credentialId: encryptedData.credentialId,
+        prfSalt: encryptedData.prfSalt,
+        rpId: encryptedData.rpId
+      });
+    }
+
     async setupYubiKey() {
       try {
         this.requireWebAuthn();
-        if (localStorage.getItem(this.credentialStorageKey)) {
-          const replace = confirm("Replace the saved Backup Codes YubiKey credential for this browser?");
+        if (this.loadLocalCredentialMeta()) {
+          const replace = confirm("Replace the saved Backup Codes YubiKey PRF credential for this browser?");
           if (!replace) return;
         }
 
-        this.showStatus("Status: touch your YubiKey to register it for Backup Codes.", "info");
-        const challenge = crypto.getRandomValues(new Uint8Array(32));
-        const userId = crypto.randomUUID();
+        const prfSalt = this.randomBytes(32);
+        this.showStatus("Status: touch your YubiKey to register it for PRF encryption.", "info");
         const publicKeyOptions = {
-          challenge,
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
           rp: { name: "GoblinPass Backup Codes", id: this.rpId() },
           user: {
-            id: new TextEncoder().encode(userId),
+            id: new TextEncoder().encode(crypto.randomUUID()),
             name: "goblinpass-backup-codes-local-user",
             displayName: "GoblinPass Backup Codes"
           },
@@ -142,77 +180,78 @@
             authenticatorAttachment: "cross-platform",
             userVerification: "required"
           },
+          extensions: {
+            prf: {
+              eval: { first: new Uint8Array(prfSalt) }
+            }
+          },
           timeout: 60000
         };
 
         const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
-        this.credentialId = Array.from(new Uint8Array(credential.rawId));
-        localStorage.setItem(this.credentialStorageKey, JSON.stringify(this.credentialId));
-        this.setupButton.textContent = "Replace YubiKey";
+        const extensionResults = credential.getClientExtensionResults?.() || {};
+        if (!extensionResults.prf?.enabled) {
+          throw new Error("This browser/security-key flow did not enable WebAuthn PRF.");
+        }
 
-        await this.deriveStableKey();
-        this.showStatus("Status: YubiKey setup complete. Sign in to unlock or save backup codes.", "success");
-        this.updateUI();
+        const meta = this.saveLocalCredentialMeta({
+          credentialId: Array.from(new Uint8Array(credential.rawId)),
+          prfSalt,
+          rpId: this.rpId()
+        });
+
+        this.setupButton.textContent = "Replace YubiKey";
+        await this.unlockWithMeta(meta);
+        this.showStatus("Status: YubiKey PRF setup complete. New exports can be opened with this YubiKey in another supported browser.", "success");
       } catch (error) {
         this.showStatus(`Status: setup failed: ${error.message}`, "warning");
       }
     }
 
-    async deriveStableKey() {
-      const storedCredentialId = JSON.parse(localStorage.getItem(this.credentialStorageKey) || "[]");
-      if (!storedCredentialId.length) return null;
+    async unlockWithMeta(meta) {
+      this.requireWebAuthn();
+      const normalized = this.normalizeCredentialMeta(meta);
+      if (!normalized) throw new Error("Missing YubiKey PRF metadata.");
 
-      const credentialBytes = new Uint8Array(storedCredentialId);
-      const salt = new TextEncoder().encode("GoblinPassBackupCodesYubiKeyVault2026");
-      const combined = new Uint8Array(credentialBytes.length + salt.length);
-      combined.set(credentialBytes, 0);
-      combined.set(salt, credentialBytes.length);
+      const credential = await navigator.credentials.get({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{
+            id: new Uint8Array(normalized.credentialId),
+            type: "public-key",
+            transports: ["usb", "nfc", "ble"]
+          }],
+          extensions: {
+            prf: {
+              eval: { first: new Uint8Array(normalized.prfSalt) }
+            }
+          },
+          timeout: 60000,
+          userVerification: "required"
+        }
+      });
 
-      const keyMaterial = await crypto.subtle.digest("SHA-256", combined);
+      const extensionResults = credential.getClientExtensionResults?.() || {};
+      const prfSecret = extensionResults.prf?.results?.first;
+      if (!prfSecret) {
+        throw new Error("This browser/YubiKey did not return a PRF secret.");
+      }
+
       this.encryptionKey = await crypto.subtle.importKey(
         "raw",
-        keyMaterial,
+        prfSecret,
         { name: "AES-GCM" },
         false,
         ["encrypt", "decrypt"]
       );
-      return this.encryptionKey;
-    }
-
-    async authenticate() {
-      try {
-        this.requireWebAuthn();
-        const storedCredentialId = JSON.parse(localStorage.getItem(this.credentialStorageKey) || "[]");
-        if (!storedCredentialId.length) {
-          throw new Error("No Backup Codes YubiKey is registered. Run setup first.");
-        }
-
-        const requestOptions = {
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          allowCredentials: [{
-            id: new Uint8Array(storedCredentialId),
-            type: "public-key",
-            transports: ["usb", "nfc", "ble"]
-          }],
-          timeout: 60000,
-          userVerification: "required"
-        };
-
-        await navigator.credentials.get({ publicKey: requestOptions });
-        await this.deriveStableKey();
-        this.isUnlocked = true;
-        this.updateUI();
-        return true;
-      } catch {
-        this.isUnlocked = false;
-        this.updateUI();
-        return false;
-      }
+      this.credentialMeta = normalized;
+      this.isUnlocked = true;
+      this.updateUI();
+      return true;
     }
 
     async encryptData(payload) {
-      if (!this.encryptionKey) await this.deriveStableKey();
-      if (!this.encryptionKey) throw new Error("No encryption key available.");
+      if (!this.encryptionKey || !this.credentialMeta) throw new Error("No YubiKey PRF key available.");
 
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const encrypted = await crypto.subtle.encrypt(
@@ -223,7 +262,11 @@
 
       return {
         type: "goblinpass-google-backup-codes",
-        version: "2.0",
+        version: "3.0",
+        keyMode: "webauthn-prf",
+        rpId: this.credentialMeta.rpId,
+        credentialId: this.credentialMeta.credentialId,
+        prfSalt: this.credentialMeta.prfSalt,
         iv: Array.from(iv),
         data: Array.from(new Uint8Array(encrypted)),
         timestamp: Date.now()
@@ -231,8 +274,7 @@
     }
 
     async decryptData(encryptedData) {
-      if (!this.encryptionKey) await this.deriveStableKey();
-      if (!this.encryptionKey) throw new Error("No encryption key available.");
+      if (!this.encryptionKey) throw new Error("No YubiKey PRF key available.");
 
       const decrypted = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv: new Uint8Array(encryptedData.iv) },
@@ -244,11 +286,11 @@
       try {
         return JSON.parse(text);
       } catch {
-        return { email: "", codes: text };
+        return { codes: text };
       }
     }
 
-    async saveToLocalStorage() {
+    async saveBackupCodes() {
       if (!this.isUnlocked) {
         this.showStatus("Status: sign in with your YubiKey first.", "warning");
         return;
@@ -256,18 +298,21 @@
 
       try {
         const payload = {
-          email: this.emailInput.value.trim(),
           codes: this.noteContent.value,
           updated: new Date().toISOString()
         };
         const encrypted = await this.encryptData(payload);
-        await this.saveToIndexedDB(encrypted);
-        localStorage.setItem(this.localStorageKey, JSON.stringify(encrypted));
+        await this.saveEncryptedRecord(encrypted);
         this.lastSaved.textContent = new Date().toLocaleTimeString();
-        this.showStatus("Status: backup codes encrypted and saved locally.", "success");
+        this.showStatus("Status: backup codes encrypted with YubiKey PRF and saved locally.", "success");
       } catch (error) {
         this.showStatus(`Status: save failed: ${error.message}`, "warning");
       }
+    }
+
+    async saveEncryptedRecord(data) {
+      await this.saveToIndexedDB(data);
+      localStorage.setItem(this.localStorageKey, JSON.stringify(data));
     }
 
     async saveToIndexedDB(data) {
@@ -285,15 +330,14 @@
       });
     }
 
-    async loadFromLocalStorage() {
+    async loadEncryptedRecord() {
       let encryptedData = null;
       if (this.db) encryptedData = await this.loadFromIndexedDB();
       if (!encryptedData) {
         const stored = localStorage.getItem(this.localStorageKey);
         if (stored) encryptedData = JSON.parse(stored);
       }
-      if (!encryptedData) return null;
-      return this.decryptData(encryptedData);
+      return encryptedData;
     }
 
     async loadFromIndexedDB() {
@@ -311,33 +355,41 @@
     }
 
     async unlockAndLoad() {
-      this.showStatus("Status: touch your YubiKey to unlock.", "info");
-      const authenticated = await this.authenticate();
-      if (!authenticated) {
-        this.showStatus("Status: authentication failed. Make sure you use the registered YubiKey.", "warning");
-        return;
-      }
+      try {
+        this.showStatus("Status: touch your YubiKey to unlock.", "info");
+        const encrypted = await this.loadEncryptedRecord();
+        if (encrypted && encrypted.keyMode !== "webauthn-prf") {
+          this.showStatus("Status: this saved vault uses the older browser-only encryption. Export or copy it before replacing it with a YubiKey PRF save.", "warning");
+          return;
+        }
+        const meta = encrypted ? this.encryptedMeta(encrypted) : this.loadLocalCredentialMeta();
+        if (!meta) {
+          this.showStatus("Status: no YubiKey PRF vault is registered or imported yet.", "warning");
+          return;
+        }
 
-      const decrypted = await this.loadFromLocalStorage();
-      if (decrypted) {
-        this.emailInput.value = decrypted.email || "";
-        this.noteContent.value = decrypted.codes || "";
-        this.renderCodeList(this.codesFromText(this.noteContent.value));
-        this.showStatus("Status: backup codes loaded and decrypted locally.", "success");
-      } else {
-        this.emailInput.value = "";
-        this.noteContent.value = "";
-        this.renderCodeList([]);
-        this.showStatus("Status: signed in. No saved backup codes found yet.", "info");
+        await this.unlockWithMeta(meta);
+        this.saveLocalCredentialMeta(meta);
+
+        if (encrypted) {
+          const decrypted = await this.decryptData(encrypted);
+          this.noteContent.value = decrypted.codes || "";
+          this.showStatus("Status: backup codes loaded with your YubiKey PRF secret.", "success");
+        } else {
+          this.noteContent.value = "";
+          this.showStatus("Status: signed in. No saved backup codes found yet.", "info");
+        }
+      } catch (error) {
+        this.isUnlocked = false;
+        this.updateUI();
+        this.showStatus(`Status: authentication failed: ${error.message}`, "warning");
       }
     }
 
     lock() {
       this.isUnlocked = false;
       this.encryptionKey = null;
-      this.emailInput.value = "";
       this.noteContent.value = "";
-      this.renderCodeList([]);
       this.updateUI();
       this.showStatus("Status: locked. Codes cleared from the screen.", "warning");
     }
@@ -351,35 +403,41 @@
         this.showStatus("Status: no encrypted backup codes to export.", "warning");
         return;
       }
+      if (exportData.keyMode !== "webauthn-prf") {
+        this.showStatus("Status: save again with YubiKey PRF before exporting a portable file.", "warning");
+        return;
+      }
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `goblinpass_backup_codes_${Date.now()}.enc`;
+      link.download = `goblinpass_backup_codes_prf_${Date.now()}.enc`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      this.showStatus("Status: encrypted backup file exported.", "success");
+      this.showStatus("Status: encrypted PRF backup file exported.", "success");
     }
 
     async importBackup(file) {
-      if (!this.isUnlocked) {
-        this.showStatus("Status: sign in with your YubiKey before importing.", "warning");
-        return;
-      }
-
       try {
         const encrypted = JSON.parse(await file.text());
-        if (!encrypted.iv || !encrypted.data) throw new Error("Invalid encrypted backup file.");
+        if (!encrypted.iv || !encrypted.data || encrypted.keyMode !== "webauthn-prf") {
+          throw new Error("This is not a YubiKey PRF encrypted backup file.");
+        }
+
+        const meta = this.encryptedMeta(encrypted);
+        if (!meta) throw new Error("The encrypted file is missing YubiKey PRF metadata.");
+
+        this.showStatus("Status: touch the matching YubiKey to import this encrypted file.", "info");
+        await this.unlockWithMeta(meta);
         const testDecrypt = await this.decryptData(encrypted);
-        await this.saveToIndexedDB(encrypted);
-        localStorage.setItem(this.localStorageKey, JSON.stringify(encrypted));
-        this.emailInput.value = testDecrypt.email || "";
+        await this.saveEncryptedRecord(encrypted);
+        this.saveLocalCredentialMeta(meta);
+        this.setupButton.textContent = "Replace YubiKey";
         this.noteContent.value = testDecrypt.codes || "";
-        this.renderCodeList(this.codesFromText(this.noteContent.value));
-        this.showStatus("Status: encrypted backup imported and decrypted.", "success");
+        this.showStatus("Status: encrypted file imported and decrypted with your YubiKey PRF secret.", "success");
       } catch (error) {
         this.showStatus(`Status: import failed: ${error.message}`, "warning");
       }
@@ -393,55 +451,8 @@
         const transaction = this.db.transaction([this.storeName], "readwrite");
         transaction.objectStore(this.storeName).delete("main");
       }
-      this.emailInput.value = "";
       this.noteContent.value = "";
-      this.renderCodeList([]);
       this.showStatus("Status: encrypted backup codes purged from this browser.", "warning");
-    }
-
-    codesFromText(text) {
-      return String(text || "")
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean);
-    }
-
-    renderCodeList(codes) {
-      if (!this.codeList) return;
-      if (!codes.length) {
-        this.codeList.textContent = this.isUnlocked
-          ? "No backup codes in the editor."
-          : "Unlock your backup codes to manage individual entries.";
-        return;
-      }
-      this.codeList.innerHTML = "";
-      codes.forEach((code, index) => {
-        const label = document.createElement("label");
-        label.className = "backup-code-row";
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = String(index);
-        checkbox.addEventListener("change", () => label.classList.toggle("is-used", checkbox.checked));
-        const value = document.createElement("span");
-        value.textContent = code;
-        label.append(checkbox, value);
-        this.codeList.appendChild(label);
-      });
-    }
-
-    removeSelectedCodes() {
-      const codes = this.codesFromText(this.noteContent.value);
-      const selected = Array.from(this.codeList.querySelectorAll("input[type='checkbox']:checked"))
-        .map(input => Number(input.value));
-      if (!selected.length) {
-        this.showStatus("Status: tick at least one used code first.", "warning");
-        return;
-      }
-      const selectedSet = new Set(selected);
-      const remaining = codes.filter((_, index) => !selectedSet.has(index));
-      this.noteContent.value = remaining.join("\n");
-      this.renderCodeList(remaining);
-      this.showStatus("Status: selected codes removed from the editor. Press save to encrypt the change.", "success");
     }
   }
 

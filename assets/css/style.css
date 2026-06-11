@@ -1069,21 +1069,7 @@ input:focus {
   padding: 14px;
 }
 
-.backup-email-input {
-  width: 100%;
-  min-height: 46px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(119, 240, 90, 0.28);
-  border-radius: 8px;
-  outline: none;
-  background: #061009;
-  color: var(--text);
-  font: inherit;
-  padding: 0 14px;
-}
-
-.backup-tool-card textarea:focus,
-.backup-email-input:focus {
+.backup-tool-card textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(119, 240, 90, 0.1);
 }
@@ -1304,60 +1290,6 @@ input:focus {
   100% { box-shadow: 0 0 0 0 rgba(119, 240, 90, 0); }
 }
 
-.backup-code-list {
-  display: grid;
-  gap: 8px;
-  min-height: 120px;
-  border: 1px solid rgba(119, 240, 90, 0.18);
-  border-radius: 8px;
-  background: rgba(5, 12, 8, 0.42);
-  color: var(--muted);
-  padding: 12px;
-}
-
-.backup-code-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 46px;
-  border: 1px solid rgba(119, 240, 90, 0.16);
-  border-radius: 8px;
-  background: rgba(7, 17, 11, 0.86);
-  color: var(--text);
-  cursor: pointer;
-  font-weight: 850;
-  padding: 0 12px;
-}
-
-.backup-code-row:hover,
-.backup-code-row:focus-within {
-  border-color: rgba(119, 240, 90, 0.45);
-  box-shadow: 0 0 0 4px rgba(119, 240, 90, 0.08);
-}
-
-.backup-code-row input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
-}
-
-.backup-code-row span {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  letter-spacing: 0.04em;
-}
-
-.backup-code-row.is-used {
-  border-color: rgba(255, 209, 102, 0.44);
-  color: #ffe9a9;
-  background: rgba(255, 209, 102, 0.08);
-}
-
-.backup-code-row.is-used span {
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-  opacity: 0.72;
-}
-
 .backup-warning-card {
   border-color: rgba(255, 209, 102, 0.32);
   background:
@@ -1367,12 +1299,6 @@ input:focus {
 
 .backup-manager-card {
   grid-column: span 2;
-}
-
-.used-code-panel {
-  margin-top: 18px;
-  border-top: 1px solid rgba(119, 240, 90, 0.14);
-  padding-top: 18px;
 }
 
 .backup-code-icon {
