@@ -354,7 +354,8 @@
   }
 
   async function encryptAndStoreCodes(codes, email = "", options = {}) {
-    const key = await getSessionKey(options);
+    const key = options.requireExistingSession ? sessionKey : await getSessionKey(options);
+    if (!key) throw new Error("Sign in with Show Codes or Sign in first, then press Encrypt.");
     const iv = randomBytes(12);
     const now = new Date().toISOString();
     const recordMeta = {
@@ -498,9 +499,13 @@
     }
     try {
       setBusy(saveButton, true, "Waiting for YubiKey...");
-      setStatus("Status: confirm with your YubiKey to encrypt backup codes. Choose Security key if Windows offers options.", "info");
-      setOutputMode("sealed", "Waiting for YubiKey confirmation. Your codes will be encrypted locally after sign-in succeeds.");
-      await encryptAndStoreCodes(codesToLines(codes), email, { fresh: true, purpose: "encrypt" });
+      setStatus(sessionKey
+        ? "Status: encrypting with the current YubiKey session."
+        : "Status: sign in first with Show Codes or Sign in, then press Encrypt.", "info");
+      setOutputMode("sealed", sessionKey
+        ? "Encrypting locally with the current YubiKey session."
+        : "Encrypt will not open another YubiKey prompt. Use Show Codes or Sign in first, then press Encrypt.");
+      await encryptAndStoreCodes(codesToLines(codes), email, { requireExistingSession: true });
       input.value = "";
       if (emailInput) emailInput.value = "";
       setAccountDisplay("");
@@ -550,7 +555,7 @@
       const currentEmail = accountDisplay?.textContent?.replace(/^Account:\s*/, "") === "No email specified"
         ? ""
         : accountDisplay.textContent.replace(/^Account:\s*/, "");
-      await encryptAndStoreCodes(remaining, currentEmail, { fresh: true, purpose: "encrypt" });
+      await encryptAndStoreCodes(remaining, currentEmail, { purpose: "encrypt" });
       setOutputMode("unlocked", remaining.length ? linesToCodes(remaining) : "All backup codes have been marked used and removed.");
       renderCodeList(remaining);
       setStatus("Status: selected used codes removed and remaining codes re-encrypted locally.", "success");
