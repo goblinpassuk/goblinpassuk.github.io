@@ -1136,6 +1136,14 @@ input:focus {
   box-shadow: 0 20px 46px rgba(40, 177, 93, 0.3);
 }
 
+.backup-actions .primary-button:disabled,
+.backup-actions .secondary-button:disabled,
+.backup-actions .danger-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+}
+
 .backup-actions .secondary-button:hover,
 .backup-actions .secondary-button:focus-visible {
   border-color: rgba(119, 240, 90, 0.62);

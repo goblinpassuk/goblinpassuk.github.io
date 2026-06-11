@@ -200,6 +200,13 @@
       .filter(Boolean);
   }
 
+  function normalizeStoredCodes(codes) {
+    if (Array.isArray(codes)) {
+      return codes.map(code => String(code || "").trim()).filter(Boolean);
+    }
+    return codesToLines(codes);
+  }
+
   function linesToCodes(lines) {
     return lines.join("\n");
   }
@@ -252,15 +259,30 @@
     output.textContent = text;
   }
 
-  async function getSessionKey() {
-    if (sessionKey) return sessionKey;
-    await signInYubiKey({ autoUnlock: false });
+  function setBusy(button, isBusy, text) {
+    if (!button) return;
+    if (isBusy) {
+      button.dataset.originalText = button.textContent;
+      button.textContent = text;
+      button.disabled = true;
+      return;
+    }
+    button.textContent = button.dataset.originalText || button.textContent;
+    button.disabled = false;
+    delete button.dataset.originalText;
+  }
+
+  async function getSessionKey(options = {}) {
+    const fresh = options.fresh === true;
+    if (sessionKey && !fresh) return sessionKey;
+    if (fresh) sessionKey = null;
+    await signInYubiKey({ autoUnlock: false, purpose: options.purpose });
     if (!sessionKey) throw new Error("YubiKey sign-in did not create an encryption key.");
     return sessionKey;
   }
 
-  async function encryptAndStoreCodes(codes, email = "") {
-    const key = await getSessionKey();
+  async function encryptAndStoreCodes(codes, email = "", options = {}) {
+    const key = await getSessionKey(options);
     const iv = randomBytes(12);
     const payload = {
       label: "Google backup codes",
@@ -292,7 +314,7 @@
     );
     const payload = JSON.parse(decoder.decode(plaintext));
     return {
-      codes: codesToLines(payload.codes),
+      codes: normalizeStoredCodes(payload.codes),
       email: normalizeEmail(payload.email)
     };
   }
@@ -344,9 +366,12 @@
 
   async function signInYubiKey(options = {}) {
     const autoUnlock = options.autoUnlock !== false;
-    setStatus(getCredentialId()
+    const purpose = options.purpose === "encrypt"
+      ? "Status: confirm with your YubiKey to encrypt and save these backup codes."
+      : "";
+    setStatus(purpose || (getCredentialId()
       ? "Status: signing in with your saved YubiKey credential. Follow the browser prompt."
-      : "Status: no local credential ID found. Trying to sign in with the discoverable credential on your YubiKey.", "info");
+      : "Status: no local credential ID found. Trying to sign in with the discoverable credential on your YubiKey."), "info");
     const prfOutput = await requestPrfWithStoredCredential();
     sessionKey = await deriveAesKey(prfOutput);
     const record = localStorage.getItem(STORAGE_KEY);
@@ -376,8 +401,10 @@
       return;
     }
     try {
-      setStatus("Status: sign in with your YubiKey to encrypt backup codes.", "info");
-      await encryptAndStoreCodes(linesToCodes(codesToLines(codes)), email);
+      setBusy(saveButton, true, "Waiting for YubiKey...");
+      setStatus("Status: confirm with your YubiKey to encrypt backup codes. Choose Security key if Windows offers options.", "info");
+      setOutputMode("sealed", "Waiting for YubiKey confirmation. Your codes will be encrypted locally after sign-in succeeds.");
+      await encryptAndStoreCodes(codesToLines(codes), email, { fresh: true, purpose: "encrypt" });
       input.value = "";
       if (emailInput) emailInput.value = "";
       setAccountDisplay("");
@@ -385,7 +412,10 @@
       renderCodeList([]);
       setStatus("Status: encrypted backup codes saved in this browser.", "success");
     } catch (error) {
+      setOutputMode("", `Encryption did not complete: ${error.message}`);
       setStatus(`Status: ${error.message}`, "warning");
+    } finally {
+      setBusy(saveButton, false);
     }
   }
 
@@ -424,7 +454,7 @@
       const currentEmail = accountDisplay?.textContent?.replace(/^Account:\s*/, "") === "No email specified"
         ? ""
         : accountDisplay.textContent.replace(/^Account:\s*/, "");
-      await encryptAndStoreCodes(linesToCodes(remaining), currentEmail);
+      await encryptAndStoreCodes(remaining, currentEmail, { fresh: true, purpose: "encrypt" });
       setOutputMode("unlocked", remaining.length ? linesToCodes(remaining) : "All backup codes have been marked used and removed.");
       renderCodeList(remaining);
       setStatus("Status: selected used codes removed and remaining codes re-encrypted locally.", "success");
