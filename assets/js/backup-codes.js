@@ -81,6 +81,25 @@
     updateSetupButton();
   }
 
+  function getSavedRecord() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function ensureBackupCredentialId() {
+    const localId = getCredentialId();
+    if (localId) return localId;
+    const recordId = getSavedRecord()?.credentialId || "";
+    if (recordId) {
+      saveCredentialId(recordId);
+      return recordId;
+    }
+    throw new Error("No Backup Codes YubiKey credential is saved in this browser. Press Register YubiKey for this Backup Codes tool first.");
+  }
+
   function physicalKeyDescriptor(idBytes) {
     return {
       type: "public-key",
@@ -128,8 +147,7 @@
 
   async function requestPrfWithStoredCredential() {
     requireWebAuthnPrf();
-    const credentialId = getCredentialId();
-    if (!credentialId) return requestPrfWithDiscoverableCredential();
+    const credentialId = ensureBackupCredentialId();
     const idBytes = base64UrlToBytes(credentialId);
     const salt = prfSalt();
 
@@ -161,27 +179,6 @@
     outputBytes = prfOutputFromResults(results, credentialId);
     if (outputBytes?.byteLength !== 32) {
       throw new Error(`Your browser or YubiKey did not return PRF data. ${extensionSummary(results)}`);
-    }
-    return new Uint8Array(outputBytes);
-  }
-
-  async function requestPrfWithDiscoverableCredential() {
-    const salt = prfSalt();
-    const assertion = await navigator.credentials.get({
-      publicKey: {
-        challenge: randomBytes(32),
-        rpId: rpId(),
-        userVerification: "preferred",
-        hints: ["security-key"],
-        extensions: { prf: { eval: { first: salt } } }
-      }
-    });
-    const discoveredId = bytesToBase64Url(new Uint8Array(assertion.rawId));
-    if (discoveredId) saveCredentialId(discoveredId);
-    const results = assertion.getClientExtensionResults?.();
-    const outputBytes = prfOutputFromResults(results, discoveredId);
-    if (outputBytes?.byteLength !== 32) {
-      throw new Error(`YubiKey sign-in worked, but this browser/key did not return PRF data. ${extensionSummary(results)}`);
     }
     return new Uint8Array(outputBytes);
   }
@@ -433,9 +430,13 @@
     const purpose = options.purpose === "encrypt"
       ? "Status: confirm with your YubiKey to encrypt and save these backup codes."
       : "";
-    setStatus(purpose || (getCredentialId()
-      ? "Status: signing in with your saved YubiKey credential. Follow the browser prompt."
-      : "Status: no local credential ID found. Trying to sign in with the discoverable credential on your YubiKey."), "info");
+    try {
+      ensureBackupCredentialId();
+    } catch (error) {
+      setOutputMode("", error.message);
+      throw error;
+    }
+    setStatus(purpose || "Status: signing in with the saved Backup Codes YubiKey credential. Follow the browser prompt.", "info");
     const prfOutput = await requestPrfWithStoredCredential();
     sessionPrfOutput = prfOutput;
     sessionKey = await deriveAesKey(prfOutput);

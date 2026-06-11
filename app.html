@@ -143,6 +143,7 @@
                     </div>
                     <p class="muted">No registration is needed in GoblinPass. When you generate, authenticate with your physical YubiKey/security key. If the key does not return PRF data, GoblinPass will stop instead of making a normal password.</p>
                     <p id="yubiKeyMessage" class="challenge-code hidden" aria-live="polite"></p>
+                    <pre id="yubiKeyDebug" class="challenge-code hidden" aria-live="polite"></pre>
                     <p class="notice">YubiKey mode changes the generated password only when WebAuthn returns a real PRF password ingredient.</p>
                   </div>
 
@@ -437,7 +438,7 @@
     </footer>
 
     <script src="assets/js/app.js?v=20260610-master-toggle"></script>
-    <script src="goblinpass/app.js?v=20260610-master-toggle"></script>
+    <script src="goblinpass/app.js?v=20260611-prf-debug"></script>
     <script src="assets/js/goblinpass-ui-guards.js?v=20260608-1"></script>
   </body>
 </html>
