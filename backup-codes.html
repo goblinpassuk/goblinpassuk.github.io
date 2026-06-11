@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Google Backup Codes Vault</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260611-backup-encrypt-direct" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260611-backup-rebuild" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -66,14 +66,14 @@
           <p class="eyebrow">Local Web Tool</p>
           <h1 id="backup-title">Google Backup Codes Vault</h1>
           <p>
-            Store Google backup codes locally in your browser, protected by
-            YubiKey sign-in and local encryption. No server, no account, no
-            cloud sync.
+            Save Google backup codes locally in your browser. Unlock, edit, and
+            export them only after signing in with the registered physical
+            YubiKey/security key.
           </p>
         </div>
         <div class="backup-trust-row" aria-label="Privacy promises">
           <span><b class="status-dot protected" aria-hidden="true"></b> Local only</span>
-          <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i> YubiKey protected</span>
+          <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i> YubiKey unlock</span>
           <span><i class="security-feature-icon small icon-copy-only-vector" aria-hidden="true"></i> Encrypted storage</span>
         </div>
       </section>
@@ -88,20 +88,25 @@
             </div>
           </div>
           <p>
-            This tool uses WebAuthn with a saved physical security-key credential.
-            Sign-in with that same YubiKey is required before codes can be shown
-            or re-encrypted.
+            Register once in this browser, then use the same physical security
+            key whenever you unlock or save your encrypted backup codes.
           </p>
           <p class="backup-choice-note">
-            If Windows shows a passkey picker, choose <strong>Security key</strong>,
-            not the saved Windows Hello or Microsoft Password Manager passkey.
+            If Windows shows a passkey picker, choose <strong>Security key</strong>.
+            This tool is intended for a physical YubiKey/security key, not
+            Windows Hello.
           </p>
           <div class="backup-actions">
-            <button id="setupBackupKey" class="primary-button" type="button">Register YubiKey</button>
-            <button id="signInBackupKey" class="secondary-button" type="button">Sign in</button>
+            <button id="setupBtn" class="primary-button" type="button">Register YubiKey</button>
+            <button id="unlockBtn" class="secondary-button" type="button">Sign in / Show Codes</button>
+            <button id="lockBtn" class="secondary-button" type="button" disabled>Lock</button>
           </div>
-          <p id="backupKeyStatus" class="backup-status">Status: not set up.</p>
-          <p class="small-note">Register once per browser. Backup Codes only accepts the saved physical YubiKey/security-key credential.</p>
+          <p id="status" class="backup-status">Status: ready. Register your YubiKey first.</p>
+          <div class="backup-storage-strip">
+            <span id="lockIndicator" class="lock-indicator locked">Locked</span>
+            <span>Storage: Browser persistent storage</span>
+            <span>Last saved: <strong id="lastSaved">Never</strong></span>
+          </div>
         </article>
 
         <article class="backup-tool-card backup-manager-card">
@@ -109,78 +114,59 @@
             <span class="backup-code-icon" aria-hidden="true">2FA</span>
             <div>
               <p class="eyebrow">Step 2</p>
-              <h2>Manage backup codes</h2>
+              <h2>Encrypted backup codes</h2>
             </div>
           </div>
           <p>
-            Sign in with your YubiKey first. If encrypted codes are already saved,
-            they unlock automatically. You can paste new codes, encrypt them,
-            show saved codes, or purge everything from this browser.
+            Once unlocked, paste or edit your backup codes below. Press save to
+            encrypt them locally into IndexedDB, with localStorage used as a
+            fallback copy.
           </p>
-          <label for="backupAccountEmail">Account Email (Optional)</label>
-          <input id="backupAccountEmail" class="backup-email-input" type="email" placeholder="user@gmail.com" autocomplete="off" spellcheck="false">
-          <label for="backupCodesInput">Paste your Google backup codes</label>
-          <textarea id="backupCodesInput" rows="10" placeholder="Example:
-1234 5678
-2345 6789
-3456 7890"></textarea>
+          <label for="accountEmail">Account Email (Optional)</label>
+          <input id="accountEmail" class="backup-email-input" type="email" placeholder="user@gmail.com" autocomplete="off" spellcheck="false" disabled>
+          <label for="noteContent">Backup codes</label>
+          <textarea id="noteContent" rows="12" placeholder="Locked - sign in with your YubiKey first" disabled></textarea>
           <div class="backup-actions">
-            <button id="saveBackupCodes" class="primary-button" type="button">Encrypt unlocked</button>
-            <button id="clearBackupInput" class="secondary-button" type="button">Clear input</button>
-            <button id="unlockBackupCodes" class="secondary-button" type="button">Show Codes</button>
-            <button id="exportBackupCodes" class="secondary-button" type="button">Export encrypted file</button>
-            <button id="importBackupCodes" class="secondary-button" type="button">Import encrypted file</button>
-            <button id="deleteBackupCodes" class="danger-button purge-button" type="button">Purge Entries</button>
+            <button id="saveBtn" class="primary-button" type="button" disabled>Encrypt and Save</button>
+            <button id="clearBtn" class="secondary-button" type="button" disabled>Clear input</button>
+            <button id="exportBtn" class="secondary-button" type="button">Export encrypted file</button>
+            <button id="importBtn" class="secondary-button" type="button">Import encrypted file</button>
+            <button id="purgeBtn" class="danger-button purge-button" type="button">Purge Entries</button>
           </div>
-          <input id="backupImportFile" type="file" accept="application/json,.json" hidden>
-          <div id="encryptedHoverHint" class="encrypted-hover-hint hidden" aria-hidden="true">
-            <span></span>
-            <b>Encrypted locally</b>
-            <em>Hover over the sealed panel to inspect the encrypted storage status.</em>
-          </div>
-          <div id="backupAccountDisplay" class="backup-account-display">Account: No email specified</div>
-          <pre id="backupCodesOutput" class="backup-output" aria-live="polite">Encrypted backup codes will appear here after YubiKey sign-in.</pre>
+          <input type="file" id="fileInput" accept="application/json,.json,.enc" hidden>
+
           <div class="used-code-panel">
             <div>
               <p class="eyebrow">Step 3</p>
               <h2>Mark used codes</h2>
             </div>
             <p>
-              After you use a Google backup code, tick it below and remove it.
-              The remaining codes are re-encrypted locally with your YubiKey.
+              After using a backup code, tick it below and remove it. The
+              remaining codes stay in the editor until you save again.
             </p>
             <div id="backupCodeList" class="backup-code-list" aria-live="polite">
-              Sign in and show your backup codes to manage individual codes.
+              Unlock your backup codes to manage individual entries.
             </div>
             <div class="backup-actions">
-              <button id="removeUsedCodes" class="primary-button" type="button">Remove selected used codes</button>
+              <button id="removeUsedBtn" class="primary-button" type="button" disabled>Remove selected used codes</button>
             </div>
-            <p class="small-note">Ticking a code only marks it visually. It is not deleted until you press remove.</p>
           </div>
         </article>
 
         <aside class="backup-tool-card backup-warning-card">
           <h2>Important</h2>
           <p>
-            This app cannot recover your backup codes if you lose the YubiKey or
-            the browser storage is cleared. Keep a safe offline backup somewhere
-            you control.
+            This is local-only. No backup codes are sent to GoblinPass, Google,
+            or any server.
           </p>
           <p>
-            WebAuthn support varies by browser, operating system, and hardware
-            key. GitHub Pages over HTTPS is suitable; opening this page directly
-            from a local file may not allow WebAuthn.
+            If you lose the YubiKey/security key or clear this browser storage,
+            GoblinPass cannot recover your codes.
           </p>
           <p>
-            Private or incognito windows may not share the saved Backup Codes
-            credential ID or encrypted entries from your normal browser session.
-            For safety, this tool does not accept Windows Hello, password
-            manager passkeys, or another GoblinPass passkey. It only uses the
-            registered Backup Codes physical security key.
-          </p>
-          <p>
-            No cryptography here protects against a fully compromised device that
-            can read the screen or capture decrypted codes after unlock.
+            Exported files are encrypted, but keep them somewhere private. A
+            fully compromised computer can still read codes after you unlock and
+            display them.
           </p>
         </aside>
       </section>
@@ -203,6 +189,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/backup-codes.js?v=20260611-backup-yubikey-compatible"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-index2-rebuild"></script>
   </body>
 </html>
