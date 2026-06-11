@@ -81,6 +81,11 @@
     updateSetupButton();
   }
 
+  function forgetCredentialId() {
+    localStorage.removeItem(CREDENTIAL_KEY);
+    updateSetupButton();
+  }
+
   function getSavedRecord() {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -109,7 +114,14 @@
   }
 
   function updateSetupButton() {
-    setupButton.textContent = "Register YubiKey";
+    setupButton.textContent = getCredentialId() ? "Replace Backup Codes YubiKey" : "Register Backup Codes YubiKey";
+  }
+
+  function assertExpectedCredential(assertion, expectedCredentialId) {
+    const returnedId = assertion?.rawId ? bytesToBase64Url(new Uint8Array(assertion.rawId)) : "";
+    if (!returnedId || returnedId !== expectedCredentialId) {
+      throw new Error("The browser returned a different passkey than the saved Backup Codes YubiKey credential. Register the Backup Codes YubiKey again.");
+    }
   }
 
   function getOrCreateUserId() {
@@ -161,6 +173,7 @@
         extensions: { prf: { eval: { first: salt } } }
       }
     });
+    assertExpectedCredential(firstAssertion, credentialId);
     let results = firstAssertion.getClientExtensionResults?.();
     let outputBytes = prfOutputFromResults(results, credentialId);
     if (outputBytes?.byteLength === 32) return new Uint8Array(outputBytes);
@@ -175,6 +188,7 @@
         extensions: { prf: { evalByCredential: { [credentialId]: { first: salt } } } }
       }
     });
+    assertExpectedCredential(secondAssertion, credentialId);
     results = secondAssertion.getClientExtensionResults?.();
     outputBytes = prfOutputFromResults(results, credentialId);
     if (outputBytes?.byteLength !== 32) {

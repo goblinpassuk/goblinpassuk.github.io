@@ -100,7 +100,7 @@
             <button id="signInBackupKey" class="secondary-button" type="button">Sign in</button>
           </div>
           <p id="backupKeyStatus" class="backup-status">Status: not set up.</p>
-          <p class="small-note">Register once per browser. After that, use Sign in to unlock existing codes or prepare the encryption key.</p>
+          <p class="small-note">Register once per browser. After that, Backup Codes signs in only with the saved Backup Codes YubiKey credential.</p>
         </article>
 
         <article class="backup-tool-card backup-manager-card">
@@ -171,10 +171,11 @@
             from a local file may not allow WebAuthn.
           </p>
           <p>
-            Private or incognito windows may not share the encrypted backup-code
-            storage from your normal browser session. You can still sign in with
-            the same YubiKey if the browser can find the key's discoverable
-            credential, but saved entries may appear empty in private browsing.
+            Private or incognito windows may not share the saved Backup Codes
+            credential ID or encrypted entries from your normal browser session.
+            For safety, this tool does not fall back to another passkey on the
+            same website. Register or import the Backup Codes credential record
+            in that browser session first.
           </p>
           <p>
             No cryptography here protects against a fully compromised device that
@@ -201,6 +202,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/backup-codes.js?v=20260611-backup-credential-lock"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-backup-credential-verify"></script>
   </body>
 </html>
