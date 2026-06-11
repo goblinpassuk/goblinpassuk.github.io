@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Google Backup Codes Vault</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260611-backup-codes" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260611-backup-code-manage" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -93,6 +93,7 @@
           </p>
           <button id="setupBackupKey" class="primary-button" type="button">Set up YubiKey</button>
           <p id="backupKeyStatus" class="backup-status">Status: not set up.</p>
+          <p class="small-note">Set up is only needed once per browser. After that, this button tests YubiKey sign-in with the saved credential.</p>
         </article>
 
         <article class="backup-tool-card">
@@ -125,7 +126,7 @@
           </div>
           <p>
             To retrieve your codes, connect or tap the same YubiKey and approve
-            the browser prompt. If PRF data is not returned, decryption stops.
+            the browser sign-in prompt. If PRF data is not returned, decryption stops.
           </p>
           <div class="backup-actions">
             <button id="unlockBackupCodes" class="primary-button" type="button">Unlock codes</button>
@@ -133,6 +134,28 @@
           </div>
           <pre id="backupCodesOutput" class="backup-output" aria-live="polite">Encrypted backup codes will appear here after YubiKey unlock.</pre>
           <button id="deleteBackupCodes" class="danger-button" type="button">Delete encrypted backup codes</button>
+        </article>
+
+        <article class="backup-tool-card">
+          <div class="feature-card-heading">
+            <span class="backup-code-icon" aria-hidden="true">4</span>
+            <div>
+              <p class="eyebrow">Step 4</p>
+              <h2>Mark used codes</h2>
+            </div>
+          </div>
+          <p>
+            After you use a Google backup code, unlock the vault, tick the used
+            code below, then remove it. The remaining codes are re-encrypted
+            locally with your YubiKey.
+          </p>
+          <div id="backupCodeList" class="backup-code-list" aria-live="polite">
+            Unlock your backup codes to manage individual codes.
+          </div>
+          <div class="backup-actions">
+            <button id="removeUsedCodes" class="primary-button" type="button">Remove selected used codes</button>
+          </div>
+          <p class="small-note">Ticking a code only marks it visually. It is not deleted until you press remove.</p>
         </article>
 
         <aside class="backup-tool-card backup-warning-card">
@@ -172,6 +195,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/backup-codes.js"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-code-manage"></script>
   </body>
 </html>
