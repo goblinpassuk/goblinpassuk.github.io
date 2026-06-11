@@ -4,6 +4,13 @@
   const STORAGE_KEY = "GOBLINPASS_GOOGLE_BACKUP_CODES_V1";
   const CREDENTIAL_KEY = "GOBLINPASS_BACKUP_CODES_CREDENTIAL_ID";
   const RP_USER_ID_KEY = "GOBLINPASS_BACKUP_CODES_USER_ID";
+  const EXPORT_TYPE = "goblinpass-google-backup-codes";
+  const RECORD_VERSION = 2;
+  const KDF_NAME = "WebAuthn-PRF-HKDF-SHA256";
+  const KDF_CONTEXT = "GoblinPass-GoogleBackupCodes-v1";
+  const RECORD_AAD = "goblinpass-google-backup-codes";
+  const LEGACY_KDF_SALT = "GoblinPass Backup Codes AES-GCM salt v1";
+  const LEGACY_KDF_INFO_PREFIX = "Google backup codes vault|";
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -26,6 +33,7 @@
   const hoverHint = document.getElementById("encryptedHoverHint");
   let unlockedCodes = [];
   let sessionKey = null;
+  let sessionPrfOutput = null;
 
   if (!setupButton) return;
 
@@ -49,10 +57,6 @@
     const bytes = new Uint8Array(length);
     crypto.getRandomValues(bytes);
     return bytes;
-  }
-
-  async function sha256Bytes(text) {
-    return new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(text)));
   }
 
   function requireWebAuthnPrf() {
@@ -113,8 +117,13 @@
     return null;
   }
 
-  async function prfSalt() {
-    return sha256Bytes(`GoblinPass Google Backup Codes v1|${location.origin}`);
+  function prfSalt() {
+    return new Uint8Array([
+      0x47, 0x50, 0x2d, 0x42, 0x41, 0x43, 0x4b, 0x55,
+      0x50, 0x2d, 0x43, 0x4f, 0x44, 0x45, 0x53, 0x2d,
+      0x59, 0x55, 0x42, 0x49, 0x4b, 0x45, 0x59, 0x2d,
+      0x50, 0x52, 0x46, 0x2d, 0x56, 0x31, 0x21, 0x21
+    ]);
   }
 
   async function requestPrfWithStoredCredential() {
@@ -122,7 +131,7 @@
     const credentialId = getCredentialId();
     if (!credentialId) return requestPrfWithDiscoverableCredential();
     const idBytes = base64UrlToBytes(credentialId);
-    const salt = await prfSalt();
+    const salt = prfSalt();
 
     const firstAssertion = await navigator.credentials.get({
       publicKey: {
@@ -157,7 +166,7 @@
   }
 
   async function requestPrfWithDiscoverableCredential() {
-    const salt = await prfSalt();
+    const salt = prfSalt();
     const assertion = await navigator.credentials.get({
       publicKey: {
         challenge: randomBytes(32),
@@ -177,14 +186,51 @@
     return new Uint8Array(outputBytes);
   }
 
-  async function deriveAesKey(prfOutput) {
+  function recordKdfContext(record) {
+    return record?.version === 1 ? LEGACY_KDF_SALT : record?.kdfContext || KDF_CONTEXT;
+  }
+
+  function recordKdfInfo(record) {
+    return record?.version === 1
+      ? `${LEGACY_KDF_INFO_PREFIX}${location.origin}`
+      : `${recordKdfContext(record)}|${record?.aad || RECORD_AAD}|${location.origin}`;
+  }
+
+  function recordAad(record) {
+    return record?.version === 1 ? undefined : encoder.encode(record?.aad || RECORD_AAD);
+  }
+
+  function validateEncryptedRecord(record) {
+    if (!record || typeof record !== "object" || !record.data || !record.iv) {
+      throw new Error("This does not look like a GoblinPass encrypted backup-code file.");
+    }
+    if (![1, 2].includes(Number(record.version))) {
+      throw new Error("This backup-code file uses an unsupported format version.");
+    }
+    if (record.alg !== "AES-GCM") {
+      throw new Error("Unsupported encryption algorithm. Expected AES-GCM.");
+    }
+    if (record.kdf !== KDF_NAME) {
+      throw new Error("Unsupported key derivation method. Expected WebAuthn PRF with HKDF-SHA256.");
+    }
+    if (Number(record.version) >= 2) {
+      if (record.kdfContext !== KDF_CONTEXT) {
+        throw new Error("Unsupported backup-code key context.");
+      }
+      if (record.aad !== RECORD_AAD) {
+        throw new Error("Backup-code purpose binding does not match.");
+      }
+    }
+  }
+
+  async function deriveAesKey(prfOutput, record = null) {
     const baseKey = await crypto.subtle.importKey("raw", prfOutput, "HKDF", false, ["deriveKey"]);
     return crypto.subtle.deriveKey(
       {
         name: "HKDF",
         hash: "SHA-256",
-        salt: encoder.encode("GoblinPass Backup Codes AES-GCM salt v1"),
-        info: encoder.encode(`Google backup codes vault|${location.origin}`)
+        salt: encoder.encode(recordKdfContext(record)),
+        info: encoder.encode(recordKdfInfo(record))
       },
       baseKey,
       { name: "AES-GCM", length: 256 },
@@ -284,31 +330,43 @@
   async function encryptAndStoreCodes(codes, email = "", options = {}) {
     const key = await getSessionKey(options);
     const iv = randomBytes(12);
+    const now = new Date().toISOString();
+    const recordMeta = {
+      version: RECORD_VERSION,
+      alg: "AES-GCM",
+      kdf: KDF_NAME,
+      kdfContext: KDF_CONTEXT,
+      aad: RECORD_AAD,
+      credentialId: getCredentialId(),
+      updated: now
+    };
     const payload = {
       label: "Google backup codes",
       service: "Google",
       email,
       codes,
-      savedAt: new Date().toISOString()
+      createdAt: now,
+      updatedAt: now
     };
-    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoder.encode(JSON.stringify(payload)));
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv, additionalData: recordAad(recordMeta) },
+      key,
+      encoder.encode(JSON.stringify(payload))
+    );
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 1,
-      alg: "AES-GCM",
-      kdf: "WebAuthn-PRF-HKDF-SHA256",
-      credentialId: getCredentialId(),
+      ...recordMeta,
       iv: bytesToBase64Url(iv),
-      data: bytesToBase64Url(new Uint8Array(ciphertext)),
-      updated: new Date().toISOString()
+      data: bytesToBase64Url(new Uint8Array(ciphertext))
     }));
   }
 
-  async function decryptStoredCodes(key) {
-    const record = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (!record?.data || !record?.iv) throw new Error("No encrypted backup codes are saved in this browser.");
+  async function decryptRecord(record, prfOutput = sessionPrfOutput) {
+    validateEncryptedRecord(record);
+    if (!prfOutput) throw new Error("Sign in with your YubiKey before decrypting backup codes.");
+    const key = await deriveAesKey(prfOutput, record);
     if (record.credentialId && record.credentialId !== getCredentialId()) saveCredentialId(record.credentialId);
     const plaintext = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: base64UrlToBytes(record.iv) },
+      { name: "AES-GCM", iv: base64UrlToBytes(record.iv), additionalData: recordAad(record) },
       key,
       base64UrlToBytes(record.data)
     );
@@ -317,6 +375,12 @@
       codes: normalizeStoredCodes(payload.codes),
       email: normalizeEmail(payload.email)
     };
+  }
+
+  async function decryptStoredCodes() {
+    const record = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    if (!record?.data || !record?.iv) throw new Error("No encrypted backup codes are saved in this browser.");
+    return decryptRecord(record);
   }
 
   async function setupYubiKey() {
@@ -373,10 +437,11 @@
       ? "Status: signing in with your saved YubiKey credential. Follow the browser prompt."
       : "Status: no local credential ID found. Trying to sign in with the discoverable credential on your YubiKey."), "info");
     const prfOutput = await requestPrfWithStoredCredential();
+    sessionPrfOutput = prfOutput;
     sessionKey = await deriveAesKey(prfOutput);
     const record = localStorage.getItem(STORAGE_KEY);
     if (record && autoUnlock) {
-      const decrypted = await decryptStoredCodes(sessionKey);
+      const decrypted = await decryptStoredCodes();
       setAccountDisplay(decrypted.email);
       setOutputMode("unlocked", decrypted.codes.length ? linesToCodes(decrypted.codes) : "No codes found in encrypted record.");
       renderCodeList(decrypted.codes);
@@ -393,10 +458,12 @@
     const codes = input.value.trim();
     const email = normalizeEmail(emailInput?.value);
     if (!codes) {
+      setOutputMode("", "Paste your Google backup codes first, then press Encrypt.");
       setStatus("Status: paste your backup codes before saving.", "warning");
       return;
     }
     if (!isBasicEmail(email)) {
+      setOutputMode("", "The email field is optional. If you use it, enter something like user@gmail.com.");
       setStatus("Status: email is optional, but if entered it should look like user@gmail.com.", "warning");
       return;
     }
@@ -421,8 +488,8 @@
 
   async function unlockCodes() {
     try {
-      const key = await getSessionKey();
-      const decrypted = await decryptStoredCodes(key);
+      await getSessionKey();
+      const decrypted = await decryptStoredCodes();
       setAccountDisplay(decrypted.email);
       setOutputMode("unlocked", decrypted.codes.length ? linesToCodes(decrypted.codes) : "No codes found in encrypted record.");
       renderCodeList(decrypted.codes);
@@ -479,10 +546,12 @@
       setStatus("Status: no encrypted backup codes are saved to export.", "warning");
       return;
     }
+    const parsedRecord = JSON.parse(record);
+    validateEncryptedRecord(parsedRecord);
     const blob = new Blob([JSON.stringify({
-      type: "goblinpass-google-backup-codes",
+      type: EXPORT_TYPE,
       exportedAt: new Date().toISOString(),
-      encryptedRecord: JSON.parse(record)
+      encryptedRecord: parsedRecord
     }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -497,19 +566,27 @@
 
   async function importEncryptedBackup(file) {
     if (!file) return;
+    const previousCredentialId = getCredentialId();
     try {
       const parsed = JSON.parse(await file.text());
       const record = parsed.encryptedRecord || parsed;
-      if (!record?.data || !record?.iv || record?.alg !== "AES-GCM") {
-        throw new Error("This does not look like a GoblinPass encrypted backup-code file.");
+      if (parsed.type && parsed.type !== EXPORT_TYPE) {
+        throw new Error("This is not a GoblinPass Google backup-code export.");
       }
+      validateEncryptedRecord(record);
+      setStatus("Status: verifying imported backup with your YubiKey before saving.", "info");
+      if (record.credentialId) saveCredentialId(record.credentialId);
+      await getSessionKey({ fresh: true, purpose: "encrypt" });
+      const decrypted = await decryptRecord(record);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
       if (record.credentialId) saveCredentialId(record.credentialId);
-      setOutputMode("sealed", "Encrypted backup file imported. Sign in with the matching YubiKey to reveal the account and codes.");
-      renderCodeList([]);
-      setAccountDisplay("");
-      setStatus("Status: encrypted backup file imported locally.", "success");
+      setOutputMode("unlocked", decrypted.codes.length ? linesToCodes(decrypted.codes) : "No codes found in encrypted record.");
+      renderCodeList(decrypted.codes);
+      setAccountDisplay(decrypted.email);
+      setStatus("Status: imported file verified, decrypted, and saved locally.", "success");
     } catch (error) {
+      if (previousCredentialId) saveCredentialId(previousCredentialId);
+      else localStorage.removeItem(CREDENTIAL_KEY);
       setStatus(`Status: ${error.message}`, "warning");
     } finally {
       importFile.value = "";
