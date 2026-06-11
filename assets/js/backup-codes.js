@@ -124,6 +124,16 @@
     }
   }
 
+  function assertBackupUserHandle(assertion) {
+    const expected = localStorage.getItem(RP_USER_ID_KEY) || "";
+    const returned = assertion?.response?.userHandle
+      ? bytesToBase64Url(new Uint8Array(assertion.response.userHandle))
+      : "";
+    if (!expected || !returned || returned !== expected) {
+      throw new Error("The browser returned a passkey for this website, but it was not the Backup Codes passkey. Choose or register the Backup Codes YubiKey user.");
+    }
+  }
+
   function getOrCreateUserId() {
     const saved = localStorage.getItem(RP_USER_ID_KEY);
     if (saved) return base64UrlToBytes(saved);
@@ -163,34 +173,65 @@
     const idBytes = base64UrlToBytes(credentialId);
     const salt = prfSalt();
 
-    const firstAssertion = await navigator.credentials.get({
-      publicKey: {
-        challenge: randomBytes(32),
-        rpId: rpId(),
-        userVerification: "preferred",
-        allowCredentials: [physicalKeyDescriptor(idBytes)],
-        hints: ["security-key"],
-        extensions: { prf: { eval: { first: salt } } }
-      }
-    });
-    assertExpectedCredential(firstAssertion, credentialId);
-    let results = firstAssertion.getClientExtensionResults?.();
-    let outputBytes = prfOutputFromResults(results, credentialId);
-    if (outputBytes?.byteLength === 32) return new Uint8Array(outputBytes);
+    let firstAssertion;
+    let results;
+    let outputBytes;
+    let strictError;
 
-    const secondAssertion = await navigator.credentials.get({
-      publicKey: {
-        challenge: randomBytes(32),
-        rpId: rpId(),
-        userVerification: "preferred",
-        allowCredentials: [physicalKeyDescriptor(idBytes)],
-        hints: ["security-key"],
-        extensions: { prf: { evalByCredential: { [credentialId]: { first: salt } } } }
+    try {
+      firstAssertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: randomBytes(32),
+          rpId: rpId(),
+          userVerification: "preferred",
+          allowCredentials: [physicalKeyDescriptor(idBytes)],
+          hints: ["security-key"],
+          extensions: { prf: { eval: { first: salt } } }
+        }
+      });
+      assertExpectedCredential(firstAssertion, credentialId);
+      results = firstAssertion.getClientExtensionResults?.();
+      outputBytes = prfOutputFromResults(results, credentialId);
+      if (outputBytes?.byteLength === 32) return new Uint8Array(outputBytes);
+
+      const secondAssertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: randomBytes(32),
+          rpId: rpId(),
+          userVerification: "preferred",
+          allowCredentials: [physicalKeyDescriptor(idBytes)],
+          hints: ["security-key"],
+          extensions: { prf: { evalByCredential: { [credentialId]: { first: salt } } } }
+        }
+      });
+      assertExpectedCredential(secondAssertion, credentialId);
+      results = secondAssertion.getClientExtensionResults?.();
+      outputBytes = prfOutputFromResults(results, credentialId);
+    } catch (error) {
+      strictError = error;
+    }
+
+    if (outputBytes?.byteLength !== 32) {
+      setStatus("Status: exact Backup Codes credential was not accepted. Trying Backup Codes discoverable sign-in.", "warning");
+      const discoverableAssertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: randomBytes(32),
+          rpId: rpId(),
+          userVerification: "preferred",
+          hints: ["security-key"],
+          extensions: { prf: { eval: { first: salt } } }
+        }
+      });
+      assertBackupUserHandle(discoverableAssertion);
+      const discoveredId = bytesToBase64Url(new Uint8Array(discoverableAssertion.rawId));
+      saveCredentialId(discoveredId);
+      results = discoverableAssertion.getClientExtensionResults?.();
+      outputBytes = prfOutputFromResults(results, discoveredId);
+      if (outputBytes?.byteLength !== 32 && strictError) {
+        throw new Error(`Backup Codes YubiKey sign-in failed. ${strictError.message}`);
       }
-    });
-    assertExpectedCredential(secondAssertion, credentialId);
-    results = secondAssertion.getClientExtensionResults?.();
-    outputBytes = prfOutputFromResults(results, credentialId);
+    }
+
     if (outputBytes?.byteLength !== 32) {
       throw new Error(`Your browser or YubiKey did not return PRF data. ${extensionSummary(results)}`);
     }
@@ -430,10 +471,9 @@
       const credentialId = bytesToBase64Url(new Uint8Array(credential.rawId));
       saveCredentialId(credentialId);
       const createResults = credential.getClientExtensionResults?.();
-      setStatus(`Status: credential saved. Testing PRF now. ${extensionSummary(createResults)}`, "info");
       sessionKey = null;
-      await signInYubiKey({ autoUnlock: false });
-      setStatus("Status: YubiKey registered and signed in. You can now encrypt or show saved codes.", "success");
+      sessionPrfOutput = null;
+      setStatus(`Status: Backup Codes YubiKey registered. Press Sign in or Encrypt when ready. ${extensionSummary(createResults)}`, "success");
     } catch (error) {
       setStatus(`Status: ${error.message}`, "warning");
     }
