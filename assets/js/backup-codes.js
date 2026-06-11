@@ -14,6 +14,11 @@
   const deleteButton = document.getElementById("deleteBackupCodes");
   const clearButton = document.getElementById("clearBackupInput");
   const removeUsedButton = document.getElementById("removeUsedCodes");
+  const exportButton = document.getElementById("exportBackupCodes");
+  const importButton = document.getElementById("importBackupCodes");
+  const importFile = document.getElementById("backupImportFile");
+  const emailInput = document.getElementById("backupAccountEmail");
+  const accountDisplay = document.getElementById("backupAccountDisplay");
   const input = document.getElementById("backupCodesInput");
   const output = document.getElementById("backupCodesOutput");
   const codeList = document.getElementById("backupCodeList");
@@ -199,6 +204,20 @@
     return lines.join("\n");
   }
 
+  function normalizeEmail(value) {
+    return String(value || "").trim();
+  }
+
+  function isBasicEmail(value) {
+    if (!value) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function setAccountDisplay(email = "") {
+    if (!accountDisplay) return;
+    accountDisplay.textContent = `Account: ${email || "No email specified"}`;
+  }
+
   function renderCodeList(lines = []) {
     unlockedCodes = [...lines];
     if (!codeList) return;
@@ -240,11 +259,13 @@
     return sessionKey;
   }
 
-  async function encryptAndStoreCodes(codes) {
+  async function encryptAndStoreCodes(codes, email = "") {
     const key = await getSessionKey();
     const iv = randomBytes(12);
     const payload = {
       label: "Google backup codes",
+      service: "Google",
+      email,
       codes,
       savedAt: new Date().toISOString()
     };
@@ -270,7 +291,10 @@
       base64UrlToBytes(record.data)
     );
     const payload = JSON.parse(decoder.decode(plaintext));
-    return codesToLines(payload.codes);
+    return {
+      codes: codesToLines(payload.codes),
+      email: normalizeEmail(payload.email)
+    };
   }
 
   async function setupYubiKey() {
@@ -327,12 +351,14 @@
     sessionKey = await deriveAesKey(prfOutput);
     const record = localStorage.getItem(STORAGE_KEY);
     if (record && autoUnlock) {
-      const lines = await decryptStoredCodes(sessionKey);
-      setOutputMode("unlocked", lines.length ? linesToCodes(lines) : "No codes found in encrypted record.");
-      renderCodeList(lines);
+      const decrypted = await decryptStoredCodes(sessionKey);
+      setAccountDisplay(decrypted.email);
+      setOutputMode("unlocked", decrypted.codes.length ? linesToCodes(decrypted.codes) : "No codes found in encrypted record.");
+      renderCodeList(decrypted.codes);
       setStatus("Status: signed in. Saved backup codes unlocked automatically.", "success");
       return;
     }
+    setAccountDisplay("");
     setOutputMode("sealed", record ? "Signed in. Encrypted backup codes are saved locally. Press Show Codes to reveal them." : "Signed in. No encrypted backup codes are saved yet.");
     renderCodeList([]);
     setStatus("Status: signed in. Paste codes and press Encrypt when ready.", "success");
@@ -340,14 +366,21 @@
 
   async function saveCodes() {
     const codes = input.value.trim();
+    const email = normalizeEmail(emailInput?.value);
     if (!codes) {
       setStatus("Status: paste your backup codes before saving.", "warning");
       return;
     }
+    if (!isBasicEmail(email)) {
+      setStatus("Status: email is optional, but if entered it should look like user@gmail.com.", "warning");
+      return;
+    }
     try {
       setStatus("Status: sign in with your YubiKey to encrypt backup codes.", "info");
-      await encryptAndStoreCodes(linesToCodes(codesToLines(codes)));
+      await encryptAndStoreCodes(linesToCodes(codesToLines(codes)), email);
       input.value = "";
+      if (emailInput) emailInput.value = "";
+      setAccountDisplay("");
       setOutputMode("sealed", "Backup codes are encrypted and stored locally. Sign in and press Show Codes to reveal them.");
       renderCodeList([]);
       setStatus("Status: encrypted backup codes saved in this browser.", "success");
@@ -359,9 +392,10 @@
   async function unlockCodes() {
     try {
       const key = await getSessionKey();
-      const lines = await decryptStoredCodes(key);
-      setOutputMode("unlocked", lines.length ? linesToCodes(lines) : "No codes found in encrypted record.");
-      renderCodeList(lines);
+      const decrypted = await decryptStoredCodes(key);
+      setAccountDisplay(decrypted.email);
+      setOutputMode("unlocked", decrypted.codes.length ? linesToCodes(decrypted.codes) : "No codes found in encrypted record.");
+      renderCodeList(decrypted.codes);
       setStatus("Status: decrypted locally. Keep the screen private while the codes are visible.", "success");
     } catch (error) {
       setOutputMode("", "Encrypted backup codes will appear here after YubiKey sign-in.");
@@ -387,7 +421,10 @@
       const ok = confirm(`Remove ${selected.length} used backup code${selected.length === 1 ? "" : "s"} and re-save ${remaining.length} remaining code${remaining.length === 1 ? "" : "s"}?`);
       if (!ok) return;
       setStatus("Status: sign in with your YubiKey to re-encrypt the remaining codes.", "info");
-      await encryptAndStoreCodes(linesToCodes(remaining));
+      const currentEmail = accountDisplay?.textContent?.replace(/^Account:\s*/, "") === "No email specified"
+        ? ""
+        : accountDisplay.textContent.replace(/^Account:\s*/, "");
+      await encryptAndStoreCodes(linesToCodes(remaining), currentEmail);
       setOutputMode("unlocked", remaining.length ? linesToCodes(remaining) : "All backup codes have been marked used and removed.");
       renderCodeList(remaining);
       setStatus("Status: selected used codes removed and remaining codes re-encrypted locally.", "success");
@@ -402,7 +439,51 @@
     localStorage.removeItem(STORAGE_KEY);
     setOutputMode("", "Encrypted backup codes will appear here after YubiKey sign-in.");
     renderCodeList([]);
+    setAccountDisplay("");
     setStatus("Status: encrypted backup codes purged from this browser.", "warning");
+  }
+
+  function exportEncryptedBackup() {
+    const record = localStorage.getItem(STORAGE_KEY);
+    if (!record) {
+      setStatus("Status: no encrypted backup codes are saved to export.", "warning");
+      return;
+    }
+    const blob = new Blob([JSON.stringify({
+      type: "goblinpass-google-backup-codes",
+      exportedAt: new Date().toISOString(),
+      encryptedRecord: JSON.parse(record)
+    }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "goblinpass-google-backup-codes-encrypted.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setStatus("Status: encrypted backup file exported. Email and codes remain encrypted inside it.", "success");
+  }
+
+  async function importEncryptedBackup(file) {
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const record = parsed.encryptedRecord || parsed;
+      if (!record?.data || !record?.iv || record?.alg !== "AES-GCM") {
+        throw new Error("This does not look like a GoblinPass encrypted backup-code file.");
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+      if (record.credentialId) saveCredentialId(record.credentialId);
+      setOutputMode("sealed", "Encrypted backup file imported. Sign in with the matching YubiKey to reveal the account and codes.");
+      renderCodeList([]);
+      setAccountDisplay("");
+      setStatus("Status: encrypted backup file imported locally.", "success");
+    } catch (error) {
+      setStatus(`Status: ${error.message}`, "warning");
+    } finally {
+      importFile.value = "";
+    }
   }
 
   setupButton.addEventListener("click", setupYubiKey);
@@ -414,6 +495,9 @@
   deleteButton.addEventListener("click", deleteCodes);
   clearButton.addEventListener("click", () => { input.value = ""; });
   removeUsedButton.addEventListener("click", removeUsedCodes);
+  exportButton.addEventListener("click", exportEncryptedBackup);
+  importButton.addEventListener("click", () => importFile.click());
+  importFile.addEventListener("change", () => importEncryptedBackup(importFile.files?.[0]));
 
   const savedRecord = localStorage.getItem(STORAGE_KEY);
   const savedCredential = getCredentialId();
@@ -421,4 +505,5 @@
   if (!window.isSecureContext) setStatus("Status: WebAuthn may not work from a local file. Use the HTTPS GitHub Pages page.", "warning");
   else if (savedCredential && savedRecord) setStatus("Status: encrypted backup codes found. Sign in with your YubiKey to unlock them.", "success");
   else if (savedCredential) setStatus("Status: YubiKey set up. No backup codes saved yet.", "info");
+  setAccountDisplay("");
 })();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Google Backup Codes Vault</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260611-yubikey-choice" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260611-backup-email" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -116,6 +116,8 @@
             they unlock automatically. You can paste new codes, encrypt them,
             show saved codes, or purge everything from this browser.
           </p>
+          <label for="backupAccountEmail">Account Email (Optional)</label>
+          <input id="backupAccountEmail" class="backup-email-input" type="email" placeholder="user@gmail.com" autocomplete="off" spellcheck="false">
           <label for="backupCodesInput">Paste your Google backup codes</label>
           <textarea id="backupCodesInput" rows="10" placeholder="Example:
 1234 5678
@@ -125,13 +127,17 @@
             <button id="saveBackupCodes" class="primary-button" type="button">Encrypt</button>
             <button id="clearBackupInput" class="secondary-button" type="button">Clear input</button>
             <button id="unlockBackupCodes" class="secondary-button" type="button">Show Codes</button>
+            <button id="exportBackupCodes" class="secondary-button" type="button">Export encrypted file</button>
+            <button id="importBackupCodes" class="secondary-button" type="button">Import encrypted file</button>
             <button id="deleteBackupCodes" class="danger-button purge-button" type="button">Purge Entries</button>
           </div>
+          <input id="backupImportFile" type="file" accept="application/json,.json" hidden>
           <div id="encryptedHoverHint" class="encrypted-hover-hint hidden" aria-hidden="true">
             <span></span>
             <b>Encrypted locally</b>
             <em>Hover over the sealed panel to inspect the encrypted storage status.</em>
           </div>
+          <div id="backupAccountDisplay" class="backup-account-display">Account: No email specified</div>
           <pre id="backupCodesOutput" class="backup-output" aria-live="polite">Encrypted backup codes will appear here after YubiKey sign-in.</pre>
           <div class="used-code-panel">
             <div>
@@ -195,6 +201,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/backup-codes.js?v=20260611-yubikey-choice"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-backup-email"></script>
   </body>
 </html>

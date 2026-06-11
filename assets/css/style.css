@@ -1069,7 +1069,21 @@ input:focus {
   padding: 14px;
 }
 
-.backup-tool-card textarea:focus {
+.backup-email-input {
+  width: 100%;
+  min-height: 46px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(119, 240, 90, 0.28);
+  border-radius: 8px;
+  outline: none;
+  background: #061009;
+  color: var(--text);
+  font: inherit;
+  padding: 0 14px;
+}
+
+.backup-tool-card textarea:focus,
+.backup-email-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(119, 240, 90, 0.1);
 }
@@ -1170,6 +1184,19 @@ input:focus {
   font-size: 1rem;
   white-space: pre-wrap;
   padding: 14px;
+}
+
+.backup-account-display {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  margin-top: 14px;
+  border: 1px solid rgba(119, 240, 90, 0.16);
+  border-radius: 8px;
+  background: rgba(5, 12, 8, 0.48);
+  color: var(--muted);
+  font-weight: 850;
+  padding: 0 12px;
 }
 
 .backup-output.is-sealed {
