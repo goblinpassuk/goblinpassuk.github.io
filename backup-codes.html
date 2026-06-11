@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Google Backup Codes Vault</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260611-discoverable-signin" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260611-yubikey-choice" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -90,6 +90,10 @@
             This tool uses WebAuthn PRF/hmac-secret. A normal WebAuthn login is
             not enough, because the YubiKey must return key material for local
             encryption and decryption.
+          </p>
+          <p class="backup-choice-note">
+            If Windows shows a passkey picker, choose <strong>Security key</strong>,
+            not the saved Windows Hello or Microsoft Password Manager passkey.
           </p>
           <div class="backup-actions">
             <button id="setupBackupKey" class="primary-button" type="button">Register YubiKey</button>
@@ -191,6 +195,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/backup-codes.js?v=20260611-discoverable-signin"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-yubikey-choice"></script>
   </body>
 </html>

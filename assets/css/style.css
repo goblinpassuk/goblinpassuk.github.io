@@ -1152,6 +1152,14 @@ input:focus {
   background: rgba(255, 209, 102, 0.08);
 }
 
+.backup-choice-note {
+  border: 1px solid rgba(255, 209, 102, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 209, 102, 0.08);
+  color: #ffe9a9;
+  padding: 12px;
+}
+
 .backup-output {
   min-height: 210px;
   overflow: auto;

@@ -72,6 +72,14 @@
     updateSetupButton();
   }
 
+  function physicalKeyDescriptor(idBytes) {
+    return {
+      type: "public-key",
+      id: idBytes,
+      transports: ["usb", "nfc", "ble", "hybrid"]
+    };
+  }
+
   function updateSetupButton() {
     setupButton.textContent = "Register YubiKey";
   }
@@ -116,7 +124,8 @@
         challenge: randomBytes(32),
         rpId: rpId(),
         userVerification: "preferred",
-        allowCredentials: [{ type: "public-key", id: idBytes }],
+        allowCredentials: [physicalKeyDescriptor(idBytes)],
+        hints: ["security-key"],
         extensions: { prf: { eval: { first: salt } } }
       }
     });
@@ -129,7 +138,8 @@
         challenge: randomBytes(32),
         rpId: rpId(),
         userVerification: "preferred",
-        allowCredentials: [{ type: "public-key", id: idBytes }],
+        allowCredentials: [physicalKeyDescriptor(idBytes)],
+        hints: ["security-key"],
         extensions: { prf: { evalByCredential: { [credentialId]: { first: salt } } } }
       }
     });
@@ -148,6 +158,7 @@
         challenge: randomBytes(32),
         rpId: rpId(),
         userVerification: "preferred",
+        hints: ["security-key"],
         extensions: { prf: { eval: { first: salt } } }
       }
     });
@@ -284,10 +295,12 @@
             { type: "public-key", alg: -257 }
           ],
           authenticatorSelection: {
+            authenticatorAttachment: "cross-platform",
             residentKey: "required",
             requireResidentKey: true,
             userVerification: "preferred"
           },
+          hints: ["security-key"],
           timeout: 120000,
           attestation: "none",
           extensions: { prf: {}, hmacCreateSecret: true }
