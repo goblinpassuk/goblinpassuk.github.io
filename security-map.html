@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Security Map</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260611-security-map-large-picker-icons" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260614-security-map-front-door" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -65,11 +65,9 @@
       <section class="section backup-hero security-map-hero" aria-labelledby="security-map-title">
         <div class="section-intro">
           <p class="eyebrow">Local Web Tool</p>
-          <h1 id="security-map-title">Security Map</h1>
+          <h1 id="security-map-title">GoblinPass Security Map</h1>
           <p>
-            Keep a local encrypted table of sites and security methods. Unlock
-            it with your YubiKey, edit it like a small spreadsheet, then save
-            only encrypted state in the browser.
+            Your local encrypted recovery map, protected by your YubiKey/passkey.
           </p>
         </div>
         <div class="backup-trust-row" aria-label="Privacy promises">
@@ -79,28 +77,66 @@
         </div>
       </section>
 
+      <section id="securityMapFrontDoor" class="section content-section security-map-front-door" aria-label="Security Map start options">
+        <article class="security-map-start-card">
+          <p class="eyebrow">New Here?</p>
+          <h2>New here?</h2>
+          <p>Create a new encrypted Security Map and register your YubiKey/passkey.</p>
+          <button id="showSecurityMapSetup" class="primary-button" type="button">Register / Set up</button>
+        </article>
+
+        <article class="security-map-start-card">
+          <p class="eyebrow">Been Here Before?</p>
+          <h2>Been here before?</h2>
+          <p>Import your encrypted GoblinPass State and unlock it with the matching YubiKey/passkey.</p>
+          <button id="frontImportSecurityMap" class="secondary-button" type="button">Import GoblinPass State</button>
+        </article>
+        <p id="securityMapFrontStatus" class="backup-status security-map-front-status">Status: choose a path to begin.</p>
+      </section>
+
+      <section id="securityMapSetupPanel" class="section content-section security-map-setup-panel" aria-labelledby="security-map-setup-title" hidden>
+        <div class="security-map-setup-copy">
+          <p class="eyebrow">New Here?</p>
+          <h2 id="security-map-setup-title">Set up your Security Map</h2>
+          <ul>
+            <li>Open GoblinPass in a clean browser session first, preferably Incognito/Private Window for first setup testing.</li>
+            <li>Register the YubiKey/passkey that will protect the Security Map.</li>
+            <li>Create your first Security Map entries.</li>
+            <li>Save/export your encrypted GoblinPass State file.</li>
+            <li>Store the exported state file somewhere safe.</li>
+            <li>The exported file cannot be decrypted without the matching YubiKey/passkey.</li>
+            <li>If the YubiKey/passkey is lost, the encrypted state may not be recoverable unless you have another registered recovery method.</li>
+          </ul>
+          <div class="backup-actions">
+            <button id="startNewSecurityMap" class="primary-button" type="button">Start new Security Map</button>
+            <button id="backToSecurityMapFront" class="secondary-button" type="button">Back</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="securityMapAppShell" hidden>
       <section class="section content-section backup-tool-grid security-map-grid" aria-label="Security Map tool">
         <article class="backup-tool-card security-map-controls">
           <div class="feature-card-heading">
             <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
             <div>
               <p class="eyebrow">Encrypted vault</p>
-              <h2>Unlock the map</h2>
+              <h2>Unlock GoblinPass State</h2>
             </div>
           </div>
           <p>
             Register once, then reuse the same PRF-capable YubiKey credential
-            for local saves and portable encrypted JSON files.
+            for local saves and portable GoblinPass State files.
           </p>
           <p class="backup-choice-note">
             If Windows shows a passkey picker, choose <strong>Security key</strong>.
             Import can also unlock directly from the encrypted file metadata.
           </p>
           <div class="backup-actions">
-            <button id="setupSecurityMapKey" class="primary-button" type="button">Register YubiKey</button>
+            <button id="setupSecurityMapKey" class="primary-button" type="button">Register YubiKey/passkey</button>
             <button id="unlockSecurityMap" class="secondary-button" type="button">Unlock / decrypt</button>
             <button id="saveSecurityMap" class="primary-button" type="button" disabled>Save encrypted local state</button>
-            <button id="lockSecurityMap" class="secondary-button" type="button" disabled>Lock / clear</button>
+            <button id="lockSecurityMap" class="secondary-button" type="button" disabled>Lock</button>
           </div>
           <p id="securityMapStatus" class="backup-status">Status: locked. Register or import to begin.</p>
           <div class="backup-storage-strip">
@@ -117,8 +153,8 @@
             the table view and drops the in-memory key and row data.
           </p>
           <p>
-            Exported JSON stays encrypted for the same YubiKey credential. Keep
-            the file private, and keep a backup of the YubiKey itself.
+            GoblinPass State stays encrypted for the same YubiKey/passkey
+            credential. Keep the file private, and keep a backup recovery method.
           </p>
         </article>
       </section>
@@ -131,22 +167,22 @@
           </div>
           <div class="backup-actions security-map-file-actions">
             <button id="deleteSecurityMapRow" class="danger-button" type="button" disabled>Delete selected row</button>
-            <button id="exportSecurityMap" class="secondary-button" type="button">Export encrypted JSON</button>
-            <button id="importSecurityMap" class="secondary-button" type="button">Import encrypted JSON</button>
+            <button id="exportSecurityMap" class="secondary-button" type="button">Export GoblinPass State</button>
+            <button id="importSecurityMap" class="secondary-button" type="button">Import GoblinPass State</button>
           </div>
-          <input type="file" id="securityMapFileInput" accept="application/json,.json,.enc" hidden>
+          <input type="file" id="securityMapFileInput" accept="application/json,.json" hidden>
         </div>
 
         <div id="securityMapStateFilePanel" class="security-map-state-file" hidden>
           <div>
-            <p class="eyebrow">State file</p>
-            <p id="securityMapStateFileStatus">No state file opened.</p>
+            <p class="eyebrow">GoblinPass State</p>
+            <p id="securityMapStateFileStatus">No GoblinPass State opened.</p>
           </div>
           <div class="backup-actions">
-            <button id="openSecurityMapStateFile" class="secondary-button" type="button">Open state file</button>
+            <button id="openSecurityMapStateFile" class="secondary-button" type="button">Open GoblinPass State</button>
             <button id="reconnectSecurityMapStateFile" class="secondary-button" type="button" hidden>Reconnect</button>
-            <button id="saveSecurityMapStateFile" class="primary-button" type="button" disabled>Save to opened state file</button>
-            <button id="saveAsSecurityMapStateFile" class="secondary-button" type="button" disabled>Save as new state file</button>
+            <button id="saveSecurityMapStateFile" class="primary-button" type="button" disabled>Save to opened GoblinPass State</button>
+            <button id="saveAsSecurityMapStateFile" class="secondary-button" type="button" disabled>Save as new GoblinPass State</button>
           </div>
         </div>
 
@@ -176,6 +212,7 @@
           </table>
         </div>
       </section>
+      </div>
     </main>
 
     <footer class="site-footer">
@@ -196,6 +233,6 @@
     </footer>
 
     <script src="assets/js/app.js"></script>
-    <script src="assets/js/security-map.js?v=20260611-security-map-large-picker-icons"></script>
+    <script src="assets/js/security-map.js?v=20260614-security-map-front-door"></script>
   </body>
 </html>

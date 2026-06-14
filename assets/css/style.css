@@ -1083,7 +1083,9 @@ input:focus {
 
 .backup-actions .primary-button,
 .backup-actions .secondary-button,
-.backup-actions .danger-button {
+.backup-actions .danger-button,
+.security-map-start-card .primary-button,
+.security-map-start-card .secondary-button {
   min-height: 48px;
   border-radius: 10px;
   cursor: pointer;
@@ -1092,7 +1094,8 @@ input:focus {
   padding: 0 18px;
 }
 
-.backup-actions .primary-button {
+.backup-actions .primary-button,
+.security-map-start-card .primary-button {
   border: 1px solid rgba(184, 255, 125, 0.48);
   color: #051009;
   background:
@@ -1101,7 +1104,8 @@ input:focus {
   box-shadow: 0 16px 38px rgba(40, 177, 93, 0.2);
 }
 
-.backup-actions .secondary-button {
+.backup-actions .secondary-button,
+.security-map-start-card .secondary-button {
   border: 1px solid rgba(119, 240, 90, 0.34);
   color: var(--text);
   background:
@@ -1112,13 +1116,19 @@ input:focus {
 .backup-actions .primary-button:hover,
 .backup-actions .primary-button:focus-visible,
 .backup-actions .secondary-button:hover,
-.backup-actions .secondary-button:focus-visible {
+.backup-actions .secondary-button:focus-visible,
+.security-map-start-card .primary-button:hover,
+.security-map-start-card .primary-button:focus-visible,
+.security-map-start-card .secondary-button:hover,
+.security-map-start-card .secondary-button:focus-visible {
   transform: translateY(-1px);
   outline: none;
 }
 
 .backup-actions .primary-button:hover,
-.backup-actions .primary-button:focus-visible {
+.backup-actions .primary-button:focus-visible,
+.security-map-start-card .primary-button:hover,
+.security-map-start-card .primary-button:focus-visible {
   box-shadow: 0 20px 46px rgba(40, 177, 93, 0.3);
 }
 
@@ -1131,7 +1141,9 @@ input:focus {
 }
 
 .backup-actions .secondary-button:hover,
-.backup-actions .secondary-button:focus-visible {
+.backup-actions .secondary-button:focus-visible,
+.security-map-start-card .secondary-button:hover,
+.security-map-start-card .secondary-button:focus-visible {
   border-color: rgba(119, 240, 90, 0.62);
   background: rgba(119, 240, 90, 0.1);
 }
@@ -1313,6 +1325,79 @@ input:focus {
   background: linear-gradient(135deg, var(--accent), #b8ff7d);
   box-shadow: 0 0 28px rgba(119, 240, 90, 0.22);
   font-weight: 950;
+}
+
+.security-map-front-door {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.security-map-front-door[hidden],
+.security-map-setup-panel[hidden],
+#securityMapAppShell[hidden] {
+  display: none;
+}
+
+.security-map-start-card,
+.security-map-setup-copy {
+  border: 1px solid rgba(119, 240, 90, 0.18);
+  border-radius: 8px;
+  background: rgba(7, 17, 11, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.security-map-start-card {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  padding: clamp(22px, 4vw, 34px);
+}
+
+.security-map-start-card h2,
+.security-map-setup-copy h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  letter-spacing: 0;
+}
+
+.security-map-start-card p:not(.eyebrow),
+.security-map-setup-copy li {
+  color: var(--muted);
+  font-weight: 750;
+  line-height: 1.7;
+}
+
+.security-map-start-card .primary-button,
+.security-map-start-card .secondary-button {
+  width: 100%;
+  margin-top: auto;
+}
+
+.security-map-front-status {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.security-map-setup-panel {
+  display: block;
+}
+
+.security-map-setup-copy {
+  padding: clamp(22px, 4vw, 34px);
+}
+
+.security-map-setup-copy ul {
+  margin: 18px 0 0;
+  padding-left: 1.2rem;
+}
+
+.security-map-setup-copy li + li {
+  margin-top: 8px;
 }
 
 .security-map-grid {
@@ -1586,6 +1671,10 @@ input:focus {
 }
 
 @media (max-width: 900px) {
+  .security-map-front-door {
+    grid-template-columns: 1fr;
+  }
+
   .security-map-toolbar {
     grid-template-columns: 1fr;
     align-items: stretch;

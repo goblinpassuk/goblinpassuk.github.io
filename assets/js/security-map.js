@@ -11,7 +11,7 @@
       this.credentialStorageKey = "goblinpass_security_map_prf_credential";
       this.backupCodesCredentialKey = "goblinpass_backup_codes_yubikey_prf_meta";
       this.exportType = "goblinpass-security-map";
-      this.stateFileName = "goblinpass-security-map-state.enc.json";
+      this.stateFileName = "goblinpass-security-map-state.json";
       this.dataVersion = 1;
       this.db = null;
       this.rows = [];
@@ -21,6 +21,7 @@
       this.isUnlocked = false;
       this.fileSystemAccessSupported = "showOpenFilePicker" in window && "showSaveFilePicker" in window;
       this.stateFileHandle = null;
+      this.hasChosenPath = false;
 
       this.icons = [
         { id: "google-factor", label: "Google factor", title: "Google factor", className: "icon-google-factor-vector" },
@@ -32,6 +33,14 @@
       ];
 
       this.setupButton = document.getElementById("setupSecurityMapKey");
+      this.frontDoor = document.getElementById("securityMapFrontDoor");
+      this.setupPanel = document.getElementById("securityMapSetupPanel");
+      this.appShell = document.getElementById("securityMapAppShell");
+      this.showSetupButton = document.getElementById("showSecurityMapSetup");
+      this.startNewButton = document.getElementById("startNewSecurityMap");
+      this.backToFrontButton = document.getElementById("backToSecurityMapFront");
+      this.frontImportButton = document.getElementById("frontImportSecurityMap");
+      this.frontStatus = document.getElementById("securityMapFrontStatus");
       this.unlockButton = document.getElementById("unlockSecurityMap");
       this.saveButton = document.getElementById("saveSecurityMap");
       this.lockButton = document.getElementById("lockSecurityMap");
@@ -76,6 +85,10 @@
     }
 
     bindEvents() {
+      this.showSetupButton?.addEventListener("click", () => this.showSetupPanel());
+      this.backToFrontButton?.addEventListener("click", () => this.showFrontDoor());
+      this.startNewButton?.addEventListener("click", () => this.startNewSecurityMap());
+      this.frontImportButton?.addEventListener("click", () => this.fileInput.click());
       this.setupButton.addEventListener("click", () => this.registerYubiKey());
       this.unlockButton.addEventListener("click", () => this.unlockAndLoad());
       this.saveButton.addEventListener("click", () => this.saveEncryptedLocalState());
@@ -97,13 +110,14 @@
     }
 
     refreshInitialState() {
+      this.showFrontDoor();
       const storedCredential = this.getStoredCredentialId();
       if (storedCredential) {
         this.credentialId = storedCredential;
-        this.setupButton.textContent = "Replace YubiKey";
+        this.setupButton.textContent = "Replace YubiKey/passkey";
         this.showStatus("Status: locked. YubiKey credential found.", "info");
       } else {
-        this.showStatus("Status: locked. Register a PRF-capable YubiKey or import an encrypted file.", "info");
+        this.showStatus("Status: locked. Register a PRF-capable YubiKey/passkey or import GoblinPass State.", "info");
       }
       this.renderRows();
       this.updateUI();
@@ -112,6 +126,36 @@
     showStatus(message, type = "info") {
       this.status.textContent = message;
       this.status.dataset.kind = type;
+      if (this.frontStatus) {
+        this.frontStatus.textContent = message;
+        this.frontStatus.dataset.kind = type;
+      }
+    }
+
+    showFrontDoor() {
+      this.hasChosenPath = false;
+      if (this.frontDoor) this.frontDoor.hidden = false;
+      if (this.setupPanel) this.setupPanel.hidden = true;
+      if (this.appShell) this.appShell.hidden = true;
+    }
+
+    showSetupPanel() {
+      if (this.frontDoor) this.frontDoor.hidden = true;
+      if (this.setupPanel) this.setupPanel.hidden = false;
+      if (this.appShell) this.appShell.hidden = true;
+      this.showStatus("Status: review setup steps, then start a new Security Map.", "info");
+    }
+
+    showAppShell() {
+      this.hasChosenPath = true;
+      if (this.frontDoor) this.frontDoor.hidden = true;
+      if (this.setupPanel) this.setupPanel.hidden = true;
+      if (this.appShell) this.appShell.hidden = false;
+    }
+
+    async startNewSecurityMap() {
+      this.showAppShell();
+      await this.registerYubiKey();
     }
 
     updateUI() {
@@ -140,21 +184,21 @@
       await this.dbReady;
       this.stateFileHandle = await this.loadRememberedFileHandle();
       if (this.stateFileHandle) {
-        this.stateFileStatus.textContent = "Previous state file remembered. Click Reconnect to continue.";
+        this.stateFileStatus.textContent = "Previous GoblinPass State remembered. Click Reconnect to continue.";
         this.reconnectStateFileButton.hidden = false;
       } else {
-        this.stateFileStatus.textContent = "No state file opened.";
+        this.stateFileStatus.textContent = "No GoblinPass State opened.";
         this.reconnectStateFileButton.hidden = true;
       }
       this.updateUI();
     }
 
     async ensureFilePermission(handle, mode) {
-      if (!handle) throw new Error("No state file is open.");
+      if (!handle) throw new Error("No GoblinPass State is open.");
       const options = { mode };
       if (await handle.queryPermission(options) === "granted") return true;
       if (await handle.requestPermission(options) === "granted") return true;
-      throw new Error(`${mode === "readwrite" ? "Write" : "Read"} permission was not granted for the state file.`);
+      throw new Error(`${mode === "readwrite" ? "Write" : "Read"} permission was not granted for the GoblinPass State.`);
     }
 
     async saveRememberedFileHandle(handle) {
@@ -274,18 +318,19 @@
     storeCredentialId(credentialId) {
       this.credentialId = credentialId;
       localStorage.setItem(this.credentialStorageKey, this.bytesToBase64(credentialId));
-      this.setupButton.textContent = "Replace YubiKey";
+      this.setupButton.textContent = "Replace YubiKey/passkey";
     }
 
     async registerYubiKey() {
       try {
         this.requireWebAuthn();
         if (this.getStoredCredentialId()) {
-          const replace = confirm("Replace the saved Security Map YubiKey credential for this browser?");
+          const replace = confirm("Replace the saved Security Map YubiKey/passkey credential for this browser?");
           if (!replace) return;
         }
 
-        this.showStatus("Status: touch your YubiKey to register PRF encryption.", "info");
+        this.showAppShell();
+        this.showStatus("Status: touch your YubiKey/passkey to register PRF encryption.", "info");
         const credential = await navigator.credentials.create({
           publicKey: {
             challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -319,7 +364,7 @@
         this.rows = [];
         this.selectedRowKey = null;
         this.renderRows();
-        this.showStatus("Status: unlocked. YubiKey PRF credential registered.", "success");
+        this.showStatus("Status: unlocked. YubiKey/passkey PRF credential registered.", "success");
       } catch (error) {
         this.showStatus(`Status: setup failed: ${error.message}`, "warning");
       }
@@ -328,7 +373,7 @@
     async unlockWithCredential(credentialId) {
       this.requireWebAuthn();
       if (!credentialId || !credentialId.length) {
-        throw new Error("No passkey available. Register a YubiKey or import an encrypted file.");
+        throw new Error("No passkey available. Register a YubiKey/passkey or import GoblinPass State.");
       }
 
       let credential;
@@ -352,7 +397,7 @@
         });
       } catch (error) {
         if (error.name === "NotAllowedError") {
-          throw new Error("No matching passkey was used. Check that this is the right YubiKey and try again.");
+          throw new Error("No matching passkey was used. Check that this is the right YubiKey/passkey and try again.");
         }
         throw new Error(error.message || "YubiKey authentication failed.");
       }
@@ -385,6 +430,7 @@
       );
       return {
         version: 1,
+        type: "goblinpass-state",
         alg: "AES-GCM",
         kdf: "WebAuthn-PRF-HKDF-SHA256",
         credentialId: this.bytesToBase64(this.credentialId),
@@ -418,7 +464,7 @@
 
     async saveEncryptedLocalState() {
       if (!this.isUnlocked) {
-        this.showStatus("Status: locked. Unlock with YubiKey before saving.", "warning");
+        this.showStatus("Status: locked. Unlock with YubiKey/passkey before saving.", "warning");
         return;
       }
       try {
@@ -464,13 +510,14 @@
     exportPayloadFromRecord(encryptedRecord) {
       return {
         type: this.exportType,
+        name: "GoblinPass State",
         exportedAt: new Date().toISOString(),
         encryptedRecord
       };
     }
 
     async encryptedExportPayloadFromCurrentRows() {
-      if (!this.isUnlocked) throw new Error("Unlock the map before saving a state file.");
+      if (!this.isUnlocked) throw new Error("Unlock the map before saving GoblinPass State.");
       this.captureRowsFromDom();
       const encryptedRecord = await this.encryptedRecordFromRows();
       return this.exportPayloadFromRecord(encryptedRecord);
@@ -478,10 +525,15 @@
 
     async applyEncryptedExportPayload(parsed, saveLocalRecord = true) {
       if (parsed.type !== this.exportType || !parsed.encryptedRecord) {
-        throw new Error("This file is not a GoblinPass Security Map export.");
+        throw new Error("This file is not a GoblinPass State export.");
       }
       const encryptedRecord = parsed.encryptedRecord;
+      if (!encryptedRecord.credentialId) {
+        throw new Error("GoblinPass State metadata does not include a credential ID.");
+      }
       const credentialId = this.base64ToBytes(encryptedRecord.credentialId);
+      this.showAppShell();
+      this.showStatus("Encrypted state loaded. Touch your matching YubiKey/passkey to unlock.", "info");
       await this.unlockWithCredential(credentialId);
       const payload = await this.decryptRecord(encryptedRecord);
       this.rows = this.cleanRows(payload.rows);
@@ -494,23 +546,24 @@
 
     async unlockAndLoad() {
       try {
+        this.showAppShell();
         const encryptedRecord = await this.loadEncryptedRecord();
         const credentialId = encryptedRecord?.credentialId
           ? this.base64ToBytes(encryptedRecord.credentialId)
           : this.getStoredCredentialId();
         if (!credentialId) {
-          this.showStatus("Status: no passkey available. Register a YubiKey or import encrypted JSON.", "warning");
+          this.showStatus("Status: no passkey available. Register a YubiKey/passkey or import GoblinPass State.", "warning");
           return;
         }
 
-        this.showStatus("Status: touch the matching YubiKey to unlock.", "info");
+        this.showStatus("Status: touch the matching YubiKey/passkey to unlock.", "info");
         await this.unlockWithCredential(credentialId);
         this.storeCredentialId(credentialId);
 
         if (encryptedRecord) {
           const payload = await this.decryptRecord(encryptedRecord);
           this.rows = this.cleanRows(payload.rows);
-          this.showStatus("Status: unlocked and decrypted.", "success");
+          this.showStatus("Security Map unlocked. Your encrypted state has been loaded locally.", "success");
         } else {
           this.rows = [];
           this.showStatus("Status: unlocked. Add rows to begin.", "success");
@@ -519,7 +572,7 @@
         this.renderRows();
       } catch (error) {
         this.lock();
-        this.showStatus(`Status: unlock failed: ${error.message}`, "warning");
+        this.showStatus("Could not unlock this state. Use the same YubiKey/passkey that created it.", "warning");
       }
     }
 
@@ -531,7 +584,7 @@
           encryptedRecord = await this.encryptedRecordFromRows();
         }
         if (!encryptedRecord) {
-          this.showStatus("Status: nothing encrypted to export yet.", "warning");
+          this.showStatus("Status: no GoblinPass State to export yet.", "warning");
           return;
         }
         const exportPayload = this.exportPayloadFromRecord(encryptedRecord);
@@ -539,12 +592,12 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `goblinpass_security_map_${Date.now()}.json`;
+        link.download = `goblinpass_state_${Date.now()}.json`;
         document.body.appendChild(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        this.showStatus("Status: exported encrypted JSON.", "success");
+        this.showStatus("Status: exported GoblinPass State.", "success");
       } catch (error) {
         this.showStatus(`Status: export failed: ${error.message}`, "warning");
       }
@@ -553,11 +606,11 @@
     async importEncryptedJson(file) {
       try {
         const parsed = JSON.parse(await file.text());
-        this.showStatus("Status: touch the matching YubiKey to import.", "info");
         await this.applyEncryptedExportPayload(parsed, true);
-        this.showStatus("Status: imported, decrypted, and saved encrypted locally.", "success");
+        this.showStatus("Security Map unlocked. Your encrypted state has been loaded locally.", "success");
       } catch (error) {
-        this.showStatus(`Status: import failed: ${error.message}`, "warning");
+        this.lock();
+        this.showStatus("Could not unlock this state. Use the same YubiKey/passkey that created it.", "warning");
       }
     }
 
@@ -566,21 +619,21 @@
         const [handle] = await window.showOpenFilePicker({
           multiple: false,
           types: [{
-            description: "GoblinPass Security Map encrypted JSON",
-            accept: { "application/json": [".json", ".enc", ".enc.json"] }
+            description: "GoblinPass State encrypted JSON",
+            accept: { "application/json": [".json"] }
           }]
         });
         await this.loadStateFileHandle(handle, true);
       } catch (error) {
         if (error.name === "AbortError") return;
-        this.showStatus(`Status: open state file failed: ${error.message}`, "warning");
+        this.showStatus(`Status: open GoblinPass State failed: ${error.message}`, "warning");
       }
     }
 
     async reconnectStateFile() {
       try {
         if (!this.stateFileHandle) this.stateFileHandle = await this.loadRememberedFileHandle();
-        if (!this.stateFileHandle) throw new Error("No remembered state file handle was found.");
+        if (!this.stateFileHandle) throw new Error("No remembered GoblinPass State handle was found.");
         await this.loadStateFileHandle(this.stateFileHandle, false);
       } catch (error) {
         this.showStatus(`Status: reconnect failed: ${error.message}`, "warning");
@@ -591,27 +644,26 @@
       await this.ensureFilePermission(handle, "read");
       const file = await handle.getFile();
       const parsed = JSON.parse(await file.text());
-      this.showStatus("Status: touch the matching YubiKey to open the state file.", "info");
       await this.applyEncryptedExportPayload(parsed, true);
       this.stateFileHandle = handle;
       if (rememberHandle) await this.saveRememberedFileHandle(handle);
-      this.stateFileStatus.textContent = `Opened state file: ${file.name || this.stateFileName}`;
+      this.stateFileStatus.textContent = `GoblinPass State loaded: ${file.name || this.stateFileName}`;
       this.reconnectStateFileButton.hidden = true;
       this.updateUI();
-      this.showStatus("Status: state file opened and decrypted.", "success");
+      this.showStatus("Security Map unlocked. Your encrypted state has been loaded locally.", "success");
     }
 
     async saveToOpenedStateFile() {
       try {
-        if (!this.stateFileHandle) throw new Error("Open or reconnect a state file first.");
+        if (!this.stateFileHandle) throw new Error("Open or reconnect a GoblinPass State first.");
         await this.ensureFilePermission(this.stateFileHandle, "readwrite");
         const exportPayload = await this.encryptedExportPayloadFromCurrentRows();
         await this.writeExportPayloadToHandle(this.stateFileHandle, exportPayload);
         await this.saveEncryptedRecord(exportPayload.encryptedRecord);
-        this.stateFileStatus.textContent = "Saved to opened state file.";
-        this.showStatus("Status: saved encrypted JSON to opened state file.", "success");
+        this.stateFileStatus.textContent = "Saved to opened GoblinPass State.";
+        this.showStatus("Status: saved encrypted GoblinPass State.", "success");
       } catch (error) {
-        this.showStatus(`Status: state file save failed: ${error.message}`, "warning");
+        this.showStatus(`Status: GoblinPass State save failed: ${error.message}`, "warning");
       }
     }
 
@@ -620,8 +672,8 @@
         const handle = await window.showSaveFilePicker({
           suggestedName: this.stateFileName,
           types: [{
-            description: "GoblinPass Security Map encrypted JSON",
-            accept: { "application/json": [".json", ".enc", ".enc.json"] }
+            description: "GoblinPass State encrypted JSON",
+            accept: { "application/json": [".json"] }
           }]
         });
         await this.ensureFilePermission(handle, "readwrite");
@@ -630,10 +682,10 @@
         await this.saveEncryptedRecord(exportPayload.encryptedRecord);
         this.stateFileHandle = handle;
         await this.saveRememberedFileHandle(handle);
-        this.stateFileStatus.textContent = "Saved as new state file.";
+        this.stateFileStatus.textContent = "Saved as new GoblinPass State.";
         this.reconnectStateFileButton.hidden = true;
         this.updateUI();
-        this.showStatus("Status: saved encrypted JSON as a new state file.", "success");
+        this.showStatus("Status: saved as new GoblinPass State.", "success");
       } catch (error) {
         if (error.name === "AbortError") return;
         this.showStatus(`Status: save as failed: ${error.message}`, "warning");
