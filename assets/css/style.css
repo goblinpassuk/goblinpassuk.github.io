@@ -45,6 +45,9 @@
 }
 
 .level2-password-field {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 800;
   min-width: 0;
 }
 
@@ -52,6 +55,12 @@
   display: inline-flex;
   gap: 6px;
   align-items: center;
+}
+
+.level2-password-heading label {
+  color: inherit;
+  font: inherit;
+  margin: 0;
 }
 
 .level2-password-control {

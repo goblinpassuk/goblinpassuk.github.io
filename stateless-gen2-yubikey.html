@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Stateless Gen 2.0 YubiKey Beta</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260615-master-label-eye" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260615-master-eye-fix" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -129,8 +129,9 @@
             <label>ID / Website ID<input id="level2SiteId" type="text" placeholder="Website ID" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
             <label>Website<input id="level2Site" type="text" placeholder="Website name" autocomplete="off" spellcheck="false"></label>
             <label>Login / Account<input id="level2Login" type="text" placeholder="Optional, must match app login for YubiKey PRF" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
-            <label id="level2MasterField" class="level2-password-field">
-              <span class="level2-password-heading">Master Password
+            <div id="level2MasterField" class="level2-password-field">
+              <span class="level2-password-heading">
+                <label for="level2Master">Master Password</label>
                 <button id="level2ToggleMaster" class="level2-inline-toggle" type="button" aria-label="Show master password" title="Show master password" aria-pressed="false">
                   <svg class="level2-eye-icon level2-eye-open" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
@@ -147,7 +148,7 @@
               <span class="level2-password-control">
                 <input id="level2Master" type="password" placeholder="Never saved" autocomplete="off" autocapitalize="none" spellcheck="false">
               </span>
-            </label>
+            </div>
             <label>Password Style<select id="level2Style"><option value="maximum">Maximum Security</option><option value="memorable">Memorable Password</option></select></label>
             <label id="level2StrengthField" hidden>Memorable Strength<select id="level2Strength"><option value="easy">Easy</option><option value="standard" selected>Standard</option><option value="strong">Strong</option></select></label>
             <label>Length<input id="level2Length" type="number" min="8" max="64" value="16"></label>
@@ -292,7 +293,7 @@
       <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
     </footer>
 
-    <script src="assets/js/goblinpass-engine.js?v=20260615-master-label-eye"></script>
-    <script src="assets/js/level2-test.js?v=20260615-master-label-eye"></script>
+    <script src="assets/js/goblinpass-engine.js?v=20260615-master-eye-fix"></script>
+    <script src="assets/js/level2-test.js?v=20260615-master-eye-fix"></script>
   </body>
 </html>

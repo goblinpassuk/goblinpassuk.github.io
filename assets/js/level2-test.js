@@ -73,7 +73,11 @@
       $("level2NextPage").addEventListener("click", () => this.changePage(1));
       $("level2CopyPassword").addEventListener("click", () => this.copyGeneratedPassword());
       $("level2TogglePassword").addEventListener("click", () => this.toggleGeneratedPassword());
-      $("level2ToggleMaster").addEventListener("click", () => this.toggleMasterVisibility());
+      $("level2ToggleMaster").addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.toggleMasterVisibility();
+      });
       $("level2RequireMaster").addEventListener("change", () => this.updateMasterRequirement());
       $("level2Style").addEventListener("change", () => this.updatePasswordStyleFields());
       $("level2MethodGoogle").addEventListener("change", () => {
