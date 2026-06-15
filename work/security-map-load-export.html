@@ -20,7 +20,7 @@
 </head>
 <body>
   <h1>Load Security Map Export</h1>
-  <p>This page stores the encrypted export in this local browser session, then opens the Security Map. Decryption still requires the matching YubiKey/passkey.</p>
+  <p>This page stores the encrypted export in this local browser session, then opens Stateless Gen 2.0.</p>
   <button type="button" id="loadExport">Load encrypted export</button>
   <p id="status"></p>
 
@@ -37,8 +37,8 @@
     document.getElementById("loadExport").addEventListener("click", () => {
       localStorage.setItem("goblinpass_security_map_encrypted_record", JSON.stringify(encryptedRecord));
       localStorage.setItem("goblinpass_security_map_prf_credential", encryptedRecord.credentialId);
-      document.getElementById("status").textContent = "Encrypted export loaded. Opening Security Map...";
-      location.href = "/security-map.html";
+      document.getElementById("status").textContent = "Encrypted export loaded. Opening Stateless Gen 2.0...";
+      location.href = "/stateless-gen2.html";
     });
   </script>
 </body>

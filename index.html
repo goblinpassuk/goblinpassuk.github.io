@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Home</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260611-backup-email" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260615-home-refresh" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -26,8 +26,9 @@
           <details class="nav-dropdown">
             <summary>Web Tools</summary>
             <div class="dropdown-menu">
-              <a href="app.html">Launch App</a>
-              <a href="checker.html">Password Checker</a><a href="backup-codes.html">Google Backup Codes</a><a href="security-map.html">Security Map</a>
+              <a href="app.html">Stateless Gen 1.0</a>
+              <a href="stateless-gen2.html">Stateless Gen 2.0 (Beta)</a>
+              <a href="checker.html">Password Checker</a><a href="backup-codes.html">Secure Notes</a>
               <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
@@ -43,7 +44,13 @@
               <a href="security.html#copy-password-only">Copy Password Only</a>
             </div>
           </details>
-          <a class="nav-link" href="guide.html">Guide</a>
+          <details class="nav-dropdown">
+            <summary>Guide</summary>
+            <div class="dropdown-menu">
+              <a href="guide.html">Guide 1.0</a>
+              <a href="guide2.html">Guide 2.0</a>
+            </div>
+          </details>
           <a class="nav-link" href="faq.html">FAQ</a>
           <details class="nav-dropdown">
             <summary>About Us</summary>
@@ -53,176 +60,177 @@
               <a href="lesspass.html">GoblinPass vs LessPass</a>
             </div>
           </details>
-          <a class="nav-link build-link" href="goblinpass/index.html">Launch App</a>
+          <a class="nav-link build-link" href="app.html">Stateless Gen 1.0</a>
         </div>
       </nav>
     </header>
 
     <main id="top">
-      <section class="hero product-hero section">
-        <div class="hero-copy">
-          <p class="eyebrow">Local-first password security with YubiKey PRF</p>
-          <h1>Generate Strong Passwords Without Storing Them</h1>
-          <p class="hero-subtitle">GoblinPass is a local-first/stateless password generator with optional YubiKey password-ingredient support.</p>
+      <section class="section home-refresh-hero" aria-labelledby="home-title">
+        <div class="home-refresh-copy">
+          <p class="eyebrow">Local-first password tools</p>
+          <h1 id="home-title">GoblinPass</h1>
+          <p class="hero-subtitle">Stateless password generation, encrypted local notes, and a Security Map beta built around unlock methods you control.</p>
           <p>
-            Create unique passwords from inputs you control, keep generation on
-            your device, and add a YubiKey PRF factor for high-value accounts
-            when supported by your browser, operating system, and hardware key.
+            Start with YubiKey today. Windows Hello passkeys and biometric routes
+            are shown as planned paths, so the site is ready to grow without
+            hiding what is still experimental.
           </p>
           <div class="hero-actions" aria-label="Primary actions">
-            <a class="demo-link" href="app.html">Launch App</a>
-            <a class="demo-link secondary-link" href="app.html#build-fork">Build Fork</a>
+            <a class="demo-link" href="stateless-gen2.html">Open Stateless Gen 2.0</a>
+            <a class="demo-link secondary-link" href="backup-codes.html">Open Secure Notes</a>
           </div>
         </div>
-        <div class="hero-panel app-preview-panel" aria-label="GoblinPass generator preview">
-          <div class="app-preview-brand">
-            <span class="mini-logo">GP</span>
-            <div>
-              <strong>GoblinPass</strong>
-              <span>Stateless passwords. Optional YubiKey PRF.</span>
-            </div>
-          </div>
-          <div class="app-preview-tabs" aria-label="App sections preview">
-            <span class="active">Generator</span>
-            <span>Vault</span>
-            <span>Settings</span>
-          </div>
-          <div class="app-preview-card">
-            <label class="mini-field"><span>Website ID</span><strong>Unique ID</strong></label>
-            <label class="mini-field"><span>Site (optional)</span><strong>example.com</strong></label>
-            <label class="mini-field"><span>Login (optional)</span><strong>username or email</strong></label>
-            <div class="mini-check"><span></span>Store full login for this entry</div>
-            <label class="mini-field password-row">
-              <span>Master Password</span>
-              <strong>Never saved</strong>
-              <em>Show</em>
-            </label>
-            <div class="mini-yubikey-row">
-              <span class="mini-key-icon">YK</span>
-              <div>
-                <strong>Use YubiKey</strong>
-                <small>PRF becomes part of the password recipe</small>
+        <div class="home-hero-visual" aria-label="GoblinPass generation flow">
+          <div class="home-flow-diagram">
+            <svg class="home-flow-connectors" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path class="connector-blue" d="M 36 25 H 43 Q 46 25 46 50" />
+              <path class="connector-red" d="M 36 40 H 46 V 50" />
+              <path class="connector-gold" d="M 36 56 H 46 V 50" />
+              <path class="connector-green" d="M 36 72 H 43 Q 46 72 46 50" />
+              <path class="connector-main" d="M 46 50 H 52" />
+            </svg>
+            <div class="home-flow-inputs">
+              <div class="home-flow-node blue">
+                <i class="security-feature-icon icon-trusted-device-vector" aria-hidden="true"></i>
+                <div>
+                  <strong>Website ID</strong>
+                  <span>Website or account ID.</span>
+                </div>
+              </div>
+              <div class="home-flow-node red">
+                <i class="security-feature-icon icon-master-password-vector" aria-hidden="true"></i>
+                <div>
+                  <strong>Master Password</strong>
+                  <span>Only you know this secret.</span>
+                </div>
+              </div>
+              <div class="home-flow-node gold">
+                <i class="security-feature-icon icon-yubikey-vector" aria-hidden="true"></i>
+                <div>
+                  <strong>Unlock Factor</strong>
+                  <span>YubiKey, passkey, or biometric route.</span>
+                </div>
+              </div>
+              <div class="home-flow-node green">
+                <i class="security-feature-icon icon-google-factor-vector" aria-hidden="true"></i>
+                <div>
+                  <strong>Additional Factors</strong>
+                  <span>Google login, trusted device, and more.</span>
+                </div>
               </div>
             </div>
-            <label class="mini-field"><span>Password Style</span><strong>Maximum Security</strong></label>
-            <p class="app-preview-help">
-              Memorable passwords are easier to enter on consoles, TVs, handheld
-              devices, and controllers. Maximum Security remains recommended for
-              email, banking, and important accounts.
-            </p>
-            <div class="mini-options">
-              <span>&#10003; a-z</span>
-              <span>&#10003; A-Z</span>
-              <span>&#10003; 0-9</span>
-              <span>&#10003; %!@</span>
+
+            <div class="home-flow-engine">
+              <div class="home-flow-join" aria-hidden="true"></div>
+              <div class="home-engine-card">
+                <span class="flow-brand-mark">GP</span>
+                <strong>GoblinPass</strong>
+                <span>Stateless password engine</span>
+              </div>
             </div>
-            <div class="mini-two">
-              <label class="mini-field"><span>Length</span><strong>16</strong></label>
-              <label class="mini-field"><span>Counter</span><strong>1</strong></label>
+
+            <div class="home-flow-outputs">
+              <div class="home-flow-output password">
+                <span class="home-output-lock" aria-hidden="true"></span>
+                <div>
+                  <strong>Generated Password</strong>
+                  <span>xR7!Qm#8Lw...</span>
+                </div>
+              </div>
+              <div class="home-flow-output map">
+                <i class="security-feature-icon icon-copy-only-vector" aria-hidden="true"></i>
+                <div>
+                  <strong>Security Map</strong>
+                  <span>Settings and context auto-recorded.</span>
+                </div>
+              </div>
             </div>
-            <div class="mini-actions"><strong>Generate & copy</strong><span>Save</span></div>
-            <div class="mini-output">Generated and copied: C0V********2#1n <em>Show</em></div>
           </div>
+        </div>
+      </section>
+
+      <section class="section home-tool-grid" aria-label="GoblinPass tools">
+        <article class="backup-tool-card gen2-choice-card gen2-choice-card-active">
+          <div class="gen2-choice-card-top">
+            <i class="legend-art icon-state-file-vector" aria-hidden="true"></i>
+            <span class="gen2-choice-status ready">Beta</span>
+          </div>
+          <h2>Stateless Gen 2.0</h2>
+          <p>Generate and copy passwords while auto-recording Security Map metadata into an encrypted state file.</p>
+          <a class="primary-button" href="stateless-gen2.html">Choose Gen 2 unlock</a>
+        </article>
+
+        <article class="backup-tool-card gen2-choice-card">
+          <div class="gen2-choice-card-top">
+            <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
+            <span class="gen2-choice-status ready">Available</span>
+          </div>
+          <h2>Secure Notes</h2>
+          <p>Keep local notes encrypted behind the same unlock-method direction, starting with YubiKey support.</p>
+          <a class="primary-button" href="backup-codes.html">Choose Notes unlock</a>
+        </article>
+
+        <article class="backup-tool-card gen2-choice-card">
+          <div class="gen2-choice-card-top">
+            <span class="gen2-choice-mark windows-hello" aria-hidden="true"></span>
+            <span class="gen2-choice-status">Original</span>
+          </div>
+          <h2>Stateless Gen 1.0</h2>
+          <p>Use the original generator and local vault while Gen 2.0 remains in beta.</p>
+          <a class="secondary-button" href="app.html">Open Gen 1.0</a>
+        </article>
+      </section>
+
+      <section class="section content-section home-explainer-section" aria-labelledby="home-explainer-title">
+        <div class="section-intro">
+          <p class="eyebrow">How it fits together</p>
+          <h2 id="home-explainer-title">Different tools, same local-first idea</h2>
+          <p>The new pages use the same visual model: inputs plus unlock factors produce something useful without sending your secrets to GoblinPass.</p>
+        </div>
+        <div class="home-explainer-grid">
+          <article class="home-explainer-card">
+            <h3>Password generation</h3>
+            <div class="mini-visual-flow">
+              <span>Site</span>
+              <b>+</b>
+              <span>Master</span>
+              <b>+</b>
+              <span>Factor</span>
+              <b>=</b>
+              <strong>Password</strong>
+            </div>
+            <p>The same private inputs recreate the same password. Gen 2.0 also records map metadata such as method, hint, length, and counter.</p>
+          </article>
+          <article class="home-explainer-card">
+            <h3>Secure notes</h3>
+            <div class="mini-visual-flow">
+              <span>Notes</span>
+              <b>+</b>
+              <span>Unlock</span>
+              <b>=</b>
+              <strong>Encrypted File</strong>
+            </div>
+            <p>Notes stay local and export as encrypted data. YubiKey is the first working unlock route.</p>
+          </article>
+          <article class="home-explainer-card">
+            <h3>Unlock roadmap</h3>
+            <div class="mini-visual-flow three">
+              <span>YubiKey</span>
+              <span>Passkey</span>
+              <span>Biometrics</span>
+            </div>
+            <p>The site now shows all three routes clearly, while only the available route opens a working tool.</p>
+          </article>
         </div>
       </section>
 
       <section class="section trust-strip" aria-label="GoblinPass trust points">
-        <span>&#10003; Local First</span>
-        <span>&#10003; No Password Storage</span>
-        <span>&#10003; YubiKey PRF Ingredient</span>
-        <span>&#10003; Publicly Viewable Source</span>
-        <span>&#10003; Optional Google Security Factor</span>
-      </section>
-
-      <section class="section content-section landing-process" aria-labelledby="home-steps-title">
-        <div class="section-intro landing-section-intro">
-          <p class="eyebrow">Three steps</p>
-          <h2 id="home-steps-title">Simple inputs, repeatable output</h2>
-          <p>GoblinPass turns the same secure inputs into the same password every time.</p>
-        </div>
-        <div class="step-flow" aria-label="GoblinPass three step process">
-          <article class="step-card">
-            <span class="step-number">Step 1</span>
-            <h3>Site ID</h3>
-          </article>
-          <article class="step-card">
-            <span class="step-number">Step 2</span>
-            <h3>Master Password</h3>
-          </article>
-          <article class="step-card">
-            <span class="step-number">Step 3</span>
-            <h3>Optional YubiKey PRF</h3>
-          </article>
-          <article class="step-result-card">
-            <span class="result-label">Result</span>
-            <h3>Generated Password</h3>
-          </article>
-        </div>
-      </section>
-
-      <section class="section content-section yubikey-highlight landing-yubikey" aria-labelledby="yubikey-home-title">
-        <div class="section-intro landing-section-intro">
-          <p class="eyebrow">Hardware-backed stateless password generation</p>
-          <h2 id="yubikey-home-title">YubiKey PRF becomes part of the password recipe</h2>
-          <p>
-            GoblinPass does not use YubiKey as normal two-factor login. When
-            YubiKey mode is enabled, the generated password depends on PRF data
-            returned by the physical key.
-          </p>
-        </div>
-        <div class="premium-formula-card" aria-label="YubiKey PRF password formula">
-          <div class="formula-ingredients">
-            <span>Website ID</span>
-            <span>Master Password</span>
-            <span>Optional Secret</span>
-            <span class="hardware-ingredient">YubiKey PRF</span>
-          </div>
-          <div class="formula-equals" aria-hidden="true">=</div>
-          <div class="formula-result">
-            <span>Generated Password</span>
-          </div>
-        </div>
-        <p class="small-note formula-note">
-          Best tested on Windows 11 with a PRF/hmac-secret compatible YubiKey.
-          Mobile NFC support may vary by browser and device.
-        </p>
-      </section>
-
-      <section class="section feature-card-grid" aria-labelledby="features-title">
-        <div class="section-intro">
-          <p class="eyebrow">Core features</p>
-          <h2 id="features-title">Built for local-first password control</h2>
-          <p>
-            GoblinPass keeps the important parts lightweight: no online password
-            database, clear local controls, and optional extra protection.
-          </p>
-        </div>
-        <div class="product-cards">
-          <article class="product-card">
-            <span class="card-icon" aria-hidden="true">&#128272;</span>
-            <h3>Stateless</h3>
-            <p>Regenerate the same password from the same private inputs instead of saving the generated password online.</p>
-            <a class="card-button" href="security.html">Security Overview</a>
-          </article>
-          <article class="product-card">
-            <span class="card-icon" aria-hidden="true">&#128452;</span>
-            <h3>Local Vault</h3>
-            <p>Use optional local vault metadata to remember site IDs, aliases, counters, hints, and notes.</p>
-            <a class="card-button" href="app.html">Launch App</a>
-          </article>
-          <article class="product-card">
-            <span class="card-icon" aria-hidden="true">&#128187;</span>
-            <h3>Publicly Viewable Source</h3>
-            <p>Review the source and inspect the project history for transparency. Use beyond viewing and studying requires permission.</p>
-            <a class="card-button" href="github.html">View Transparency</a>
-          </article>
-          <article class="product-card">
-            <span class="card-icon" aria-hidden="true">&#128737;</span>
-            <h3>YubiKey PRF</h3>
-            <p>Use a supported YubiKey as a hardware password ingredient, so the same inputs without the key do not recreate the same password.</p>
-            <a class="card-button" href="guide.html#yubikey-guide">YubiKey Guide</a>
-          </article>
-        </div>
+        <span>Local first</span>
+        <span>No online password database</span>
+        <span>YubiKey available now</span>
+        <span>Passkeys planned</span>
+        <span>Publicly viewable source</span>
       </section>
     </main>
 
@@ -235,8 +243,8 @@
       <nav class="footer-links" aria-label="Footer navigation">
         <a href="index.html">Home</a>
         <a href="about.html">About Us</a>
-        <a href="checker.html">Password Checker</a><a href="backup-codes.html">Google Backup Codes</a><a href="security-map.html">Security Map</a>
-        <a href="guide.html">Guide</a>
+        <a href="checker.html">Password Checker</a><a href="backup-codes.html">Secure Notes</a>
+        <a href="guide.html">Guide 1.0</a><a href="guide2.html">Guide 2.0</a>
         <a href="security.html">Security</a>
         <a href="github.html">GitHub</a>
       </nav>
