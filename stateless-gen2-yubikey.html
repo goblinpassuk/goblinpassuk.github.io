@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Stateless Gen 2.0 YubiKey Beta</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260615-stateless-gen2-options" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260615-map-filter-v2" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -214,8 +214,19 @@
             <button id="level2ToggleMapReveal" class="secondary-button" type="button" aria-pressed="false">Show all entries</button>
           </div>
           <div class="level2-map-filter" aria-label="Filter Security Map entries">
-            <label for="level2SiteFilter">Filter by site</label>
-            <input id="level2SiteFilter" type="search" placeholder="Type a site name..." autocomplete="off" spellcheck="false">
+            <label class="level2-filter-field" for="level2SiteFilter">
+              <span>Filter by site</span>
+              <input id="level2SiteFilter" type="search" placeholder="Type a site name..." autocomplete="off" spellcheck="false">
+            </label>
+            <label class="level2-filter-field level2-page-size-field" for="level2PageSize">
+              <span>Entries per page</span>
+              <select id="level2PageSize">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
             <p id="level2FilterStatus" class="level2-filter-status">Showing all entries.</p>
             <div class="level2-pagination" aria-label="Security Map pages">
               <button id="level2PrevPage" class="secondary-button" type="button">Previous</button>
@@ -263,7 +274,7 @@
       <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
     </footer>
 
-    <script src="assets/js/goblinpass-engine.js?v=20260615-stateless-gen2-options"></script>
-    <script src="assets/js/level2-test.js?v=20260615-stateless-gen2-options"></script>
+    <script src="assets/js/goblinpass-engine.js?v=20260615-map-filter-v2"></script>
+    <script src="assets/js/level2-test.js?v=20260615-map-filter-v2"></script>
   </body>
 </html>

@@ -67,6 +67,7 @@
       $("level2AutoRecord").addEventListener("click", () => this.toggleAutoRecord());
       $("level2ToggleMapReveal").addEventListener("click", () => this.toggleMapRevealAll());
       $("level2SiteFilter").addEventListener("input", event => this.updateSiteFilter(event.target.value));
+      $("level2PageSize").addEventListener("change", event => this.updatePageSize(event.target.value));
       $("level2PrevPage").addEventListener("click", () => this.changePage(-1));
       $("level2NextPage").addEventListener("click", () => this.changePage(1));
       $("level2CopyPassword").addEventListener("click", () => this.copyGeneratedPassword());
@@ -858,6 +859,13 @@
       this.renderRows();
     }
 
+    updatePageSize(value) {
+      const next = Number.parseInt(value, 10);
+      this.pageSize = [10, 25, 50, 100].includes(next) ? next : 25;
+      this.currentPage = 1;
+      this.renderRows();
+    }
+
     filteredRows() {
       if (!this.siteFilter) return [...this.rows];
       return this.rows.filter(row => String(row.site || "").toLowerCase().includes(this.siteFilter));
@@ -889,12 +897,15 @@
       const filterInput = $("level2SiteFilter");
       const filterStatus = $("level2FilterStatus");
       const pageStatus = $("level2PageStatus");
+      const pageSize = $("level2PageSize");
       const prev = $("level2PrevPage");
       const next = $("level2NextPage");
       const hasRows = this.isUnlocked && this.rows.length > 0;
       if (!hasRows) this.currentPage = 1;
       const totalPages = this.totalPagesForCount(filteredCount);
       filterInput.disabled = !hasRows;
+      pageSize.disabled = !hasRows;
+      pageSize.value = String(this.pageSize);
       prev.disabled = !hasRows || this.currentPage <= 1 || filteredCount <= this.pageSize;
       next.disabled = !hasRows || this.currentPage >= totalPages || filteredCount <= this.pageSize;
       filterStatus.textContent = hasRows
