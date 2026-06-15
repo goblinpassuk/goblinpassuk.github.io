@@ -53,6 +53,59 @@
   margin: 10px 0;
 }
 
+.level2-map-filter {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.5fr) minmax(220px, 1fr) minmax(180px, 0.9fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.level2-map-filter label {
+  color: var(--text);
+  font-weight: 850;
+}
+
+.level2-map-filter input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(119, 240, 90, 0.34);
+  border-radius: 8px;
+  background: rgba(2, 10, 6, 0.82);
+  color: var(--text);
+  font: inherit;
+  font-weight: 750;
+  padding: 9px 12px;
+}
+
+.level2-map-filter input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(119, 240, 90, 0.12);
+}
+
+.level2-filter-status,
+.level2-pagination span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.level2-pagination {
+  display: grid;
+  grid-template-columns: auto minmax(80px, auto) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.level2-pagination .secondary-button {
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+}
+
 .level2-map-privacy .backup-status {
   margin: 0;
 }
@@ -126,6 +179,11 @@
 
 @media (max-width: 640px) {
   .level2-map-privacy {
+    grid-template-columns: 1fr;
+  }
+
+  .level2-map-filter,
+  .level2-pagination {
     grid-template-columns: 1fr;
   }
 }

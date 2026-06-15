@@ -213,6 +213,16 @@
             <p id="level2MapPrivacyStatus" class="backup-status">Map entries hidden.</p>
             <button id="level2ToggleMapReveal" class="secondary-button" type="button" aria-pressed="false">Show all entries</button>
           </div>
+          <div class="level2-map-filter" aria-label="Filter Security Map entries">
+            <label for="level2SiteFilter">Filter by site</label>
+            <input id="level2SiteFilter" type="search" placeholder="Type a site name..." autocomplete="off" spellcheck="false">
+            <p id="level2FilterStatus" class="level2-filter-status">Showing all entries.</p>
+            <div class="level2-pagination" aria-label="Security Map pages">
+              <button id="level2PrevPage" class="secondary-button" type="button">Previous</button>
+              <span id="level2PageStatus">Page 1 of 1</span>
+              <button id="level2NextPage" class="secondary-button" type="button">Next</button>
+            </div>
+          </div>
           <div class="security-map-table-wrap">
             <table class="security-map-table level2-table" aria-label="Level 2 Security Map preview">
               <thead>

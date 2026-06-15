@@ -26,6 +26,9 @@
       this.mapRevealAll = false;
       this.revealedRowKeys = new Set();
       this.editingRowKey = null;
+      this.siteFilter = "";
+      this.currentPage = 1;
+      this.pageSize = 25;
       this.layoutStorageKey = "goblinpass_level2_test_layout_v2";
       this.googleClientId = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
       this.googleScriptPromise = null;
@@ -63,6 +66,9 @@
       $("level2Generate").addEventListener("click", () => this.generateAndMaybeRecord());
       $("level2AutoRecord").addEventListener("click", () => this.toggleAutoRecord());
       $("level2ToggleMapReveal").addEventListener("click", () => this.toggleMapRevealAll());
+      $("level2SiteFilter").addEventListener("input", event => this.updateSiteFilter(event.target.value));
+      $("level2PrevPage").addEventListener("click", () => this.changePage(-1));
+      $("level2NextPage").addEventListener("click", () => this.changePage(1));
       $("level2CopyPassword").addEventListener("click", () => this.copyGeneratedPassword());
       $("level2TogglePassword").addEventListener("click", () => this.toggleGeneratedPassword());
       $("level2RequireMaster").addEventListener("change", () => this.updateMasterRequirement());
@@ -846,6 +852,59 @@
         : "Map entries hidden.";
     }
 
+    updateSiteFilter(value) {
+      this.siteFilter = String(value || "").trim().toLowerCase();
+      this.currentPage = 1;
+      this.renderRows();
+    }
+
+    filteredRows() {
+      if (!this.siteFilter) return [...this.rows];
+      return this.rows.filter(row => String(row.site || "").toLowerCase().includes(this.siteFilter));
+    }
+
+    totalPagesFor(rows) {
+      return Math.max(1, Math.ceil(rows.length / this.pageSize));
+    }
+
+    totalPagesForCount(count) {
+      return Math.max(1, Math.ceil(count / this.pageSize));
+    }
+
+    pagedRows(rows) {
+      const totalPages = this.totalPagesFor(rows);
+      this.currentPage = Math.min(Math.max(1, this.currentPage), totalPages);
+      const start = (this.currentPage - 1) * this.pageSize;
+      return rows.slice(start, start + this.pageSize);
+    }
+
+    changePage(direction) {
+      const filtered = this.filteredRows();
+      const totalPages = this.totalPagesFor(filtered);
+      this.currentPage = Math.min(Math.max(1, this.currentPage + direction), totalPages);
+      this.renderRows();
+    }
+
+    updateFilterControls(filteredCount = 0) {
+      const filterInput = $("level2SiteFilter");
+      const filterStatus = $("level2FilterStatus");
+      const pageStatus = $("level2PageStatus");
+      const prev = $("level2PrevPage");
+      const next = $("level2NextPage");
+      const hasRows = this.isUnlocked && this.rows.length > 0;
+      if (!hasRows) this.currentPage = 1;
+      const totalPages = this.totalPagesForCount(filteredCount);
+      filterInput.disabled = !hasRows;
+      prev.disabled = !hasRows || this.currentPage <= 1 || filteredCount <= this.pageSize;
+      next.disabled = !hasRows || this.currentPage >= totalPages || filteredCount <= this.pageSize;
+      filterStatus.textContent = hasRows
+        ? this.siteFilter
+          ? `Showing ${filteredCount} of ${this.rows.length} entries matching site.`
+          : `Showing ${filteredCount} of ${this.rows.length} entries.`
+        : "No entries to filter.";
+      pageStatus.textContent = `Page ${this.currentPage} of ${totalPages}`;
+    }
+
     toggleAutoRecord() {
       this.autoRecord = !this.autoRecord;
       this.updateUI();
@@ -908,15 +967,25 @@
       body.innerHTML = "";
       if (!this.isUnlocked) {
         body.innerHTML = "<tr class=\"security-map-empty-row\"><td colspan=\"9\">Connect or create a beta state to begin.</td></tr>";
+        this.updateFilterControls(0);
         this.updateUI();
         return;
       }
       if (!this.rows.length) {
         body.innerHTML = "<tr class=\"security-map-empty-row\"><td colspan=\"9\">No generated entries recorded yet.</td></tr>";
+        this.updateFilterControls(0);
         this.updateUI();
         return;
       }
-      this.rows.forEach(row => {
+      const filtered = this.filteredRows();
+      const rowsToRender = this.pagedRows(filtered);
+      this.updateFilterControls(filtered.length);
+      if (!rowsToRender.length) {
+        body.innerHTML = "<tr class=\"security-map-empty-row\"><td colspan=\"9\">No sites match this filter.</td></tr>";
+        this.updateUI();
+        return;
+      }
+      rowsToRender.forEach(row => {
         const revealed = this.rowIsRevealed(row.key);
         const editing = this.editingRowKey === row.key;
         const tableRow = document.createElement("tr");
