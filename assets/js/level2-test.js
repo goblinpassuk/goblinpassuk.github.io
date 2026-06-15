@@ -207,6 +207,7 @@
 
     updateMasterVisibility() {
       $("level2Master").type = this.masterVisible ? "text" : "password";
+      $("level2ToggleMaster").textContent = this.masterVisible ? "Hide" : "Show";
       $("level2ToggleMaster").setAttribute("aria-pressed", String(this.masterVisible));
       $("level2ToggleMaster").setAttribute("aria-label", this.masterVisible ? "Hide master password" : "Show master password");
       $("level2ToggleMaster").title = this.masterVisible ? "Hide master password" : "Show master password";

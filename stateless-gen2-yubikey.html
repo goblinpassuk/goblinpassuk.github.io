@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Stateless Gen 2.0 YubiKey Beta</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260615-master-eye-fix" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260615-master-show-button" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -132,18 +132,7 @@
             <div id="level2MasterField" class="level2-password-field">
               <span class="level2-password-heading">
                 <label for="level2Master">Master Password</label>
-                <button id="level2ToggleMaster" class="level2-inline-toggle" type="button" aria-label="Show master password" title="Show master password" aria-pressed="false">
-                  <svg class="level2-eye-icon level2-eye-open" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  <svg class="level2-eye-icon level2-eye-closed" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M3 3l18 18"></path>
-                    <path d="M10.6 10.7A3 3 0 0 0 13.3 13.4"></path>
-                    <path d="M9.9 5.3A10.7 10.7 0 0 1 12 5c6 0 9.5 7 9.5 7a17.8 17.8 0 0 1-3.1 4.1"></path>
-                    <path d="M6.5 6.8A17.4 17.4 0 0 0 2.5 12S6 19 12 19a10.8 10.8 0 0 0 4.4-.9"></path>
-                  </svg>
-                </button>
+                <button id="level2ToggleMaster" class="level2-inline-toggle" type="button" aria-label="Show master password" title="Show master password" aria-pressed="false">Show</button>
               </span>
               <span class="level2-password-control">
                 <input id="level2Master" type="password" placeholder="Never saved" autocomplete="off" autocapitalize="none" spellcheck="false">
@@ -293,7 +282,7 @@
       <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
     </footer>
 
-    <script src="assets/js/goblinpass-engine.js?v=20260615-master-eye-fix"></script>
-    <script src="assets/js/level2-test.js?v=20260615-master-eye-fix"></script>
+    <script src="assets/js/goblinpass-engine.js?v=20260615-master-show-button"></script>
+    <script src="assets/js/level2-test.js?v=20260615-master-show-button"></script>
   </body>
 </html>

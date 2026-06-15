@@ -53,7 +53,7 @@
 
 .level2-password-heading {
   display: inline-flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -73,16 +73,20 @@
 }
 
 .level2-inline-toggle {
-  display: inline-grid;
-  width: 22px;
-  height: 22px;
-  min-height: 0;
-  place-items: center;
+  display: inline-flex;
+  min-width: 46px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(119, 240, 90, 0.38);
-  border-radius: 999px;
+  border-radius: 7px;
   background: rgba(5, 20, 11, 0.72);
   color: var(--text);
-  padding: 0;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
   cursor: pointer;
 }
 
@@ -98,29 +102,6 @@
 .level2-inline-toggle:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-}
-
-.level2-eye-icon {
-  grid-area: 1 / 1;
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-}
-
-.level2-eye-closed {
-  display: none;
-}
-
-.level2-inline-toggle[aria-pressed="true"] .level2-eye-open {
-  display: none;
-}
-
-.level2-inline-toggle[aria-pressed="true"] .level2-eye-closed {
-  display: block;
 }
 
 /* Final Level 2 privacy overrides. */
