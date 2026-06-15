@@ -44,6 +44,48 @@
   display: none !important;
 }
 
+.level2-password-field {
+  min-width: 0;
+}
+
+.level2-password-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.level2-password-control input {
+  min-width: 0;
+}
+
+.level2-inline-toggle {
+  min-height: 42px;
+  border: 1px solid rgba(119, 240, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(5, 20, 11, 0.86);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 900;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.level2-inline-toggle:hover,
+.level2-inline-toggle:focus-visible,
+.level2-inline-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: rgba(119, 240, 90, 0.14);
+  color: var(--accent);
+  outline: none;
+}
+
+.level2-inline-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* Final Level 2 privacy overrides. */
 .level2-map-privacy {
   display: grid;

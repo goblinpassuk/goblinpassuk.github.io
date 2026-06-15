@@ -23,6 +23,7 @@
       this.autoRecord = true;
       this.generatedPassword = "";
       this.generatedVisible = false;
+      this.masterVisible = false;
       this.mapRevealAll = false;
       this.revealedRowKeys = new Set();
       this.editingRowKey = null;
@@ -72,6 +73,7 @@
       $("level2NextPage").addEventListener("click", () => this.changePage(1));
       $("level2CopyPassword").addEventListener("click", () => this.copyGeneratedPassword());
       $("level2TogglePassword").addEventListener("click", () => this.toggleGeneratedPassword());
+      $("level2ToggleMaster").addEventListener("click", () => this.toggleMasterVisibility());
       $("level2RequireMaster").addEventListener("change", () => this.updateMasterRequirement());
       $("level2Style").addEventListener("change", () => this.updatePasswordStyleFields());
       $("level2MethodGoogle").addEventListener("change", () => {
@@ -189,9 +191,26 @@
       const required = this.masterRequired();
       $("level2MasterField").hidden = !required;
       $("level2Master").disabled = !required;
-      if (!required) $("level2Master").value = "";
+      $("level2ToggleMaster").disabled = !required;
+      if (!required) {
+        $("level2Master").value = "";
+        this.masterVisible = false;
+        this.updateMasterVisibility();
+      }
       $("level2Master").placeholder = required ? "Never saved" : "Not used in this recipe";
       this.showStatus(required ? "Status: master password is required." : "Status: master password is not required for this recipe.", "info");
+    }
+
+    updateMasterVisibility() {
+      $("level2Master").type = this.masterVisible ? "text" : "password";
+      $("level2ToggleMaster").textContent = this.masterVisible ? "Hide" : "Show";
+      $("level2ToggleMaster").setAttribute("aria-pressed", String(this.masterVisible));
+    }
+
+    toggleMasterVisibility() {
+      if (!this.masterRequired()) return;
+      this.masterVisible = !this.masterVisible;
+      this.updateMasterVisibility();
     }
 
     updatePasswordStyleFields() {
