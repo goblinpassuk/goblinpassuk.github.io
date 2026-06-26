@@ -48,9 +48,23 @@ h1 span{color:var(--green)}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:12px}
 .app-menu{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:8px;
   margin:0 0 14px;
+}
+.app-menu a{
+  display:grid;
+  place-items:center;
+  min-height:44px;
+  border:1px solid var(--border2);
+  background:#07160d;
+  color:#fff;
+  border-radius:12px;
+  padding:10px 8px;
+  font-weight:850;
+  font-size:13px;
+  text-align:center;
+  text-decoration:none;
 }
 .app-menu button.active{
   background:linear-gradient(180deg,#76ff9e,#22a95c);
