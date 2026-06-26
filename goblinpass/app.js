@@ -166,6 +166,7 @@ function loadSettings() {
       saveWebsiteIds: true,
       useMasterPassword: true,
       googleSecurityFactorEnabled: false,
+      offlineDeviceMode: false,
       ...saved
     };
   } catch {
@@ -178,7 +179,8 @@ function loadSettings() {
       defaultPasswordStyle: "maximum",
       saveWebsiteIds: true,
       useMasterPassword: true,
-      googleSecurityFactorEnabled: false
+      googleSecurityFactorEnabled: false,
+      offlineDeviceMode: false
     };
   }
 }
@@ -195,7 +197,8 @@ function saveSettings(settings) {
     defaultPasswordStyle: PASSWORD_STYLES.includes(next.defaultPasswordStyle) ? next.defaultPasswordStyle : "maximum",
     saveWebsiteIds: next.saveWebsiteIds !== false,
     useMasterPassword: next.useMasterPassword !== false,
-    googleSecurityFactorEnabled: !!next.googleSecurityFactorEnabled
+    googleSecurityFactorEnabled: !!next.googleSecurityFactorEnabled,
+    offlineDeviceMode: !!next.offlineDeviceMode
   }));
 }
 
@@ -225,6 +228,7 @@ function clearGeneratedResult() {
   generatedVisible = false;
   lastGeneratedMeta = null;
   if ($("result")) $("result").classList.add("hidden");
+  hidePasswordQr();
 }
 
 function applyMasterPasswordSetting() {
@@ -338,6 +342,196 @@ function bytesToBase64Url(bytes) {
 function base64UrlToBytes(value) {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
   return Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+}
+
+const QR_VERSION = 4;
+const QR_SIZE = 33;
+const QR_DATA_CODEWORDS = 80;
+const QR_ECC_CODEWORDS = 20;
+
+function initQrGf() {
+  const exp = new Array(512);
+  const log = new Array(256);
+  let x = 1;
+  for (let i = 0; i < 255; i++) {
+    exp[i] = x;
+    log[x] = i;
+    x <<= 1;
+    if (x & 0x100) x ^= 0x11d;
+  }
+  for (let i = 255; i < 512; i++) exp[i] = exp[i - 255];
+  return { exp, log };
+}
+
+const QR_GF = initQrGf();
+
+function qrGfMul(a, b) {
+  if (!a || !b) return 0;
+  return QR_GF.exp[QR_GF.log[a] + QR_GF.log[b]];
+}
+
+function qrGeneratorPoly(degree) {
+  let poly = [1];
+  for (let i = 0; i < degree; i++) {
+    const next = new Array(poly.length + 1).fill(0);
+    for (let j = 0; j < poly.length; j++) {
+      next[j] ^= poly[j];
+      next[j + 1] ^= qrGfMul(poly[j], QR_GF.exp[i]);
+    }
+    poly = next;
+  }
+  return poly;
+}
+
+function qrErrorCorrection(data, degree) {
+  const gen = qrGeneratorPoly(degree);
+  const ecc = new Array(degree).fill(0);
+  data.forEach(byte => {
+    const factor = byte ^ ecc.shift();
+    ecc.push(0);
+    for (let i = 0; i < degree; i++) ecc[i] ^= qrGfMul(gen[i + 1], factor);
+  });
+  return ecc;
+}
+
+function qrPushBits(bits, value, length) {
+  for (let i = length - 1; i >= 0; i--) bits.push((value >>> i) & 1);
+}
+
+function qrDataCodewords(text) {
+  const bytes = [...new TextEncoder().encode(text)];
+  if (bytes.length > 78) throw new Error("QR transfer supports passwords up to 78 bytes.");
+  const bits = [];
+  qrPushBits(bits, 0b0100, 4);
+  qrPushBits(bits, bytes.length, 8);
+  bytes.forEach(byte => qrPushBits(bits, byte, 8));
+  const maxBits = QR_DATA_CODEWORDS * 8;
+  qrPushBits(bits, 0, Math.min(4, maxBits - bits.length));
+  while (bits.length % 8) bits.push(0);
+  const codewords = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    codewords.push(bits.slice(i, i + 8).reduce((value, bit) => (value << 1) | bit, 0));
+  }
+  for (let pad = 0xec; codewords.length < QR_DATA_CODEWORDS; pad = pad === 0xec ? 0x11 : 0xec) {
+    codewords.push(pad);
+  }
+  return codewords;
+}
+
+function qrFormatBits(mask) {
+  let data = (0b01 << 3) | mask;
+  let value = data << 10;
+  for (let i = 14; i >= 10; i--) {
+    if ((value >>> i) & 1) value ^= 0x537 << (i - 10);
+  }
+  return ((data << 10) | value) ^ 0x5412;
+}
+
+function makeQrMatrix(text) {
+  const modules = Array.from({ length: QR_SIZE }, () => Array(QR_SIZE).fill(null));
+  const set = (x, y, dark) => {
+    if (x >= 0 && y >= 0 && x < QR_SIZE && y < QR_SIZE) modules[y][x] = !!dark;
+  };
+
+  function finder(x, y) {
+    for (let yy = -1; yy <= 7; yy++) {
+      for (let xx = -1; xx <= 7; xx++) {
+        const edge = xx === -1 || yy === -1 || xx === 7 || yy === 7;
+        const dark = !edge && (xx === 0 || yy === 0 || xx === 6 || yy === 6 || (xx >= 2 && xx <= 4 && yy >= 2 && yy <= 4));
+        set(x + xx, y + yy, dark);
+      }
+    }
+  }
+
+  function alignment(cx, cy) {
+    for (let yy = -2; yy <= 2; yy++) {
+      for (let xx = -2; xx <= 2; xx++) {
+        set(cx + xx, cy + yy, Math.max(Math.abs(xx), Math.abs(yy)) !== 1);
+      }
+    }
+  }
+
+  finder(0, 0);
+  finder(QR_SIZE - 7, 0);
+  finder(0, QR_SIZE - 7);
+  alignment(26, 26);
+  for (let i = 8; i < QR_SIZE - 8; i++) {
+    set(i, 6, i % 2 === 0);
+    set(6, i, i % 2 === 0);
+  }
+  set(8, QR_SIZE - 8, true);
+
+  const reserveFormat = [
+    ...Array.from({ length: 6 }, (_, i) => [8, i]),
+    [8, 7], [8, 8], [7, 8],
+    ...Array.from({ length: 6 }, (_, i) => [5 - i, 8]),
+    ...Array.from({ length: 8 }, (_, i) => [QR_SIZE - 1 - i, 8]),
+    ...Array.from({ length: 7 }, (_, i) => [8, QR_SIZE - 7 + i])
+  ];
+  reserveFormat.forEach(([x, y]) => set(x, y, false));
+
+  const data = qrDataCodewords(text);
+  const codewords = data.concat(qrErrorCorrection(data, QR_ECC_CODEWORDS));
+  const bits = [];
+  codewords.forEach(byte => qrPushBits(bits, byte, 8));
+
+  let bitIndex = 0;
+  let upward = true;
+  for (let x = QR_SIZE - 1; x > 0; x -= 2) {
+    if (x === 6) x--;
+    for (let i = 0; i < QR_SIZE; i++) {
+      const y = upward ? QR_SIZE - 1 - i : i;
+      for (let dx = 0; dx < 2; dx++) {
+        const xx = x - dx;
+        if (modules[y][xx] !== null) continue;
+        const bit = bits[bitIndex++] || 0;
+        const masked = bit ^ (((xx + y) % 2) === 0 ? 1 : 0);
+        set(xx, y, masked);
+      }
+    }
+    upward = !upward;
+  }
+
+  const format = qrFormatBits(0);
+  const formatBit = i => ((format >>> i) & 1) === 1;
+  for (let i = 0; i < 6; i++) set(8, i, formatBit(i));
+  set(8, 7, formatBit(6));
+  set(8, 8, formatBit(7));
+  set(7, 8, formatBit(8));
+  for (let i = 9; i < 15; i++) set(14 - i, 8, formatBit(i));
+  for (let i = 0; i < 8; i++) set(QR_SIZE - 1 - i, 8, formatBit(i));
+  for (let i = 8; i < 15; i++) set(8, QR_SIZE - 15 + i, formatBit(i));
+
+  return modules;
+}
+
+function drawQrToCanvas(text) {
+  const panel = $("qrTransfer");
+  const canvas = $("passwordQr");
+  if (!panel || !canvas) return;
+  try {
+    const matrix = makeQrMatrix(text);
+    const scale = 7;
+    const quiet = 4;
+    const size = (QR_SIZE + quiet * 2) * scale;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = "#000000";
+    matrix.forEach((row, y) => row.forEach((dark, x) => {
+      if (dark) ctx.fillRect((x + quiet) * scale, (y + quiet) * scale, scale, scale);
+    }));
+    panel.classList.remove("hidden");
+  } catch (error) {
+    panel.classList.add("hidden");
+    alert(error.message || "Could not create QR code.");
+  }
+}
+
+function hidePasswordQr() {
+  if ($("qrTransfer")) $("qrTransfer").classList.add("hidden");
 }
 
 function credentialIdBuffer(id) {
@@ -1456,7 +1650,15 @@ async function generate() {
     return;
   }
   generatedPassword = await deterministicPassword(style, strength);
-  lastGeneratedMeta = { style, strength, useYubiKey: !!$("useYubiKey")?.checked, yubiKeyMode: getYubiKeyMode(), useMasterPassword: isMasterPasswordEnabled() };
+  lastGeneratedMeta = {
+    style,
+    strength,
+    useYubiKey: !!$("useYubiKey")?.checked,
+    yubiKeyMode: getYubiKeyMode(),
+    useMasterPassword: isMasterPasswordEnabled(),
+    googleSecurityFactorEnabled: isGoogleSecurityFactorEnabled(),
+    trustedDeviceEnabled: !!loadSettings().trustedDeviceEnabled
+  };
   currentYubiKeyFactor = "";
   generatedVisible = false;
   try { await navigator.clipboard.writeText(generatedPassword); } catch {}
@@ -1469,6 +1671,12 @@ async function generate() {
     $("toggleGenerated").classList.remove("hidden");
   }
   $("result").classList.remove("hidden");
+  if (loadSettings().offlineDeviceMode) {
+    drawQrToCanvas(generatedPassword);
+    await saveCurrent({ silent: true });
+  } else {
+    hidePasswordQr();
+  }
 }
 
 function getEntryPayload(passwordHint) {
@@ -1487,6 +1695,9 @@ function getEntryPayload(passwordHint) {
     passwordHint: passwordHint || "",
     yubiKeyRequired: !!$("useYubiKey")?.checked,
     yubiKeyMode: getYubiKeyMode(),
+    useMasterPassword: isMasterPasswordEnabled(),
+    googleSecurityFactorRequired: isGoogleSecurityFactorEnabled(),
+    trustedDeviceRequired: !!loadSettings().trustedDeviceEnabled,
     memorableStrength: getMemorableStrength(),
     length: parseInt($("length").value || "16", 10),
     counter: parseInt($("counter").value || "1", 10),
@@ -1577,7 +1788,8 @@ async function ensureVaultUnlocked(message) {
   return true;
 }
 
-async function saveCurrent() {
+async function saveCurrent(options = {}) {
+  const silent = !!options.silent;
   try {
     if (!(await ensureVaultUnlocked("Save requires your vault PIN."))) return;
 
@@ -1586,7 +1798,7 @@ async function saveCurrent() {
     let pwForHint = generatedPassword;
     const usingYubiKey = !!$("useYubiKey")?.checked;
     const yubiKeyMode = getYubiKeyMode();
-    if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode || lastGeneratedMeta.useMasterPassword !== isMasterPasswordEnabled())) {
+    if (pwForHint && (!lastGeneratedMeta || lastGeneratedMeta.style !== savedStyle || lastGeneratedMeta.strength !== savedStrength || lastGeneratedMeta.useYubiKey !== usingYubiKey || lastGeneratedMeta.yubiKeyMode !== yubiKeyMode || lastGeneratedMeta.useMasterPassword !== isMasterPasswordEnabled() || lastGeneratedMeta.googleSecurityFactorEnabled !== isGoogleSecurityFactorEnabled() || lastGeneratedMeta.trustedDeviceEnabled !== !!loadSettings().trustedDeviceEnabled)) {
       pwForHint = "";
     }
     if (!pwForHint && isSecurityKeyEnabled() && !getSecurityKeyInputValue()) return alert("Enter your Additional Secret, or turn it off in Settings.");
@@ -1624,9 +1836,15 @@ async function saveCurrent() {
 
     await saveEntries(entries);
     renderEntries();
-    showResultMessage(updatedExisting ? "Updated vault entry." : "Saved to vault.", !!generatedPassword && !loadSettings().copyPasswordOnly);
+    if (!silent) {
+      showResultMessage(updatedExisting ? "Updated vault entry." : "Saved to vault.", !!generatedPassword && !loadSettings().copyPasswordOnly);
+    } else if ($("resultText")) {
+      $("resultText").textContent += updatedExisting ? " Saved to vault." : " Saved to vault.";
+    }
+    return true;
   } catch (error) {
     alert(`Could not save to vault: ${error.message || error}`);
+    return false;
   }
 }
 
@@ -1788,6 +2006,94 @@ async function exportVault() {
   URL.revokeObjectURL(url);
 }
 
+function downloadTextFile(filename, text, type = "text/html") {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function methodCellsForLogbook(entry) {
+  const methods = [
+    ["Yubikey", !!entry.yubiKeyRequired],
+    ["Master Password", entry.useMasterPassword !== false],
+    ["Google", !!entry.googleSecurityFactorRequired],
+    ["Trusted Device", !!entry.trustedDeviceRequired]
+  ];
+  return methods.map(([label, checked]) => `<span class="method-box">${checked ? "[x]" : "[ ]"} ${escapeHtml(label)}</span>`).join("");
+}
+
+async function exportOfflineLogbook() {
+  if (!(await ensureVaultUnlocked("Logbook export requires your vault PIN."))) return;
+  const entries = await loadEntries();
+  const rows = entries.map(entry => `
+    <tr>
+      <td>${escapeHtml(getEntryId(entry))}</td>
+      <td>${escapeHtml(getEntrySite(entry))}</td>
+      <td>${methodCellsForLogbook(entry)}</td>
+      <td>${escapeHtml(entry.length || 16)}</td>
+      <td>${escapeHtml(entry.counter || 1)}</td>
+      <td>${escapeHtml(getEntryLoginForDisplay(entry) || "")}</td>
+    </tr>`).join("");
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GoblinPass 1.0 Offline ID Logbook Export</title>
+  <style>
+    @page{size:A4;margin:10mm}
+    *{box-sizing:border-box}
+    body{margin:0;background:#fff;color:#111;font-family:Arial,sans-serif;font-size:11px}
+    header{border:1px solid #222;border-radius:10px;padding:12px;margin-bottom:8px}
+    h1{margin:0 0 4px;font-size:22px}
+    p{margin:0;color:#333}
+    .notice{border:1px solid #555;border-radius:8px;padding:8px;margin-bottom:8px;font-weight:700}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    th,td{border:1px solid #555;padding:5px;vertical-align:top;word-break:break-word}
+    th{background:#eee;text-align:left;text-transform:uppercase;font-size:10px}
+    tr{break-inside:avoid;page-break-inside:avoid}
+    .method-box{display:inline-block;margin:0 5px 3px 0;white-space:nowrap}
+    footer{margin-top:8px;text-align:center;font-weight:700}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GoblinPass 1.0 Offline ID Logbook</h1>
+    <p>Website IDs and safe lookup details only. Never write down passwords.</p>
+  </header>
+  <div class="notice">This export does not include generated passwords, master passwords, YubiKey secrets, recovery phrases, or additional secret values.</div>
+  <table>
+    <thead><tr><th>ID</th><th>Website</th><th>Security Method</th><th>Length</th><th>Counter</th><th>Notes</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="6">No vault entries exported.</td></tr>'}</tbody>
+  </table>
+  <footer>GoblinPass 1.0 • Offline ID Logbook • Do not store passwords on this sheet</footer>
+</body>
+</html>`;
+  downloadTextFile("GoblinPass_1_Offline_ID_Logbook_Export.html", html);
+}
+
+async function downloadOfflineSource() {
+  try {
+    const [html, css, js, manifest] = await Promise.all([
+      fetch("index.html").then(response => response.text()),
+      fetch("style.css").then(response => response.text()),
+      fetch("app.js").then(response => response.text()),
+      fetch("manifest.webmanifest").then(response => response.text()).catch(() => "{}")
+    ]);
+    const source = html
+      .replace(/<link rel="manifest" href="manifest\.webmanifest">/, `<script type="application/json" id="offlineManifest">${escapeHtml(manifest)}</script>`)
+      .replace(/<link rel="stylesheet" href="style\.css[^"]*">/, `<style>\n${css}\n</style>`)
+      .replace(/<script src="app\.js[^"]*"><\/script>/, `<script>\n${js}\n<\/script>`);
+    downloadTextFile("GoblinPass_1_Offline_Source.html", source);
+  } catch (error) {
+    alert("Could not build the offline download from local files. Open this page from the GoblinPass folder and try again.");
+  }
+}
+
 async function importVault(file) {
   if (!(await ensureVaultUnlocked("Import requires your vault PIN."))) return;
   const text = await file.text();
@@ -1815,6 +2121,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("passwordStyle").value = getDefaultPasswordStyle();
   $("saveWebsiteIds").checked = loadSettings().saveWebsiteIds !== false;
   if ($("useMasterPassword")) $("useMasterPassword").checked = isMasterPasswordEnabled();
+  if ($("offlineDeviceMode")) $("offlineDeviceMode").checked = !!loadSettings().offlineDeviceMode;
   $("memorableStrength").value = "standard";
   updatePasswordStyleUi();
   $("generate").onclick = generate;
@@ -1823,6 +2130,8 @@ document.addEventListener("DOMContentLoaded", () => {
   $("setOrUnlockPin").onclick = setOrUnlockPin;
   $("filter").oninput = renderEntries;
   $("exportBtn").onclick = exportVault;
+  if ($("exportLogbookBtn")) $("exportLogbookBtn").onclick = exportOfflineLogbook;
+  if ($("downloadOfflineSource")) $("downloadOfflineSource").onclick = downloadOfflineSource;
   $("importFile").onchange = async ev => {
     try { if (ev.target.files[0]) await importVault(ev.target.files[0]); }
     catch (e) { alert(e.message); }
@@ -1927,6 +2236,10 @@ document.addEventListener("DOMContentLoaded", () => {
   $("copyPasswordOnly").onchange = () => {
     saveSettings({ copyPasswordOnly: $("copyPasswordOnly").checked });
     updateTrustedDeviceStatus();
+  };
+  if ($("offlineDeviceMode")) $("offlineDeviceMode").onchange = () => {
+    saveSettings({ offlineDeviceMode: $("offlineDeviceMode").checked });
+    if (!$("offlineDeviceMode").checked) hidePasswordQr();
   };
   $("setupGoogleSignIn").onclick = setupGoogleSignIn;
   $("googleSignOut").onclick = googleSignOut;
