@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GoblinPass Mobile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07120e">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="brand">
+      <div class="logo">GP</div>
+      <div>
+        <h1>Goblin<span>Pass</span></h1>
+        <p>Tiny vault. Minimal secrets.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <label>Site</label>
+      <input id="site" type="text" placeholder="example.com" autocomplete="off" autocapitalize="none" spellcheck="false">
+
+      <label>Login (Username / Email)</label>
+      <input id="login" type="text" placeholder="username or email" autocomplete="off" autocapitalize="none" spellcheck="false">
+
+      <label class="save-full-row">
+        <input id="storeFullLogin" type="checkbox">
+        Store full login for this entry
+      </label>
+
+      <label>Master Password</label>
+      <div class="input-row">
+        <input id="master" type="password" placeholder="Never saved" autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button id="toggleMaster" class="icon-btn" type="button">👁</button>
+      </div>
+
+      <div class="options-grid">
+        <label class="check"><input id="lower" type="checkbox" checked> a-z</label>
+        <label class="check"><input id="upper" type="checkbox" checked> A-Z</label>
+        <label class="check"><input id="nums" type="checkbox" checked> 0-9</label>
+        <label class="check"><input id="symbols" type="checkbox" checked> %!@</label>
+      </div>
+
+      <div class="number-row">
+        <div>
+          <label>Length</label>
+          <input id="length" type="number" min="8" max="64" value="16">
+        </div>
+        <div>
+          <label>Counter</label>
+          <input id="counter" type="number" min="1" max="999" value="1">
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="generate" class="primary" type="button">Generate & copy</button>
+        <button id="save" type="button">Save</button>
+      </div>
+
+      <div id="result" class="result hidden">
+        <span id="resultText"></span>
+        <button id="toggleGenerated" class="icon-btn small" type="button">👁</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="vault-head">
+        <h2>Vault</h2>
+        <button id="vaultBtn" type="button">Show vault</button>
+      </div>
+      <p class="muted">Saved locally on this device. Full passwords are never saved.</p>
+
+      <div id="pinBox" class="pin-box hidden">
+        <p class="muted">Create or enter your vault PIN.</p>
+        <div class="pin-row">
+          <input id="vaultPin" type="password" maxlength="4" inputmode="numeric" placeholder="Vault PIN">
+          <button id="setOrUnlockPin" type="button">Unlock</button>
+        </div>
+      </div>
+
+      <div id="vaultArea" class="hidden">
+        <input id="filter" class="filter" type="text" placeholder="Filter vault..." autocomplete="off">
+        <div class="vault-actions">
+          <button id="exportBtn" type="button">Export</button>
+          <label class="import-label">
+            Import
+            <input id="importFile" type="file" accept="application/json">
+          </label>
+        </div>
+        <div id="entries" class="entries"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

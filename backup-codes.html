@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GoblinPass - Secure Notes</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260615-secure-notes-options" />
+    <title>GoblinPass - Google Backup Codes Vault</title>
+    <link rel="stylesheet" href="assets/css/style.css?v=20260611-backup-clean" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
   </head>
-  <body class="secure-notes-choice-page">
+  <body>
     <header class="site-header">
       <nav class="nav" aria-label="Main navigation">
         <a class="brand" href="index.html" aria-label="GoblinPass home">
@@ -26,11 +26,10 @@
           <details class="nav-dropdown">
             <summary>Web Tools</summary>
             <div class="dropdown-menu">
-              <a href="app.html">Stateless Gen 1.0</a>
-              <a href="stateless-gen2.html">Stateless Gen 2.0 (Beta)</a>
+              <a href="app.html">Launch App</a>
               <a href="checker.html">Password Checker</a>
-              <a href="backup-codes.html">Secure Notes</a>
-              <a href="goblinpass/offline-id-logbook.html">Offline ID Logbook</a>
+              <a href="backup-codes.html">Google Backup Codes</a>
+              <a href="security-map.html">Security Map</a>
               <a href="app.html#build-fork">Build Fork</a>
             </div>
           </details>
@@ -46,13 +45,7 @@
               <a href="security.html#copy-password-only">Copy Password Only</a>
             </div>
           </details>
-          <details class="nav-dropdown">
-            <summary>Guide</summary>
-            <div class="dropdown-menu">
-              <a href="guide.html">Guide 1.0</a>
-              <a href="guide2.html">Guide 2.0</a>
-            </div>
-          </details>
+          <a class="nav-link" href="guide.html">Guide</a>
           <a class="nav-link" href="faq.html">FAQ</a>
           <details class="nav-dropdown">
             <summary>About Us</summary>
@@ -63,55 +56,103 @@
               <a href="lesspass.html">GoblinPass vs LessPass</a>
             </div>
           </details>
-          <a class="nav-link build-link" href="app.html">Stateless Gen 1.0</a>
+          <a class="nav-link build-link" href="goblinpass/index.html">Launch App</a>
         </div>
       </nav>
     </header>
 
     <main>
-      <section class="section backup-hero secure-notes-choice-hero" aria-labelledby="secure-notes-title">
+      <section class="section backup-hero" aria-labelledby="backup-title">
         <div class="section-intro">
           <p class="eyebrow">Local Web Tool</p>
-          <h1 id="secure-notes-title">Secure Notes</h1>
-          <p>Choose how you want to unlock encrypted local notes. YubiKey is available now; passkey and biometric routes can be added later.</p>
+          <h1 id="backup-title">Google Backup Codes Vault</h1>
+          <p>
+            Save Google backup codes locally in your browser. New exports are
+            encrypted with a secret produced by your physical YubiKey/security
+            key, so the file can be imported in another supported browser with
+            the same key.
+          </p>
         </div>
-        <div class="backup-trust-row" aria-label="Secure Notes boundaries">
+        <div class="backup-trust-row" aria-label="Privacy promises">
           <span><b class="status-dot protected" aria-hidden="true"></b> Local only</span>
-          <span><i class="security-feature-icon small icon-state-file-vector" aria-hidden="true"></i> Encrypted export</span>
-          <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i> Security key ready</span>
+          <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i> YubiKey PRF unlock</span>
+          <span><i class="security-feature-icon small icon-copy-only-vector" aria-hidden="true"></i> Portable encrypted file</span>
         </div>
       </section>
 
-      <section class="section content-section gen2-choice-grid" aria-label="Choose a Secure Notes unlock method">
-        <article class="backup-tool-card gen2-choice-card gen2-choice-card-active">
-          <div class="gen2-choice-card-top">
+      <section class="section content-section backup-tool-grid" aria-label="Backup codes tool">
+        <article class="backup-tool-card">
+          <div class="feature-card-heading">
             <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
-            <span class="gen2-choice-status ready">Available now</span>
+            <div>
+              <p class="eyebrow">Step 1</p>
+              <h2>Set up your YubiKey</h2>
+            </div>
           </div>
-          <h2>YubiKey / Security Key</h2>
-          <p>Use the current Secure Notes tool with YubiKey PRF encryption, local browser storage, encrypted export, and import support.</p>
-          <a class="primary-button" href="secure-notes-yubikey.html">Open YubiKey notes</a>
+          <p>
+            Register a PRF-capable physical security key, then use that same
+            key whenever you unlock, save, export, or import your encrypted
+            backup codes.
+          </p>
+          <p class="backup-choice-note">
+            If Windows shows a passkey picker, choose <strong>Security key</strong>.
+            This tool is intended for a physical YubiKey/security key, not
+            Windows Hello.
+          </p>
+          <div class="backup-actions">
+            <button id="setupBtn" class="primary-button" type="button">Register YubiKey</button>
+            <button id="unlockBtn" class="secondary-button" type="button">Sign in / Show Codes</button>
+            <button id="lockBtn" class="secondary-button" type="button" disabled>Lock</button>
+          </div>
+          <p id="status" class="backup-status">Status: ready. Register a PRF-capable YubiKey first.</p>
+          <div class="backup-storage-strip">
+            <span id="lockIndicator" class="lock-indicator locked">Locked</span>
+            <span>Encryption: YubiKey PRF secret</span>
+            <span>Last saved: <strong id="lastSaved">Never</strong></span>
+          </div>
         </article>
 
-        <article class="backup-tool-card gen2-choice-card gen2-choice-card-soon" aria-disabled="true">
-          <div class="gen2-choice-card-top">
-            <span class="gen2-choice-mark windows-hello" aria-hidden="true"></span>
-            <span class="gen2-choice-status">Coming later</span>
+        <article class="backup-tool-card backup-manager-card">
+          <div class="feature-card-heading">
+            <span class="backup-code-icon" aria-hidden="true">2FA</span>
+            <div>
+              <p class="eyebrow">Step 2</p>
+              <h2>Encrypted backup codes</h2>
+            </div>
           </div>
-          <h2>Windows Hello Passkey</h2>
-          <p>A future notes unlock path for users without a physical YubiKey, built around passkey confirmation before notes can be opened.</p>
-          <button class="secondary-button" type="button" disabled>Not ready yet</button>
+          <p>
+            Once unlocked, paste or edit your backup codes below. Press save to
+            encrypt them with your YubiKey PRF secret. Exported files include
+            public unlock metadata, but not the YubiKey secret itself.
+          </p>
+          <label for="noteContent">Backup codes</label>
+          <textarea id="noteContent" rows="12" placeholder="Locked - sign in with your YubiKey first" disabled></textarea>
+          <div class="backup-actions">
+            <button id="saveBtn" class="primary-button" type="button" disabled>Encrypt and Save</button>
+            <button id="clearBtn" class="secondary-button" type="button" disabled>Clear input</button>
+            <button id="exportBtn" class="secondary-button" type="button">Export encrypted file</button>
+            <button id="importBtn" class="secondary-button" type="button">Import encrypted file</button>
+            <button id="purgeBtn" class="danger-button purge-button" type="button">Purge Entries</button>
+          </div>
+          <input type="file" id="fileInput" accept="application/json,.json,.enc" hidden>
         </article>
 
-        <article class="backup-tool-card gen2-choice-card gen2-choice-card-soon" aria-disabled="true">
-          <div class="gen2-choice-card-top">
-            <span class="gen2-choice-mark biometric" aria-hidden="true"></span>
-            <span class="gen2-choice-status">Coming later</span>
-          </div>
-          <h2>Biometrics</h2>
-          <p>A future trusted-device route for opening notes with a phone or biometric check, while keeping the stored note file encrypted.</p>
-          <button class="secondary-button" type="button" disabled>Not ready yet</button>
-        </article>
+        <aside class="backup-tool-card backup-warning-card">
+          <h2>Important</h2>
+          <p>
+            This is local-only. No backup codes are sent to GoblinPass, Google,
+            or any server.
+          </p>
+          <p>
+            If you lose the YubiKey/security key used for PRF encryption,
+            GoblinPass cannot recover your codes.
+          </p>
+          <p>
+            Exported files are encrypted for the same YubiKey, but keep them
+            somewhere private. A fully compromised computer can still read codes
+            after you unlock and display them.
+          </p>
+        </aside>
       </section>
     </main>
 
@@ -125,13 +166,14 @@
         <a href="index.html">Home</a>
         <a href="app.html">Web Tools</a>
         <a href="checker.html">Password Checker</a>
-        <a href="backup-codes.html">Secure Notes</a>
-              <a href="goblinpass/offline-id-logbook.html">Offline ID Logbook</a>
+        <a href="backup-codes.html">Google Backup Codes</a>
+        <a href="security-map.html">Security Map</a>
         <a href="security.html">Security</a>
       </nav>
       <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
     </footer>
 
     <script src="assets/js/app.js"></script>
+    <script src="assets/js/backup-codes.js?v=20260611-yubikey-prf-export"></script>
   </body>
 </html>
