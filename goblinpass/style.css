@@ -48,7 +48,7 @@ h1 span{color:var(--green)}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:12px}
 .app-menu{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(auto-fit,minmax(88px,1fr));
   gap:8px;
   margin:0 0 14px;
 }

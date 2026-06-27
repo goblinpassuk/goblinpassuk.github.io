@@ -869,7 +869,7 @@ function updateYubiKeyUi() {
   if (!enabled) setYubiKeyMessage("");
   else if (!webAuthnPrfSupported()) setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
   else if (cap.prfAvailable) setYubiKeyMessage(yubiKeyStatusText("Last YubiKey authentication returned a real PRF password ingredient."), "success");
-  else setYubiKeyMessage("No registration needed. When you generate, choose your physical YubiKey/security key and complete the touch or PIN prompt.", "info");
+  else setYubiKeyMessage("Register or verify a password-generation YubiKey from the dedicated YubiKey Registration page, then return here to generate.", "info");
 }
 
 function webAuthnPrfSupported() {

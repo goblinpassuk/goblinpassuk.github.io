@@ -26,6 +26,7 @@
       <button id="vaultTab" type="button" data-page-target="vaultPage">Vault</button>
       <button id="settingsTab" type="button" data-page-target="settingsPage">Settings</button>
       <a class="logbook-link" href="offline-id-logbook.html">Logbook</a>
+      <a class="logbook-link" href="../yubikey-registration.html">YubiKey</a>
     </nav>
 
     <section id="generatorPage" class="page-section">
@@ -69,7 +70,8 @@
           <strong>YubiKey hardware protection</strong>
           <span id="yubiKeyStatus">Status: Authenticates on generate</span>
         </div>
-        <p class="muted">No registration is needed in GoblinPass. When you generate, authenticate with your physical YubiKey/security key. If the key does not return PRF data, GoblinPass will stop instead of making a normal password.</p>
+        <p class="muted">Register or verify the YubiKey used for password generation, then authenticate with that physical key when you generate. If the key does not return PRF data, GoblinPass will stop instead of making a normal password.</p>
+        <p><a href="../yubikey-registration.html">Open YubiKey Registration</a></p>
         <p id="yubiKeyMessage" class="challenge-code hidden" aria-live="polite"></p>
         <pre id="yubiKeyDebug" class="challenge-code hidden" aria-live="polite"></pre>
         <p class="notice">YubiKey mode changes the generated password only when WebAuthn returns a real PRF password ingredient.</p>
