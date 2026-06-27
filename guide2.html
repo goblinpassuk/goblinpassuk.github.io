@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - Guide 2.0</title>
+    <link rel="stylesheet" href="assets/css/style.css?v=20260615-guide2" />
+    <meta name="author" content="Carl Hatton">
+    <meta name="copyright" content="Carl Hatton">
+    <meta name="application-name" content="GoblinPass">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home">
+          <span class="brand-mark" aria-hidden="true">GP</span>
+          <span>GoblinPass</span>
+        </a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Stateless Gen 1.0</a>
+              <a href="stateless-gen2.html">Stateless Gen 2.0 (Beta)</a>
+              <a href="checker.html">Password Checker</a>
+              <a href="backup-codes.html">Secure Notes</a>
+              <a href="goblinpass/offline-id-logbook.html">Offline ID Logbook</a>
+              <a href="app.html#build-fork">Build Fork</a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>Security</summary>
+            <div class="dropdown-menu">
+              <a href="security.html">Security Overview</a>
+              <a href="security-model.html">Security Model</a>
+              <a href="security.html#trusted-device-protection">Trusted Device Protection</a>
+              <a href="security.html#security-key">Additional Secret</a>
+              <a href="security.html#google-security-factor">Google Security Factor</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
+              <a href="security.html#copy-password-only">Copy Password Only</a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>Guide</summary>
+            <div class="dropdown-menu">
+              <a href="guide.html">Guide 1.0</a>
+              <a href="guide2.html">Guide 2.0</a>
+            </div>
+          </details>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <details class="nav-dropdown">
+            <summary>About Us</summary>
+            <div class="dropdown-menu">
+              <a href="about-me.html">About Me</a>
+              <a href="about.html">About GoblinPass</a>
+              <a href="github.html">Why We Use GitHub</a>
+              <a href="lesspass.html">GoblinPass vs LessPass</a>
+            </div>
+          </details>
+          <a class="nav-link build-link" href="app.html">Stateless Gen 1.0</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section content-section guide2-hero" aria-labelledby="guide2-title">
+        <div class="section-intro">
+          <p class="eyebrow">Guide 2.0</p>
+          <h1 id="guide2-title">How to use Stateless Gen 2.0</h1>
+          <p>Gen 2.0 is the beta flow for generating passwords and recording Security Map metadata into an encrypted state file. YubiKey is available now; passkey and biometric routes are planned.</p>
+        </div>
+        <div class="home-formula-strip guide2-formula">
+          <span class="home-formula-token">
+            <i class="security-feature-icon small icon-trusted-device-vector" aria-hidden="true"></i>
+            Website ID
+          </span>
+          <b>+</b>
+          <span class="home-formula-token">
+            <i class="security-feature-icon small icon-master-password-vector" aria-hidden="true"></i>
+            Master Password
+          </span>
+          <b>+</b>
+          <span class="home-formula-token">
+            <i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i>
+            YubiKey PRF
+          </span>
+          <b>=</b>
+          <strong class="home-formula-result">
+            <i class="status-dot protected" aria-hidden="true"></i>
+            Password + Map Entry
+          </strong>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="guide2-start-title">
+        <div class="section-intro">
+          <p class="eyebrow">Start here</p>
+          <h2 id="guide2-start-title">Choose your Gen 2.0 route</h2>
+          <p>The first page shows three routes. Only YubiKey opens a working beta tool today.</p>
+        </div>
+        <div class="preview-grid guide2-step-grid">
+          <figure class="screen-card guide2-screen-card">
+            <figcaption>1. Open Stateless Gen 2.0</figcaption>
+            <div class="guide2-browser-shot">
+              <div class="shot-topbar">goblinpassuk.github.io/stateless-gen2.html</div>
+              <div class="guide2-choice-row">
+                <div class="guide2-choice active">
+                  <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
+                  <strong>YubiKey / Security Key</strong>
+                  <span>Available now</span>
+                </div>
+                <div class="guide2-choice">
+                  <span class="gen2-choice-mark windows-hello" aria-hidden="true"></span>
+                  <strong>Windows Hello Passkey</strong>
+                  <span>Coming later</span>
+                </div>
+                <div class="guide2-choice">
+                  <span class="gen2-choice-mark biometric" aria-hidden="true"></span>
+                  <strong>Biometrics</strong>
+                  <span>Coming later</span>
+                </div>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="screen-card guide2-screen-card">
+            <figcaption>2. Open the YubiKey beta</figcaption>
+            <div class="guide2-browser-shot">
+              <div class="shot-topbar">stateless-gen2-yubikey.html</div>
+              <div class="guide2-panel-row">
+                <button type="button">Create beta state</button>
+                <button type="button">Open state file</button>
+                <button type="button">Reconnect remembered file</button>
+              </div>
+              <p class="backup-status">Status: not connected.</p>
+              <p>A state file is required before the map can be saved or exported.</p>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="guide2-state-title">
+        <div class="section-intro">
+          <p class="eyebrow">Encrypted state</p>
+          <h2 id="guide2-state-title">Create, open, or reconnect your state file</h2>
+          <p>The state file stores map metadata such as ID, website, method icons, hint, length, and counter. It does not store the generated password.</p>
+        </div>
+        <div class="content-cards three-column">
+          <article>
+            <h3>Create beta state</h3>
+            <p>Use this for a fresh Gen 2.0 test. Save the exported file somewhere you can find again.</p>
+          </article>
+          <article>
+            <h3>Open state file</h3>
+            <p>Use this when you already exported your latest Gen 2.0 state and want to continue from it.</p>
+          </article>
+          <article>
+            <h3>Reconnect remembered file</h3>
+            <p>If the browser remembers a previous file handle, this reconnects it so saving can update the same state file.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="guide2-generate-title">
+        <div class="section-intro">
+          <p class="eyebrow">Generate</p>
+          <h2 id="guide2-generate-title">Fill in the generator and sign with YubiKey</h2>
+          <p>When YubiKey is selected, Gen 2.0 must sign in during generation. If the browser cannot return real PRF data, the tool should stop rather than create a different fallback password.</p>
+        </div>
+        <div class="preview-grid guide2-step-grid">
+          <figure class="screen-card guide2-screen-card">
+            <figcaption>3. Fill in the generator</figcaption>
+            <div class="guide2-generator-shot">
+              <label>ID / Website ID <strong>30</strong></label>
+              <label>Website <strong>Amazon</strong></label>
+              <label>Login / Account <strong>optional login label</strong></label>
+              <label>Master Password <strong>Never saved</strong></label>
+              <label>Password Style <strong>Maximum Security</strong></label>
+              <label>Length <strong>16</strong></label>
+              <label>Counter <strong>1</strong></label>
+              <div class="guide2-checkbox checked">YubiKey</div>
+              <div class="mini-actions"><strong>Generate & Copy</strong><span>Auto-record on</span></div>
+            </div>
+          </figure>
+
+          <figure class="screen-card guide2-screen-card">
+            <figcaption>4. Confirm the YubiKey prompt</figcaption>
+            <div class="os-dialog-mock">
+              <div class="dialog-title">Windows Security</div>
+              <h3>Sign in to GoblinPass</h3>
+              <p>Choose your physical security key if Windows offers more than one option.</p>
+              <div class="security-key-symbol">USB</div>
+              <strong>Enter the key PIN if asked, then touch the YubiKey.</strong>
+              <p class="muted">The returned PRF value becomes part of the password recipe.</p>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="guide2-map-title">
+        <div class="section-intro">
+          <p class="eyebrow">Security Map</p>
+          <h2 id="guide2-map-title">Auto-record and manage the map entry</h2>
+          <p>With auto-record on, a generated password adds or updates the matching row in the encrypted Security Map state.</p>
+        </div>
+        <div class="preview-grid guide2-step-grid">
+          <figure class="screen-card guide2-screen-card large-screen">
+            <figcaption>5. Check the hidden map row</figcaption>
+            <div class="guide2-map-shot">
+              <div class="security-map-picker">
+                <div class="security-map-icon-picker guide2-icon-strip">
+                  <i class="security-feature-icon small icon-master-password-vector" aria-hidden="true"></i>
+                  <i class="security-feature-icon small icon-google-factor-vector" aria-hidden="true"></i>
+                  <i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i>
+                  <i class="security-feature-icon small icon-trusted-device-vector" aria-hidden="true"></i>
+                  <i class="security-feature-icon small icon-copy-only-vector" aria-hidden="true"></i>
+                </div>
+              </div>
+              <table class="guide2-table">
+                <thead>
+                  <tr><th>ID</th><th>Site</th><th>Method</th><th>Hint</th><th>Length</th><th>Counter</th><th>Edit</th><th>View</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><span class="level2-masked-value"></span></td><td><span class="level2-masked-value"></span></td><td><i class="security-feature-icon small icon-master-password-vector" aria-hidden="true"></i><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i></td><td><span class="level2-masked-value"></span></td><td>16</td><td>1</td><td>Edit</td><td>Show</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </figure>
+
+          <figure class="screen-card guide2-screen-card">
+            <figcaption>6. Reveal, edit, or delete only when needed</figcaption>
+            <div class="guide2-browser-shot">
+              <p class="backup-status">Map entries hidden.</p>
+              <div class="guide2-panel-row">
+                <button type="button">Show all entries</button>
+                <button type="button">Edit</button>
+                <button type="button">Delete</button>
+              </div>
+              <p>Clicking a row also fills the generator with that entry's ID, website, length, counter, and method metadata.</p>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="guide2-settings-title">
+        <div class="section-intro">
+          <p class="eyebrow">Settings</p>
+          <h2 id="guide2-settings-title">Use settings for optional factors</h2>
+          <p>Optional factors should be enabled deliberately. If a factor affects generation, you need the same factor later to recreate the same password.</p>
+        </div>
+        <div class="preview-grid guide2-step-grid">
+          <figure class="screen-card guide2-screen-card">
+            <figcaption>7. Google Security Factor</figcaption>
+            <div class="guide2-settings-shot">
+              <div class="guide2-checkbox">Google Security Factor</div>
+              <div class="guide2-reveal-card">
+                <h3>Google Sign-In</h3>
+                <p>Uses the stable Google account subject ID as an extra password ingredient.</p>
+                <div class="mini-actions"><span>Set up Google Sign-In</span><span>Sign out</span></div>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="screen-card guide2-screen-card">
+            <figcaption>8. Trusted Device Protection</figcaption>
+            <div class="guide2-settings-shot">
+              <div class="guide2-checkbox">Enable Trusted Device Protection</div>
+              <div class="guide2-reveal-card">
+                <p class="backup-status">Trusted Device Protection: Enabled - Recovery Key: Not backed up</p>
+                <div class="mini-actions"><span>Show Recovery Key</span><span>Restore Trusted Device</span></div>
+              </div>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section content-section" aria-labelledby="guide2-finish-title">
+        <div class="section-intro">
+          <p class="eyebrow">Finish safely</p>
+          <h2 id="guide2-finish-title">Save or export after changes</h2>
+          <p>After generating, editing, or deleting entries, save/export the latest state file. The newest state is the one you should keep and import next time.</p>
+        </div>
+        <div class="content-cards two-column">
+          <article>
+            <h3>Recommended habit</h3>
+            <ol class="number-list">
+              <li>Open or reconnect your latest state file.</li>
+              <li>Generate the password with auto-record on.</li>
+              <li>Check the map row was added or updated.</li>
+              <li>Save/export the updated state.</li>
+              <li>Keep the newest exported state somewhere private.</li>
+            </ol>
+          </article>
+          <article>
+            <h3>What not to rely on</h3>
+            <p>Do not rely on memory alone if you are using Gen 2.0 map metadata. The state file is what keeps ID, website, method icons, hint, length, and counter together.</p>
+            <p>Do not enable optional factors unless you are prepared to use the same factor again later.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <p><strong>GoblinPass</strong></p>
+        <p>Tiny vault. Minimal secrets.</p>
+        <p>Publicly viewable source. Local first. No password storage.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="index.html">Home</a>
+        <a href="app.html">Web Tools</a>
+        <a href="guide.html">Guide 1.0</a>
+        <a href="guide2.html">Guide 2.0</a>
+        <a href="security.html">Security</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+      <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>

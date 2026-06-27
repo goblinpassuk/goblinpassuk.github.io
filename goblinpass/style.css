@@ -48,9 +48,23 @@ h1 span{color:var(--green)}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:12px}
 .app-menu{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:8px;
   margin:0 0 14px;
+}
+.app-menu a{
+  display:grid;
+  place-items:center;
+  min-height:44px;
+  border:1px solid var(--border2);
+  background:#07160d;
+  color:#fff;
+  border-radius:12px;
+  padding:10px 8px;
+  font-weight:850;
+  font-size:13px;
+  text-align:center;
+  text-decoration:none;
 }
 .app-menu button.active{
   background:linear-gradient(180deg,#76ff9e,#22a95c);
@@ -192,6 +206,35 @@ button,.import-label{
   overflow-wrap:anywhere;
   line-height:1.35;
 }
+.qr-transfer{
+  margin-top:14px;
+  border:1px solid var(--border2);
+  border-radius:16px;
+  padding:14px;
+  background:#07160d;
+  text-align:center;
+}
+.qr-transfer-head{
+  display:grid;
+  gap:3px;
+  margin-bottom:12px;
+  text-align:left;
+}
+.qr-transfer-head strong{
+  color:var(--green);
+  font-size:14px;
+}
+.qr-transfer-head span{
+  color:var(--muted);
+  font-size:12px;
+}
+.qr-transfer canvas{
+  width:min(100%,232px);
+  height:auto;
+  border:10px solid #fff;
+  border-radius:10px;
+  background:#fff;
+}
 .hidden{display:none!important}
 .security-key-box{
   margin-bottom:16px;
@@ -322,7 +365,12 @@ h2{margin:0;font-size:18px}
 .muted{color:var(--muted);font-size:12px;margin:7px 0 12px}
 .pin-row{display:grid;grid-template-columns:1fr 96px;gap:8px}
 .filter{margin:4px 0 10px}
-.vault-actions{display:flex;gap:8px;margin-bottom:10px}
+.vault-actions{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-bottom:10px;
+}
 .import-label{position:relative;overflow:hidden}
 .import-label input{position:absolute;inset:0;opacity:0}
 .entry{
@@ -437,6 +485,12 @@ h2{margin:0;font-size:18px}
   text-align:center;
   font-size:13px;
 }
+.offline-install-card{
+  margin-top:0;
+}
+.offline-install-card button{
+  width:100%;
+}
 .footer-attribution{
   margin:0;
 }
@@ -459,5 +513,6 @@ h2{margin:0;font-size:18px}
   .button-row{grid-template-columns:1fr}
   .result{grid-template-columns:1fr}
   .result .icon-btn.small{width:100%}
+  .vault-actions{grid-template-columns:1fr}
   .settings-actions{grid-template-columns:1fr}
 }

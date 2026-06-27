@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Encrypted state file">
+  <g fill="none" stroke="#77f05a" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="4" d="M14 7h25l11 11v23" />
+    <path stroke-width="4" d="M14 7v50h28" />
+    <path stroke-width="4" d="M39 7v13h11" />
+    <path stroke-width="3.6" d="M22 25h15M22 33h10M22 41h8" />
+    <circle cx="43" cy="43" r="13" stroke-width="4" />
+    <circle cx="48" cy="38" r="3" stroke-width="3.5" />
+    <path stroke-width="4" d="M45.5 40.5 34 52" />
+    <path stroke-width="4" d="M37 49h-6v6" />
+  </g>
+</svg>

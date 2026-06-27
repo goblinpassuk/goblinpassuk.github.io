@@ -1,76 +1,286 @@
-# GoblinPass Strength Checker
+# GoblinPass
 
-GoblinPass Strength Checker is a simple local-only password strength checker and password safety guide built with HTML, CSS, and vanilla JavaScript.
+GoblinPass is a local-first password tools website built around stateless password generation, YubiKey/security-key support, encrypted local state, and secure notes.
 
-## How to use
+The main idea is simple:
 
-Open `index.html` directly in a web browser. No install step is needed.
+```text
+Website ID + Master Password + Unlock Factor + Optional Factors
+    -> GoblinPass
+    = Generated Password
+    -> Security Map metadata is recorded locally
+```
 
-## Privacy
+GoblinPass does not aim to be a cloud password manager. The password generator is designed so the same inputs recreate the same password, while avoiding storage of the generated password itself.
 
-The password checker runs entirely in your browser. Password data entered into the checker is not sent, saved, stored, logged, placed in localStorage, written to cookies, written to sessionStorage, or sent to any external service.
+## Current Focus
 
-The included GoblinPass app under `goblinpass/` is a separate local-first ID-based vault app. If a user chooses to save vault entries, that app encrypts vault metadata in the browser's localStorage using a key derived from the vault PIN. It does not save the master password or full generated passwords.
+The most important part of the project is **Stateless Gen 2.0 (Beta)**:
 
-GoblinPass also includes an optional Additional Secret setting. When disabled, existing users keep generating the same passwords as before. When enabled, the full Additional Secret is added during generation as a second secret, but the key itself is not saved in the vault, exported, transmitted, or stored. Users can enter it with a normal keyboard, a desktop shuffled on-screen keyboard, or a mobile combination lock. GoblinPass does not use partial or random character prompts for the Additional Secret.
+- Stateless password generation.
+- YubiKey/security-key unlock support using WebAuthn PRF where available.
+- A local encrypted Security Map state file.
+- Auto-recording of password metadata after generation.
+- Hidden Security Map rows by default for screen privacy.
+- Search and paging for larger Security Map lists.
+- Secure Notes with YubiKey-backed encryption.
+- Planned support for Windows Hello passkeys and biometric routes.
 
-GoblinPass supports two password styles. Maximum Security is the default and keeps existing complex password generation unchanged. Memorable Password mode is optional and generates deterministic word-based passwords, with Easy, Standard, and Strong strength choices.
+## Live Pages
 
-The vault can optionally avoid saving Website IDs. When this setting is off, users must remember or enter the Website ID themselves when regenerating a password.
+Main pages in the current site:
 
-Trusted Device Protection is a separate optional setting. When enabled, GoblinPass adds a hidden local Trusted Device Key to password generation. Save the Recovery Key offline before relying on this mode; without it, passwords made with Trusted Device Protection cannot be recreated on another device.
+- `index.html` - homepage and overview.
+- `app.html` - Stateless Gen 1.0, the original generator.
+- `stateless-gen2.html` - Stateless Gen 2.0 unlock-method chooser.
+- `stateless-gen2-yubikey.html` - current Gen 2.0 YubiKey/security-key beta.
+- `backup-codes.html` - Secure Notes unlock-method chooser.
+- `secure-notes-yubikey.html` - current YubiKey-backed Secure Notes tool.
+- `checker.html` - password strength checker.
+- `security.html` - security overview.
+- `security-model.html` - security model details.
+- `guide.html` - Guide 1.0.
+- `guide2.html` - Guide 2.0.
+- `faq.html` - frequently asked questions.
 
-Optional Google Sign-In support uses Google Identity Services with a hardcoded frontend Client ID only. It does not request Gmail, Drive, Calendar, or other sensitive scopes. Do not add a Google client secret to this static site. Google Sign-In can be used for future sync/import/export convenience without changing passwords.
+## Stateless Gen 1.0
 
-Google Security Factor is a separate optional setting. When disabled, password generation remains unchanged. When enabled, users must sign in with Google and GoblinPass uses the stable Google account subject ID, not the email address, as an extra password generation input. The subject ID is kept in memory for generation and is not saved in plain text. If access to that Google account is lost, the same passwords may not be recoverable.
+Stateless Gen 1.0 is the original GoblinPass generator.
 
-## Content
+It uses user-provided inputs such as a Website ID and Master Password to deterministically generate a password. If the same recipe is entered again, the same password can be recreated.
 
-The page includes:
+Gen 1.0 remains linked as the stable/original tool while Gen 2.0 is being tested.
 
-- A responsive navigation bar
-- A local password strength checker
-- Password security guidance
-- Password tips and common mistakes
-- Email alias and forwarding guidance
-- A short DuckDuckGo privacy tools mention
-- A GoblinPass overview
-- GoblinPass vault preview screens
-- A link to the live GoblinPass demo
-- An included GoblinPass mobile PWA under `goblinpass/`
-- Optional Additional Secret settings for the included app and generated forks
-- Optional Memorable Password mode for the included app and generated forks
-- A link to the GoblinPass GitHub repository
-- Master password and regeneration guidance
-- A GoblinPass and LessPass comparison table
-- A Create Your Own Pass fork package builder
-- An expanded About GoblinPass section
-- A Why GitHub transparency section
+## Stateless Gen 2.0 Beta
 
-## Files
+Stateless Gen 2.0 is the next-generation workflow.
 
-- `index.html`
-- `assets/css/style.css`
-- `assets/js/app.js`
-- `README.md`
-- `goblinpass/`
+It is built around a clearer separation:
+
+- **Inputs**: Website ID, website name, optional login/account, master password, length, counter, and selected security methods.
+- **Unlock Factor**: currently YubiKey/security-key.
+- **Generated Password**: copied for use, not stored as a saved password.
+- **Security Map**: local encrypted metadata that helps remember how each password was generated.
+
+The Gen 2.0 chooser currently presents three routes:
+
+- **YubiKey / Security Key**: available now.
+- **Windows Hello Passkey**: planned.
+- **Biometrics**: planned.
+
+Only the YubiKey route is currently active.
+
+## YubiKey / Security Key Support
+
+The Gen 2.0 YubiKey beta uses the browser's WebAuthn support to involve a physical security key during generation.
+
+The current YubiKey route is intended for users who want a hardware-backed unlock step as part of their password-generation recipe.
+
+Important notes:
+
+- The same YubiKey/security key may be required to regenerate the same passwords when YubiKey is part of the recipe.
+- If the browser or operating system shows a passkey picker, choose the physical security key route when using the YubiKey version.
+- If a security key is lost and there is no recovery design in place for that factor, affected passwords may not be recoverable.
+
+## Security Map
+
+The Security Map is the Gen 2.0 companion to the password generator.
+
+It records metadata about how a password was generated, without saving the generated password itself.
+
+Current Security Map entries can include:
+
+- ID / Website ID.
+- Site / website name.
+- Security method icons.
+- Password hint.
+- Password length.
+- Counter.
+
+The hint is designed to help identify the generated password without saving the full password.
+
+The Security Map is designed to answer questions like:
+
+- Which security method did I use for this site?
+- What length did I use?
+- What counter did I use?
+- Did I use a master password, YubiKey, Google factor, trusted device, or copy-only setting?
+
+## Security Map Privacy
+
+Security Map entries are hidden by default so someone nearby cannot quickly read the screen.
+
+Current privacy controls include:
+
+- Hide all entries.
+- Show all entries.
+- Reveal individual rows.
+- Edit selected entry metadata.
+- Delete entries.
+- Site-name search filter.
+- Entries-per-page paging.
+
+This is meant to reduce casual shoulder-surfing and screenshot risk. It does not protect against a fully compromised device after data is unlocked and visible.
+
+## Encrypted State File
+
+Gen 2.0 uses a local encrypted state file for the Security Map.
+
+The user can:
+
+- Create a beta state.
+- Open an existing state file.
+- Reconnect a remembered state file when supported by the browser.
+- Save changes.
+- Save as a new file.
+- Export a copy.
+
+The current model is local-first. The user keeps control of the exported state file. There is no required GoblinPass server account for the Gen 2.0 beta.
+
+## Auto-Record
+
+Auto-record is designed to reduce manual work.
+
+When a password is generated, GoblinPass can add or update the matching Security Map row with the current metadata:
+
+- Website ID.
+- Site.
+- Security methods.
+- Hint.
+- Length.
+- Counter.
+
+This means the user should not need to separately save an entry after generating a password.
+
+## Secure Notes
+
+Secure Notes is a local encrypted notes tool.
+
+The current available route is:
+
+- **YubiKey / Security Key Secure Notes**.
+
+Planned routes are:
+
+- Windows Hello Passkey.
+- Biometrics.
+
+The YubiKey Secure Notes tool lets the user:
+
+- Register a PRF-capable YubiKey/security key.
+- Unlock notes with that key.
+- Save encrypted notes locally.
+- Export an encrypted file.
+- Import an encrypted file.
+- Lock the notes again.
+- Purge local note entries.
+
+Secure Notes are local-only. They are not sent to GoblinPass, Google, or a server by the static site.
+
+## Planned Support
+
+The interface already shows future unlock routes so the product direction is clear:
+
+- Windows Hello passkey support.
+- Biometric confirmation support.
+- Possible trusted-device or phone-assisted flows.
+- More polished recovery and migration flows.
+- Continued improvements to Security Map filtering, paging, and editing.
+
+These routes are shown as planned paths, not finished features.
+
+## Privacy Model
+
+GoblinPass is designed as a static, local-first website.
+
+The core privacy goals are:
+
+- Do not store generated passwords.
+- Keep generation inputs under the user's control.
+- Keep state files local and encrypted.
+- Keep Secure Notes local and encrypted.
+- Avoid requiring a cloud account for password generation.
+
+Some optional factors, such as Google Security Factor, may involve signing in to a third-party identity provider if enabled. Those factors should be treated as part of the user's chosen password recipe.
+
+## Security Boundaries
+
+GoblinPass can help reduce several common risks:
+
+- Password reuse.
+- Weak passwords.
+- Cloud vault breach risk.
+- Forgetting which method was used for a site.
+- Casual screen-watching of Security Map entries.
+
+GoblinPass cannot protect against every situation:
+
+- A fully compromised computer can read data after it is unlocked or displayed.
+- Losing a required unlock factor can make affected passwords or notes unrecoverable.
+- Incorrectly typed inputs can generate a different password.
+- Users must keep exported state and note files backed up safely.
+
+## Running Locally
+
+This is a static website.
+
+Open `index.html` in a browser, or open any page directly.
+
+For the YubiKey/WebAuthn features, browser support and local security context rules may apply. Some browsers restrict WebAuthn or file access when pages are opened directly from `file://`. If a feature does not work from a direct file open, use a local static server during testing.
+
+Example local server:
+
+```powershell
+python -m http.server 8000
+```
+
+Then open:
+
+```text
+http://localhost:8000/
+```
+
+## Project Structure
+
+Key files and folders:
+
+- `index.html` - homepage.
+- `app.html` - Stateless Gen 1.0.
+- `stateless-gen2.html` - Gen 2.0 method chooser.
+- `stateless-gen2-yubikey.html` - active Gen 2.0 YubiKey beta.
+- `backup-codes.html` - Secure Notes method chooser.
+- `secure-notes-yubikey.html` - active YubiKey Secure Notes tool.
+- `assets/css/style.css` - main website styling.
+- `assets/js/goblinpass-engine.js` - shared password engine logic.
+- `assets/js/level2-test.js` - Gen 2.0 YubiKey beta logic.
+- `assets/js/backup-codes.js` - Secure Notes logic.
+- `assets/img/security-icons/` - icons used across the security pages and tools.
+- `goblinpass/` - included mobile/PWA-style app assets.
+
+## Status
+
+GoblinPass is actively evolving.
+
+Current stable/original route:
+
+- Stateless Gen 1.0.
+
+Current beta routes:
+
+- Stateless Gen 2.0 with YubiKey/security-key.
+- Secure Notes with YubiKey/security-key.
+
+Planned routes:
+
+- Windows Hello passkeys.
+- Biometrics.
+- Expanded unlock-method support.
 
 ## License
 
-Copyright (c) 2026 Carl Hatton
+Copyright (c) 2026 Carl Hatton.
 
-GoblinPass is a project created and maintained by Carl Hatton.
+GoblinPass is created and maintained by Carl Hatton.
 
-All rights reserved.
+See `LICENSE` for the full license terms.
 
-This project is publicly viewable for personal and educational purposes only.
-
-Modification, redistribution, commercial use, and derivative works are prohibited without prior written permission.
-
-See the LICENSE file for full terms.
-
-## Support the Project
-
-If you find GoblinPass useful and would like to support future development, testing hardware, hosting costs, and new features, voluntary tips are appreciated.
-
-Tips are optional and do not grant any additional rights to use, modify, redistribute, or commercialize the software.

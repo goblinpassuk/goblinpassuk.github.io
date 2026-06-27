@@ -25,6 +25,7 @@
       <button id="generatorTab" class="active" type="button" data-page-target="generatorPage">Generator</button>
       <button id="vaultTab" type="button" data-page-target="vaultPage">Vault</button>
       <button id="settingsTab" type="button" data-page-target="settingsPage">Settings</button>
+      <a class="logbook-link" href="offline-id-logbook.html">Logbook</a>
     </nav>
 
     <section id="generatorPage" class="page-section">
@@ -117,6 +118,14 @@
         <button id="copyGenerated" class="icon-btn small" type="button" aria-label="Copy generated password">Copy</button>
         <button id="toggleGenerated" class="icon-btn small" type="button" aria-label="Show generated password">Show</button>
       </div>
+      <div id="qrTransfer" class="qr-transfer hidden" aria-live="polite">
+        <div class="qr-transfer-head">
+          <strong>Offline transfer QR</strong>
+          <span>Scan with another phone to copy the generated password.</span>
+        </div>
+        <canvas id="passwordQr" width="232" height="232" aria-label="Generated password QR code"></canvas>
+        <p class="muted">Only display this when nobody else can see your screen. The QR code contains the generated password.</p>
+      </div>
     </section>
     </section>
 
@@ -140,6 +149,7 @@
         <input id="filter" class="filter" type="text" placeholder="Filter vault..." autocomplete="off">
         <div class="vault-actions">
           <button id="exportBtn" type="button">Export</button>
+          <button id="exportLogbookBtn" type="button">Export logbook</button>
           <label class="import-label">
             Import
             <input id="importFile" type="file" accept="application/json">
@@ -221,6 +231,11 @@
               Copy Password Only
             </label>
             <p class="muted">Copies the generated password without showing it on screen.</p>
+            <label class="setting-row">
+              <input id="offlineDeviceMode" type="checkbox">
+              Offline Device Mode
+            </label>
+            <p class="muted">After generation, GoblinPass shows a password QR code and saves the entry to the encrypted vault. Use this for an offline phone that transfers passwords by scan.</p>
           </section>
 
           <section class="settings-card google-account-card">
@@ -245,6 +260,12 @@
           </section>
         </div>
       </section>
+    </section>
+
+    <section class="card offline-install-card">
+      <h2>Use GoblinPass 1.0 Offline</h2>
+      <p class="muted">Download a self-contained copy of GoblinPass 1.0 for a phone or offline device. The download includes the app styling and script in one HTML file.</p>
+      <button id="downloadOfflineSource" type="button">Download offline source</button>
     </section>
   </main>
 
