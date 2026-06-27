@@ -62,6 +62,7 @@
       $("level2OpenState").addEventListener("click", () => this.openStateFile());
       $("level2Reconnect").addEventListener("click", () => this.reconnectStateFile());
       $("level2SaveState").addEventListener("click", () => this.saveToOpenedStateFile());
+      $("level2RekeyState").addEventListener("click", () => this.rekeyStateFile());
       $("level2SaveAs").addEventListener("click", () => this.saveAsNewStateFile());
       $("level2Export").addEventListener("click", () => this.exportState());
       $("level2Generate").addEventListener("click", () => this.generateAndMaybeRecord());
@@ -147,6 +148,7 @@
 
     updateUI() {
       $("level2SaveState").disabled = !this.isUnlocked || !this.stateFileHandle;
+      $("level2RekeyState").disabled = !this.isUnlocked || !this.stateFileHandle;
       $("level2SaveAs").disabled = !this.isUnlocked || !this.fileSystemAccessSupported;
       $("level2Export").disabled = !this.isUnlocked && !localStorage.getItem(this.localStorageKey);
       $("level2OpenState").disabled = !this.fileSystemAccessSupported;
@@ -534,24 +536,10 @@
 
     async registerTestState() {
       try {
-        this.requireWebAuthn();
         this.showStatus("Status: touch your YubiKey/passkey to create the beta state.", "info");
-        const credential = await navigator.credentials.create({
-          publicKey: {
-            challenge: crypto.getRandomValues(new Uint8Array(32)),
-            rp: { name: "GoblinPass Stateless Gen 2.0 Beta", id: this.rpId() },
-            user: { id: new TextEncoder().encode(crypto.randomUUID()), name: "goblinpass-stateless-gen2-beta-user", displayName: "GoblinPass Stateless Gen 2.0 Beta" },
-            pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-            authenticatorSelection: { authenticatorAttachment: "cross-platform", userVerification: "required" },
-            extensions: { prf: { eval: { first: await this.fixedPrfSalt() } } },
-            timeout: 60000
-          }
-        });
-        const extensionResults = credential.getClientExtensionResults?.() || {};
-        if (!extensionResults.prf?.enabled) throw new Error("PRF not supported by this browser/security-key flow.");
-        this.credentialId = new Uint8Array(credential.rawId);
-        localStorage.setItem(this.credentialStorageKey, this.bytesToBase64(this.credentialId));
-        await this.unlockWithCredential(this.credentialId);
+        const credentialId = await this.createStateCredential();
+        await this.unlockWithCredential(credentialId);
+        localStorage.setItem(this.credentialStorageKey, this.bytesToBase64(credentialId));
         this.rows = [];
         this.hideMapEntries();
         await this.saveEncryptedLocalRecord();
@@ -560,6 +548,34 @@
       } catch (error) {
         this.showStatus(`Status: beta setup failed: ${error.message}`, "warning");
       }
+    }
+
+    async createStateCredential() {
+      this.requireWebAuthn();
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: "GoblinPass Stateless Gen 2.0 Beta", id: this.rpId() },
+          user: { id: new TextEncoder().encode(crypto.randomUUID()), name: "goblinpass-stateless-gen2-beta-user", displayName: "GoblinPass Stateless Gen 2.0 Beta" },
+          pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+          authenticatorSelection: { authenticatorAttachment: "cross-platform", userVerification: "required" },
+          extensions: { prf: { eval: { first: await this.fixedPrfSalt() } } },
+          timeout: 60000
+        }
+      });
+      const extensionResults = credential.getClientExtensionResults?.() || {};
+      if (!extensionResults.prf?.enabled) throw new Error("PRF not supported by this browser/security-key flow.");
+      return new Uint8Array(credential.rawId);
+    }
+
+    stateUnlockErrorMessage(error) {
+      if (error?.name === "NotAllowedError") {
+        return "The matching original YubiKey was not used, or its touch/PIN prompt was cancelled or timed out. Existing state files remain tied to the YubiKey that created them; password-generation registration does not change that binding.";
+      }
+      if (error?.name === "OperationError") {
+        return "The selected key could not decrypt this state file. Use the original YubiKey that created the file.";
+      }
+      return error?.message || "The state file could not be unlocked.";
     }
 
     async unlockWithCredential(credentialId) {
@@ -669,7 +685,7 @@
         await this.loadStateFileHandle(handle, true);
       } catch (error) {
         if (error.name === "AbortError") return;
-        this.showStatus(`Status: open failed: ${error.message}`, "warning");
+        this.showStatus(`Status: open failed: ${this.stateUnlockErrorMessage(error)}`, "warning");
       }
     }
 
@@ -679,7 +695,50 @@
         if (!this.stateFileHandle) throw new Error("No remembered Stateless Gen 2.0 file was found.");
         await this.loadStateFileHandle(this.stateFileHandle, false);
       } catch (error) {
-        this.showStatus(`Status: reconnect failed: ${error.message}`, "warning");
+        this.showStatus(`Status: reconnect failed: ${this.stateUnlockErrorMessage(error)}`, "warning");
+      }
+    }
+
+    async rekeyStateFile() {
+      if (!this.isUnlocked || !this.stateFileHandle) {
+        this.showStatus("Status: open and unlock the state file with its original YubiKey first.", "warning");
+        return;
+      }
+      const confirmed = confirm("Change the YubiKey for this opened state file? Use the replacement key for the new registration and verification prompts. The updated file will no longer unlock with the original key.");
+      if (!confirmed) return;
+
+      const oldCryptoKey = this.cryptoKey;
+      const oldCredentialId = this.credentialId;
+      let fileUpdated = false;
+      try {
+        this.showStatus("Status: register the replacement YubiKey for this state file.", "info");
+        const newCredentialId = await this.createStateCredential();
+        this.showStatus("Status: verify the replacement YubiKey to re-encrypt the opened state.", "info");
+        await this.unlockWithCredential(newCredentialId);
+        const encryptedRecord = await this.encryptedRecordFromRows();
+        await this.ensureFilePermission(this.stateFileHandle, "readwrite");
+        await this.writeExportPayloadToHandle(this.stateFileHandle, this.exportPayloadFromRecord(encryptedRecord));
+        fileUpdated = true;
+        try {
+          localStorage.setItem(this.localStorageKey, JSON.stringify(encryptedRecord));
+          localStorage.setItem(this.credentialStorageKey, this.bytesToBase64(newCredentialId));
+        } catch {
+          $("level2FileStatus").textContent = "State file re-encrypted, but this browser could not remember the updated local copy.";
+          this.showStatus("Status: state YubiKey changed in the opened file. Keep that file safe; browser storage could not be updated.", "warning");
+          return;
+        }
+        $("level2FileStatus").textContent = "Opened state file re-encrypted for the replacement YubiKey.";
+        this.showStatus("Status: state YubiKey changed successfully. The original key no longer unlocks this updated file.", "success");
+      } catch (error) {
+        if (fileUpdated) {
+          this.showStatus("Status: the opened file was changed to the replacement YubiKey, but browser storage could not be updated.", "warning");
+          return;
+        }
+        this.cryptoKey = oldCryptoKey;
+        this.credentialId = oldCredentialId;
+        this.isUnlocked = true;
+        this.updateUI();
+        this.showStatus(`Status: YubiKey change failed; the opened state still uses its original key. ${this.stateUnlockErrorMessage(error)}`, "warning");
       }
     }
 
