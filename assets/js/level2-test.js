@@ -60,6 +60,7 @@
     bindEvents() {
       $("level2Register").addEventListener("click", () => this.registerTestState());
       $("level2OpenState").addEventListener("click", () => this.openStateFile());
+      $("level2OpenStateChooser").addEventListener("click", () => this.openStateFile(true));
       $("level2Reconnect").addEventListener("click", () => this.reconnectStateFile());
       $("level2SaveState").addEventListener("click", () => this.saveToOpenedStateFile());
       $("level2SaveAs").addEventListener("click", () => this.saveAsNewStateFile());
@@ -150,6 +151,7 @@
       $("level2SaveAs").disabled = !this.isUnlocked || !this.fileSystemAccessSupported;
       $("level2Export").disabled = !this.isUnlocked && !localStorage.getItem(this.localStorageKey);
       $("level2OpenState").disabled = !this.fileSystemAccessSupported;
+      $("level2OpenStateChooser").disabled = !this.fileSystemAccessSupported;
       $("level2AutoRecord").textContent = this.autoRecord ? "Auto-record on" : "Auto-record off";
       $("level2AutoRecord").setAttribute("aria-pressed", String(this.autoRecord));
       $("level2CopyPassword").disabled = !this.generatedPassword;
@@ -561,24 +563,30 @@
       }
     }
 
-    async unlockWithCredential(credentialId) {
+    async unlockWithCredential(credentialId, chooseCredential = false) {
       this.requireWebAuthn();
+      const publicKey = {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rpId: this.rpId(),
+        extensions: { prf: { eval: { first: await this.fixedPrfSalt() } } },
+        timeout: 60000,
+        userVerification: "required"
+      };
+      if (!chooseCredential) {
+        publicKey.allowCredentials = [{ id: credentialId, type: "public-key" }];
+      }
       const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          allowCredentials: [{ id: credentialId, type: "public-key" }],
-          extensions: { prf: { eval: { first: await this.fixedPrfSalt() } } },
-          timeout: 60000,
-          userVerification: "required"
-        }
+        publicKey
       });
       const extensionResults = credential.getClientExtensionResults?.() || {};
       const prfSecret = extensionResults.prf?.results?.first;
       if (!prfSecret) throw new Error("PRF not supported or no PRF secret returned.");
+      const selectedCredentialId = new Uint8Array(credential.rawId);
       this.cryptoKey = await this.deriveAesKey(prfSecret);
-      this.credentialId = credentialId;
+      this.credentialId = selectedCredentialId;
       this.isUnlocked = true;
       this.updateUI();
+      return selectedCredentialId;
     }
 
     normalizedRows() {
@@ -644,28 +652,48 @@
       return encryptedRecord;
     }
 
-    async applyExportPayload(parsed) {
+    async applyExportPayload(parsed, chooseCredential = false) {
       if (parsed.type !== this.exportType || !parsed.encryptedRecord) throw new Error("This file is not a GoblinPass State export.");
       const encryptedRecord = parsed.encryptedRecord;
       const credentialId = this.base64ToBytes(encryptedRecord.credentialId);
-      this.showStatus("Status: touch the matching YubiKey/passkey to unlock.", "info");
-      await this.unlockWithCredential(credentialId);
-      const payload = await this.decryptRecord(encryptedRecord);
+      const previous = {
+        cryptoKey: this.cryptoKey,
+        credentialId: this.credentialId,
+        isUnlocked: this.isUnlocked
+      };
+      this.showStatus(chooseCredential
+        ? "Status: choose the YubiKey account that originally created this state file."
+        : "Status: touch the matching YubiKey/passkey to unlock.", "info");
+      let selectedCredentialId;
+      let payload;
+      try {
+        selectedCredentialId = await this.unlockWithCredential(credentialId, chooseCredential);
+        payload = await this.decryptRecord(encryptedRecord);
+      } catch (error) {
+        this.cryptoKey = previous.cryptoKey;
+        this.credentialId = previous.credentialId;
+        this.isUnlocked = previous.isUnlocked;
+        this.updateUI();
+        if (chooseCredential && error?.name === "OperationError") {
+          throw new Error("That YubiKey account does not unlock this state file. Open it again and choose a different account.");
+        }
+        throw error;
+      }
       this.rows = this.cleanRows(payload.rows);
       this.hideMapEntries();
       localStorage.setItem(this.localStorageKey, JSON.stringify(encryptedRecord));
-      localStorage.setItem(this.credentialStorageKey, this.bytesToBase64(credentialId));
+      localStorage.setItem(this.credentialStorageKey, this.bytesToBase64(selectedCredentialId));
       this.renderRows();
       this.showStatus("Status: beta Security Map connected and unlocked.", "success");
     }
 
-    async openStateFile() {
+    async openStateFile(chooseCredential = false) {
       try {
         const [handle] = await window.showOpenFilePicker({
           multiple: false,
           types: [{ description: "GoblinPass State encrypted JSON", accept: { "application/json": [".json"] } }]
         });
-        await this.loadStateFileHandle(handle, true);
+        await this.loadStateFileHandle(handle, true, chooseCredential);
       } catch (error) {
         if (error.name === "AbortError") return;
         this.showStatus(`Status: open failed: ${error.message}`, "warning");
@@ -682,11 +710,11 @@
       }
     }
 
-    async loadStateFileHandle(handle, rememberHandle) {
+    async loadStateFileHandle(handle, rememberHandle, chooseCredential = false) {
       await this.ensureFilePermission(handle, "read");
       const file = await handle.getFile();
       const parsed = JSON.parse(await file.text());
-      await this.applyExportPayload(parsed);
+      await this.applyExportPayload(parsed, chooseCredential);
       this.stateFileHandle = handle;
       if (rememberHandle) await this.saveRememberedFileHandle(handle);
       $("level2Reconnect").hidden = true;
