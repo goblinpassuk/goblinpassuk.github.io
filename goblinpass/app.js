@@ -862,14 +862,21 @@ function yubiKeyStatusText(extra = "") {
 
 function updateYubiKeyUi() {
   const enabled = !!$("useYubiKey")?.checked;
+  const mode = getYubiKeyMode();
   const cap = getYubiKeyCapability();
-  if ($("yubiKeyMode")) $("yubiKeyMode").value = "prf";
+  const hasCredential = !!getYubiKeyCredentialId();
+  const registered = mode === "gate"
+    ? hasCredential && !!cap.touchGateAvailable
+    : hasCredential && (!!cap.prfAvailable || !!cap.hmacSecretAvailable);
+  if ($("yubiKeyMode")) $("yubiKeyMode").value = mode;
   if ($("yubiKeyBox")) $("yubiKeyBox").classList.toggle("hidden", !enabled);
-  if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = cap.prfAvailable ? "Status: Last authentication worked" : "Status: Authenticates on generate";
+  if ($("yubiKeyStatus")) $("yubiKeyStatus").textContent = registered ? "Status: Registered" : "Status: Not registered";
   if (!enabled) setYubiKeyMessage("");
+  else if (!hasCredential) setYubiKeyMessage("Register and test the YubiKey before generating a YubiKey-protected password.", "info");
   else if (!webAuthnPrfSupported()) setYubiKeyMessage("This browser does not expose WebAuthn PRF. Try a current Chromium-based browser over HTTPS with a YubiKey that supports hmac-secret.", "warning");
-  else if (cap.prfAvailable) setYubiKeyMessage(yubiKeyStatusText("Last YubiKey authentication returned a real PRF password ingredient."), "success");
-  else setYubiKeyMessage("No registration needed. When you generate, choose your physical YubiKey/security key and complete the touch or PIN prompt.", "info");
+  else if (mode === "gate") setYubiKeyMessage(yubiKeyStatusText("YubiKey touch unlock only is active. This mode does not change the generated password."), "info");
+  else if (registered) setYubiKeyMessage(yubiKeyStatusText("YubiKey is registered for this site origin."), "success");
+  else setYubiKeyMessage("This key is not confirmed for PRF ingredient mode. Use Set up and test YubiKey PRF.", "warning");
 }
 
 function webAuthnPrfSupported() {
@@ -1297,25 +1304,33 @@ async function verifyRegisteredYubiKey(id, mode) {
 
 async function getYubiKeyFactor() {
   if (!$("useYubiKey")?.checked) return "";
+  const id = getYubiKeyCredentialId();
+  if (!id) throw new Error("Register and test a YubiKey before generating a YubiKey-protected password.");
+  if (getYubiKeyMode() === "gate") {
+    await verifyYubiKeyTouchGate(id);
+    setYubiKeyMessage(yubiKeyStatusText("YubiKey touch unlock succeeded. The password was generated with the normal GoblinPass formula."), "success");
+    return "";
+  }
   if (!webAuthnPrfSupported()) throw new Error("This browser does not support WebAuthn PRF.");
   const salt = await yubiKeySalt();
   try {
-    setYubiKeyMessage("Authenticate with your YubiKey now. Choose the physical security key if the browser offers more than one option.", "info");
+    setYubiKeyMessage("Authenticate with the registered YubiKey now and complete its touch or PIN prompt.", "info");
     setYubiKeyDebug({ prfPresent: false, prfLength: 0, prfUsed: false, requestShape: "starting", resultSource: "waiting for authenticator" });
-    const { credential, results, output, requestShape, resultSource } = await requestYubiKeyAuthenticationPrf(salt);
+    const { credential, results, output, requestShape, firstResults } = await requestYubiKeyPrf(id, salt);
     const prfLength = output?.byteLength || 0;
+    const resultSource = getPrfOutputDetails(results).source || "stored credential";
     const cap = getYubiKeyCapability();
     saveYubiKeyCapability({
       ...cap,
       touchGateAvailable: true,
       authenticatorAttachment: credential.authenticatorAttachment || cap.authenticatorAttachment || "",
-      getResults: extensionSummary(results),
+      getResults: `${firstResults ? `First try: ${extensionSummary(firstResults)}; ` : ""}Final try: ${extensionSummary(results)}`,
       prfRequestShape: requestShape,
       rpId: webAuthnRpId(),
-      prfAvailable: !!output && output.byteLength === 32,
+      prfAvailable: (!!output && output.byteLength === 32) || !!cap.prfAvailable,
       hmacSecretAvailable: !!cap.hmacSecretAvailable,
-      storedCredentialIdLength: 0,
-      allowCredentialsSupplied: false,
+      storedCredentialIdLength: id.length,
+      allowCredentialsSupplied: true,
       prfResultReturned: !!output,
       browserUserAgent: navigator.userAgent || ""
     });

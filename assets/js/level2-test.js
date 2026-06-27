@@ -468,17 +468,25 @@
       const salt = await this.yubiKeySalt(siteId, accountId, masterPassword);
       this.showStatus("Status: authenticate with your YubiKey/passkey for the password ingredient.", "info");
       try {
-        const credential = await navigator.credentials.get({
-          publicKey: {
-            challenge: crypto.getRandomValues(new Uint8Array(32)),
-            rpId: this.rpId(),
-            userVerification: "preferred",
-            timeout: 60000,
-            hints: ["security-key"],
-            extensions: {
-              prf: { eval: { first: salt } }
-            }
+        const publicKey = {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rpId: this.rpId(),
+          userVerification: "preferred",
+          timeout: 60000,
+          hints: ["security-key"],
+          extensions: {
+            prf: { eval: { first: salt } }
           }
+        };
+        if (this.credentialId?.byteLength) {
+          publicKey.allowCredentials = [{
+            id: this.credentialId,
+            type: "public-key",
+            transports: ["usb", "nfc", "ble"]
+          }];
+        }
+        const credential = await navigator.credentials.get({
+          publicKey
         });
         const output = this.getPrfOutput(credential.getClientExtensionResults?.());
         if (!output || output.byteLength !== 32) {
