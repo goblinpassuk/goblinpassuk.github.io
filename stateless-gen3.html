@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoblinPass - Stateless Gen 3.0 (Beta)</title>
+    <link rel="stylesheet" href="assets/css/style.css?v=20260627-gen3" />
+    <meta name="author" content="Carl Hatton">
+    <meta name="copyright" content="Carl Hatton">
+    <meta name="application-name" content="GoblinPass">
+  </head>
+  <body class="level2-page gen3-page">
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html" aria-label="GoblinPass home">
+          <span class="brand-mark" aria-hidden="true">GP</span>
+          <span>GoblinPass</span>
+        </a>
+        <button id="navToggle" class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div id="navLinks" class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <details class="nav-dropdown">
+            <summary>Web Tools</summary>
+            <div class="dropdown-menu">
+              <a href="app.html">Stateless Gen 1.0</a>
+              <a href="stateless-gen2.html">Stateless Gen 2.0 (Beta)</a>
+              <a href="stateless-gen3.html">Stateless Gen 3.0 (Beta)</a>
+              <a href="checker.html">Password Checker</a>
+              <a href="backup-codes.html">Secure Notes</a>
+              <a href="goblinpass/offline-id-logbook.html">Offline ID Logbook</a>
+            </div>
+          </details>
+          <details class="nav-dropdown">
+            <summary>Security</summary>
+            <div class="dropdown-menu">
+              <a href="security.html">Security Overview</a>
+              <a href="security-model.html">Security Model</a>
+              <a href="security.html#yubikey-prf">YubiKey PRF</a>
+            </div>
+          </details>
+          <a class="nav-link" href="guide2.html">Guide</a>
+          <a class="nav-link" href="faq.html">FAQ</a>
+          <a class="nav-link build-link" href="app.html">Stateless Gen 1.0</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section backup-hero security-map-hero level2-hero gen3-hero" aria-labelledby="gen3-title">
+        <div class="section-intro">
+          <p class="eyebrow">Simplified beta</p>
+          <h1 id="gen3-title">Stateless Gen 3.0</h1>
+          <p>Website ID and Master Password generate the password. Authentication methods unlock the encrypted map only.</p>
+        </div>
+        <div class="backup-trust-row" aria-label="Gen 3 boundaries">
+          <span><b class="status-dot protected" aria-hidden="true"></b> Two password ingredients</span>
+          <span><i class="security-feature-icon small icon-state-file-vector" aria-hidden="true"></i> Encrypted map</span>
+          <span><i class="security-feature-icon small icon-yubikey-vector" aria-hidden="true"></i> Separate map authentication</span>
+        </div>
+      </section>
+
+      <section class="section content-section gen3-map-control" aria-labelledby="gen3-map-title">
+        <div class="level2-panel-copy">
+          <p class="eyebrow">Encrypted Security Map</p>
+          <h2 id="gen3-map-title">Create or open a map</h2>
+          <p id="gen3Status" class="backup-status" data-kind="info">Status: no map is open.</p>
+        </div>
+
+        <div id="gen3Setup" class="gen3-auth-grid">
+          <section class="gen3-auth-option">
+            <label class="gen3-check"><input id="gen3UseYubiKey" type="checkbox" checked> YubiKey unlock</label>
+            <p>Used only to unlock the map. It does not change generated passwords.</p>
+          </section>
+          <section class="gen3-auth-option">
+            <label class="gen3-check"><input id="gen3UseAuthenticator" type="checkbox"> Google Authenticator</label>
+            <p>The setup key is kept in this browser and can be restored manually on another device.</p>
+            <div class="backup-actions">
+              <button id="gen3PrepareAuthenticator" class="secondary-button" type="button">Prepare setup key</button>
+            </div>
+            <div id="gen3AuthenticatorSetup" class="gen3-authenticator-setup" hidden>
+              <label for="gen3SetupKey">Authenticator setup key</label>
+              <div class="gen3-inline-input">
+                <input id="gen3SetupKey" type="text" readonly>
+                <button id="gen3CopySetupKey" class="secondary-button" type="button">Copy</button>
+              </div>
+              <label for="gen3SetupCode">Current 6-digit code</label>
+              <input id="gen3SetupCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+            </div>
+          </section>
+        </div>
+
+        <div id="gen3Unlock" class="gen3-unlock" hidden>
+          <div id="gen3YubiUnlock" class="gen3-unlock-method" hidden>
+            <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
+            <button id="gen3UnlockYubiKey" class="primary-button" type="button">Unlock with YubiKey</button>
+          </div>
+          <div id="gen3TotpUnlock" class="gen3-unlock-method" hidden>
+            <i class="legend-art icon-google-factor-vector" aria-hidden="true"></i>
+            <input id="gen3UnlockCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Authenticator code">
+            <button id="gen3UnlockAuthenticator" class="primary-button" type="button">Unlock</button>
+            <details class="gen3-restore-key">
+              <summary>Restore setup key</summary>
+              <div class="gen3-inline-input">
+                <input id="gen3RestoreSetupKey" type="text" autocomplete="off" placeholder="Authenticator setup key">
+                <button id="gen3StoreSetupKey" class="secondary-button" type="button">Use key</button>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="backup-actions gen3-map-actions">
+          <button id="gen3CreateMap" class="primary-button" type="button">Create encrypted map</button>
+          <button id="gen3OpenMap" class="secondary-button" type="button">Open map</button>
+          <button id="gen3SelectSave" class="secondary-button" type="button" disabled>Select save file</button>
+          <button id="gen3SaveNow" class="secondary-button" type="button" disabled>Save now</button>
+          <button id="gen3Lock" class="secondary-button" type="button" disabled>Lock map</button>
+        </div>
+        <p id="gen3FileStatus" class="level2-file-status">No save file selected. Generation is locked.</p>
+      </section>
+
+      <section class="section content-section gen3-workspace" aria-label="Gen 3 generator and Security Map">
+        <article class="backup-tool-card gen3-generator">
+          <div class="feature-card-heading">
+            <i class="legend-art icon-master-password-vector" aria-hidden="true"></i>
+            <div><p class="eyebrow">Stateless Gen 3.0</p><h2>Generate</h2></div>
+          </div>
+          <div class="gen3-form">
+            <label for="gen3SiteId">Website ID</label>
+            <input id="gen3SiteId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Website ID">
+            <span class="level2-password-heading">
+              <label for="gen3Master">Master Password</label>
+              <button id="gen3ToggleMaster" class="level2-inline-toggle" type="button" aria-label="Show master password" aria-pressed="false">Show</button>
+            </span>
+            <input id="gen3Master" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Never saved">
+          </div>
+          <div class="gen3-recipe" aria-label="Password recipe">
+            <span>Website ID</span><b>+</b><span>Master Password</span>
+          </div>
+          <button id="gen3Generate" class="primary-button gen3-generate-button" type="button" disabled>Generate, copy &amp; save</button>
+          <div id="gen3ResultBox" class="level2-result-box" hidden>
+            <p id="gen3Result" class="backup-status level2-result">No password generated.</p>
+            <button id="gen3CopyPassword" class="secondary-button" type="button" disabled>Copy password</button>
+          </div>
+        </article>
+
+        <article class="backup-tool-card gen3-map-card">
+          <div class="feature-card-heading">
+            <i class="legend-art icon-state-file-vector" aria-hidden="true"></i>
+            <div><p class="eyebrow">Auto-saved metadata</p><h2>Security Map</h2></div>
+          </div>
+          <div class="gen3-table-wrap">
+            <table class="gen3-table">
+              <thead><tr><th>Website ID</th><th>Length</th><th>Counter</th><th>Hint</th><th>Updated</th></tr></thead>
+              <tbody id="gen3MapRows"><tr><td colspan="5" class="gen3-empty">Unlock a map to view entries.</td></tr></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand"><p><strong>GoblinPass</strong></p><p>Tiny vault. Minimal secrets.</p></div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="index.html">Home</a><a href="app.html">Gen 1.0</a><a href="stateless-gen2.html">Gen 2.0</a><a href="stateless-gen3.html">Gen 3.0</a>
+      </nav>
+      <p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton</p>
+    </footer>
+
+    <script src="assets/js/goblinpass-engine.js?v=20260627-gen3"></script>
+    <script src="assets/js/level3.js?v=20260627-gen3"></script>
+  </body>
+</html>
