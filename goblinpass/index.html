@@ -69,7 +69,7 @@
           <strong>YubiKey hardware protection</strong>
           <span id="yubiKeyStatus">Status: Not registered</span>
         </div>
-        <p class="muted">Register the physical YubiKey used for password generation. PRF ingredient mode changes the generated password; touch unlock only verifies the key.</p>
+        <p class="muted">When generating, choose the same YubiKey credential you originally used. Set up a key only when adding a genuinely new credential.</p>
         <div class="settings-actions">
           <button id="setupAndTestYubiKeyPrf" type="button">Set up and test YubiKey PRF</button>
           <button id="registerYubiKey" type="button">Register YubiKey</button>
@@ -280,7 +280,7 @@
     </section>
   </main>
 
-  <script src="app.js?v=20260627-yubikey-credential-fix"></script>
+  <script src="app.js?v=20260627-yubikey-chooser-restore"></script>
     <footer class="site-footer"><p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p></footer>
 </body>
 </html>
