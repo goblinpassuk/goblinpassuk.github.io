@@ -82,8 +82,13 @@
             <div id="gen3AuthenticatorSetup" class="gen3-authenticator-setup" hidden>
               <label for="gen3SetupKey">Authenticator setup key</label>
               <div class="gen3-inline-input">
-                <input id="gen3SetupKey" type="text" readonly>
+                <input id="gen3SetupKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Generate a new key or paste an existing key">
                 <button id="gen3CopySetupKey" class="secondary-button" type="button">Copy</button>
+              </div>
+              <button id="gen3ToggleSetupQr" class="secondary-button gen3-qr-toggle" type="button">Show QR code</button>
+              <div id="gen3SetupQrPanel" class="gen3-setup-qr" hidden>
+                <canvas id="gen3SetupQr" width="246" height="246" aria-label="Google Authenticator setup QR code"></canvas>
+                <p>Scan with Google Authenticator. This QR code contains the setup key.</p>
               </div>
               <label for="gen3SetupCode">Current 6-digit code</label>
               <input id="gen3SetupCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
@@ -169,6 +174,7 @@
     </footer>
 
     <script src="assets/js/goblinpass-engine.js?v=20260627-gen3"></script>
-    <script src="assets/js/level3.js?v=20260627-gen3"></script>
+    <script src="assets/js/qr-v4.js?v=20260627-gen3-qr"></script>
+    <script src="assets/js/level3.js?v=20260627-gen3-polish"></script>
   </body>
 </html>

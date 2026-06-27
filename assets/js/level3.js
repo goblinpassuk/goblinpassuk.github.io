@@ -32,6 +32,7 @@
       });
       $("gen3PrepareAuthenticator").addEventListener("click", () => this.prepareAuthenticator());
       $("gen3CopySetupKey").addEventListener("click", () => this.copySetupKey());
+      $("gen3ToggleSetupQr").addEventListener("click", () => this.toggleSetupQr());
       $("gen3CreateMap").addEventListener("click", () => this.createMap());
       $("gen3OpenMap").addEventListener("click", () => this.openMap());
       $("gen3SelectSave").addEventListener("click", () => this.selectSaveFile());
@@ -44,7 +45,12 @@
       $("gen3CopyPassword").addEventListener("click", () => this.copyPassword());
       $("gen3ToggleMaster").addEventListener("click", () => this.toggleMaster());
       $("gen3UseAuthenticator").addEventListener("change", () => {
-        if (!$("gen3UseAuthenticator").checked) $("gen3AuthenticatorSetup").hidden = true;
+        $("gen3AuthenticatorSetup").hidden = !$("gen3UseAuthenticator").checked;
+        if (!$("gen3UseAuthenticator").checked) this.hideSetupQr();
+      });
+      $("gen3SetupKey").addEventListener("input", event => {
+        this.pendingTotpSecret = this.normalizeTotpSecret(event.target.value);
+        if (!$("gen3SetupQrPanel").hidden) this.drawSetupQr();
       });
     }
 
@@ -145,6 +151,10 @@
         }
       }
       return new Uint8Array(output);
+    }
+
+    normalizeTotpSecret(value) {
+      return String(value || "").toUpperCase().replace(/[^A-Z2-7]/g, "");
     }
 
     async totpCode(secret, timeStep = Math.floor(Date.now() / 30000)) {
@@ -295,10 +305,53 @@
       this.setStatus("add the setup key to Google Authenticator, then enter its current code before creating the map.");
     }
 
-    async copySetupKey() {
-      if (!this.pendingTotpSecret) return;
+    authenticatorUri(secret) {
+      return `otpauth://totp/GP3?secret=${secret}&issuer=GP`;
+    }
+
+    drawSetupQr() {
+      const secret = this.normalizeTotpSecret($("gen3SetupKey").value || this.pendingTotpSecret);
+      if (secret.length < 16) {
+        this.hideSetupQr();
+        this.setStatus("enter or prepare a valid Authenticator setup key before showing its QR code.", "warning");
+        return false;
+      }
+      if (!window.GoblinPassQrV4?.draw) {
+        this.setStatus("the local QR renderer did not load.", "warning");
+        return false;
+      }
       try {
-        await navigator.clipboard.writeText(this.pendingTotpSecret);
+        window.GoblinPassQrV4.draw($("gen3SetupQr"), this.authenticatorUri(secret));
+        return true;
+      } catch (error) {
+        this.hideSetupQr();
+        this.setStatus(error?.message || "the Authenticator QR code could not be created.", "warning");
+        return false;
+      }
+    }
+
+    toggleSetupQr() {
+      const panel = $("gen3SetupQrPanel");
+      if (!panel.hidden) {
+        this.hideSetupQr();
+        return;
+      }
+      if (!this.drawSetupQr()) return;
+      panel.hidden = false;
+      $("gen3ToggleSetupQr").textContent = "Hide QR code";
+      this.setStatus("Authenticator QR code ready to scan.", "success");
+    }
+
+    hideSetupQr() {
+      $("gen3SetupQrPanel").hidden = true;
+      $("gen3ToggleSetupQr").textContent = "Show QR code";
+    }
+
+    async copySetupKey() {
+      const secret = this.normalizeTotpSecret($("gen3SetupKey").value || this.pendingTotpSecret);
+      if (!secret) return this.setStatus("enter or prepare an Authenticator setup key first.", "warning");
+      try {
+        await navigator.clipboard.writeText(secret);
         this.setStatus("Authenticator setup key copied.", "success");
       } catch {
         this.setStatus("The setup key could not be copied. Select it manually.", "warning");
@@ -309,10 +362,11 @@
       if (this.busy) return;
       const useYubiKey = $("gen3UseYubiKey").checked;
       const useAuthenticator = $("gen3UseAuthenticator").checked;
+      const authenticatorSecret = this.normalizeTotpSecret($("gen3SetupKey").value || this.pendingTotpSecret);
       if (!useYubiKey && !useAuthenticator) return this.setStatus("select at least one map unlock method.", "warning");
-      if (useAuthenticator && !this.pendingTotpSecret) return this.setStatus("prepare an Authenticator setup key first.", "warning");
-      if (useAuthenticator && !(await this.verifyTotp(this.pendingTotpSecret, $("gen3SetupCode").value))) {
-        return this.setStatus("the Authenticator code did not match the prepared setup key.", "warning");
+      if (useAuthenticator && authenticatorSecret.length < 16) return this.setStatus("enter or prepare a valid Authenticator setup key first.", "warning");
+      if (useAuthenticator && !(await this.verifyTotp(authenticatorSecret, $("gen3SetupCode").value))) {
+        return this.setStatus("the Authenticator code did not match the entered setup key.", "warning");
       }
 
       this.setBusy(true);
@@ -321,15 +375,18 @@
         const unlockMethods = [];
         if (useYubiKey) unlockMethods.push(await this.createYubiMethod(dataKey));
         if (useAuthenticator) {
-          const secretId = await this.totpSecretId(this.pendingTotpSecret);
-          const wrappingKey = await this.deriveTotpWrapKey(this.pendingTotpSecret);
+          const secretId = await this.totpSecretId(authenticatorSecret);
+          const wrappingKey = await this.deriveTotpWrapKey(authenticatorSecret);
           unlockMethods.push({ type: "totp", secretId, wrappedKey: await this.wrapDataKey(dataKey, wrappingKey) });
-          this.saveTotpSecret(secretId, this.pendingTotpSecret);
+          this.saveTotpSecret(secretId, authenticatorSecret);
         }
         this.dataKey = dataKey;
         this.rows = [];
         this.mapRecord = { type: this.recordType, version: 1, updatedAt: new Date().toISOString(), unlockMethods, payload: await this.encryptRows() };
         this.pendingTotpSecret = "";
+        $("gen3SetupKey").value = "";
+        $("gen3SetupCode").value = "";
+        this.hideSetupQr();
         $("gen3AuthenticatorSetup").hidden = true;
         this.renderRows();
         this.setStatus("encrypted map created. Select a save file to enable generation.", "success");
