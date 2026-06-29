@@ -2,6 +2,7 @@
   "use strict";
 
   const $ = id => document.getElementById(id);
+  const MapCrypto = window.GoblinPassGen3MapCrypto;
 
   class GoblinPassGen3 {
     constructor() {
@@ -20,6 +21,8 @@
       this.filter = "";
       this.revealAll = false;
       this.revealedRows = new Set();
+      this.legacyImportPending = false;
+      this.legacyEncrypted = false;
       this.fileSystemSupported = "showOpenFilePicker" in window && "showSaveFilePicker" in window;
       this.bindEvents();
       this.updateUI();
@@ -70,6 +73,7 @@
       const unlocked = !!this.dataKey;
       const hasSaveFile = !!this.fileHandle;
       $("gen3CreateMap").disabled = this.busy || !this.fileSystemSupported || !!this.mapRecord;
+      $("gen3CreateMap").textContent = this.legacyImportPending ? "Encrypt imported map" : "Create encrypted map";
       $("gen3OpenMap").disabled = this.busy || !this.fileSystemSupported;
       $("gen3SelectSave").disabled = this.busy || !unlocked || !this.fileSystemSupported;
       $("gen3SaveNow").disabled = this.busy || !unlocked || !hasSaveFile;
@@ -81,7 +85,9 @@
       $("gen3ToggleRows").textContent = this.revealAll ? "Hide all" : "Show all";
       $("gen3Setup").hidden = !!this.mapRecord;
       if (!this.mapRecord || unlocked) $("gen3Unlock").hidden = true;
-      $("gen3FileStatus").textContent = hasSaveFile
+      $("gen3FileStatus").textContent = this.legacyImportPending
+        ? "Legacy plaintext map loaded. Choose unlock methods, then encrypt and save it."
+        : hasSaveFile
         ? `Auto-save connected: ${this.fileName}`
         : (unlocked ? "Select a save file before generating." : "No save file selected. Generation is locked.");
       this.updateGoogleStatus();
@@ -137,13 +143,17 @@
       return new Uint8Array(await crypto.subtle.digest("SHA-256", input));
     }
 
-    async deriveGoogleWrapKey(subject, salt) {
-      const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(subject), "PBKDF2", false, ["deriveKey"]);
+    async deriveGoogleWrapKey(subject, salt, kdf = MapCrypto.KDF) {
+      if (kdf === "PBKDF2-SHA256") {
+        const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(subject), "PBKDF2", false, ["deriveKey"]);
+        return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 240000 }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+      }
+      const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(subject), "HKDF", false, ["deriveKey"]);
       return crypto.subtle.deriveKey({
-        name: "PBKDF2",
+        name: "HKDF",
         hash: "SHA-256",
         salt,
-        iterations: 240000
+        info: new TextEncoder().encode("GoblinPass Gen3 Google Map Key v1")
       }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
     }
 
@@ -180,26 +190,15 @@
     }
 
     async encryptRows() {
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const plaintext = new TextEncoder().encode(JSON.stringify({ rows: this.rows, updatedAt: new Date().toISOString() }));
-      const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, this.dataKey, plaintext);
-      return { iv: this.bytesToBase64(iv), data: this.bytesToBase64(data) };
+      return MapCrypto.encryptPayload(this.dataKey, MapCrypto.buildPayload(this.rows));
     }
 
     async decryptRows(payload, dataKey) {
-      const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: this.base64ToBytes(payload.iv) }, dataKey, this.base64ToBytes(payload.data));
-      const parsed = JSON.parse(new TextDecoder().decode(plaintext));
-      if (!Array.isArray(parsed.rows)) throw new Error("The decrypted map is invalid.");
-      return parsed.rows.map(row => ({
-        key: String(row.key || crypto.randomUUID()),
-        id: String(row.id || ""),
-        site: String(row.site || ""),
-        login: String(row.login || ""),
-        length: 16,
-        counter: 1,
-        hint: String(row.hint || ""),
-        updated: String(row.updated || "")
-      }));
+      const parsed = await MapCrypto.decryptPayload(dataKey, payload);
+      if (parsed?.schema === 1) return MapCrypto.restoreRows(parsed);
+      const legacyRows = MapCrypto.restoreLegacyRows(parsed);
+      if (!legacyRows) throw new Error("The decrypted GoblinPass Security Map is invalid.");
+      return legacyRows;
     }
 
     yubiPrfOutput(results, credentialId) {
@@ -395,17 +394,21 @@
 
       this.setBusy(true);
       try {
+        const importedRows = this.legacyImportPending ? this.rows.map(row => ({ ...row })) : [];
+        const migratingPlaintext = this.legacyImportPending;
         const dataKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
         const unlockMethods = [];
         if (useYubiKey) unlockMethods.push(await this.createYubiMethod(dataKey));
         if (useBiometric) unlockMethods.push(await this.createBiometricMethod(dataKey));
         if (useGoogle) unlockMethods.push(await this.createGoogleMethod(dataKey));
         this.dataKey = dataKey;
-        this.rows = [];
-        this.mapRecord = { type: this.recordType, version: 1, updatedAt: new Date().toISOString(), unlockMethods, payload: await this.encryptRows() };
+        this.rows = importedRows;
+        this.mapRecord = MapCrypto.createEnvelope(unlockMethods, await this.encryptRows());
+        this.legacyImportPending = false;
+        this.legacyEncrypted = false;
         this.resetRevealState();
         this.renderRows();
-        this.setStatus("encrypted map created. Select a save file to enable generation.", "success");
+        this.setStatus(migratingPlaintext ? "legacy map encrypted. Save now to replace the plaintext file." : "encrypted map created. Select a save file to enable generation.", "success");
       } catch (error) {
         this.setStatus(error?.message || "map creation failed.", "warning");
       } finally {
@@ -414,10 +417,11 @@
     }
 
     validateRecord(record) {
-      if (record?.type !== this.recordType || record.version !== 1 || !Array.isArray(record.unlockMethods) || !record.payload) {
-        throw new Error("This is not a GoblinPass Gen 3.0 map file.");
-      }
-      return record;
+      if (record?.magic === MapCrypto.MAGIC) return { kind: "encrypted", record: MapCrypto.validateEnvelope(record) };
+      if (MapCrypto.isLegacyEncrypted(record)) return { kind: "legacy-encrypted", record };
+      const rows = MapCrypto.restoreLegacyRows(record);
+      if (rows) return { kind: "legacy-plaintext", rows };
+      throw new Error("This is not a GoblinPass Gen 3.0 map file.");
     }
 
     async openMap() {
@@ -428,11 +432,27 @@
           types: [{ description: "GoblinPass Gen 3 encrypted map", accept: { "application/json": [".json"] } }]
         });
         const file = await handle.getFile();
-        this.mapRecord = this.validateRecord(JSON.parse(await file.text()));
+        const imported = this.validateRecord(JSON.parse(await file.text()));
         this.fileHandle = handle;
         this.fileName = file.name || this.fileName;
         this.dataKey = null;
+        this.resetRevealState();
+        if (imported.kind === "legacy-plaintext") {
+          this.mapRecord = null;
+          this.rows = imported.rows;
+          this.legacyImportPending = true;
+          this.legacyEncrypted = false;
+          $("gen3Unlock").hidden = true;
+          $("gen3Setup").hidden = false;
+          this.renderRows();
+          this.setStatus("legacy plaintext map imported. Choose unlock methods, then encrypt and save it.", "warning");
+          this.updateUI();
+          return;
+        }
+        this.mapRecord = imported.record;
         this.rows = [];
+        this.legacyImportPending = false;
+        this.legacyEncrypted = imported.kind === "legacy-encrypted";
         this.resetRevealState();
         this.showUnlockMethods();
         this.renderRows();
@@ -461,10 +481,15 @@
     async finishUnlock(dataKey, label) {
       this.rows = await this.decryptRows(this.mapRecord.payload, dataKey);
       this.dataKey = dataKey;
+      const migrated = this.legacyEncrypted;
+      if (migrated) {
+        this.mapRecord = MapCrypto.createEnvelope(MapCrypto.normalizeLegacyUnlockMethods(this.mapRecord.unlockMethods), await this.encryptRows());
+        this.legacyEncrypted = false;
+      }
       this.generatedPassword = "";
       this.resetRevealState();
       this.renderRows();
-      this.setStatus(`map unlocked with ${label}.`, "success");
+      this.setStatus(migrated ? `map unlocked with ${label} and upgraded. Save now to write the encrypted GPASS3 format.` : `map unlocked with ${label}.`, "success");
       this.updateUI();
     }
 
@@ -491,7 +516,7 @@
         if (!output || output.byteLength !== 32) throw new Error("The YubiKey did not return the map-unlock secret.");
         await this.finishUnlock(await this.unwrapDataKey(method.wrappedKey, await this.deriveYubiWrapKey(output)), "YubiKey");
       } catch (error) {
-        this.setStatus(error?.name === "NotAllowedError" ? "YubiKey sign-in was cancelled, timed out, or used the wrong key." : error?.message || "YubiKey unlock failed.", "warning");
+        this.setStatus("Unable to unlock this GoblinPass Security Map.", "warning");
       } finally {
         this.setBusy(false);
       }
@@ -520,7 +545,7 @@
         if (!output || output.byteLength !== 32) throw new Error("This device passkey did not return the PRF map-unlock secret.");
         await this.finishUnlock(await this.unwrapDataKey(method.wrappedKey, await this.deriveBiometricWrapKey(output)), "mobile biometric / passkey");
       } catch (error) {
-        this.setStatus(error?.name === "NotAllowedError" ? "Biometric sign-in was cancelled, timed out, or used the wrong passkey." : error?.message || "Biometric map unlock failed.", "warning");
+        this.setStatus("Unable to unlock this GoblinPass Security Map.", "warning");
       } finally {
         this.setBusy(false);
       }
@@ -534,10 +559,10 @@
       try {
         const subjectHash = this.bytesToBase64Url(await this.sha256Bytes(`GoblinPass Gen3 Google Subject v1|${this.googleUser.sub}`));
         if (subjectHash !== method.subjectHash) throw new Error("This Google account is not assigned to this map.");
-        const wrappingKey = await this.deriveGoogleWrapKey(this.googleUser.sub, this.base64ToBytes(method.salt));
+        const wrappingKey = await this.deriveGoogleWrapKey(this.googleUser.sub, this.base64ToBytes(method.salt), method.kdf || (this.mapRecord.magic === MapCrypto.MAGIC ? MapCrypto.KDF : "PBKDF2-SHA256"));
         await this.finishUnlock(await this.unwrapDataKey(method.wrappedKey, wrappingKey), "Google Sign-In");
       } catch (error) {
-        this.setStatus(error?.message || "Google map unlock failed.", "warning");
+        this.setStatus("Unable to unlock this GoblinPass Security Map.", "warning");
       } finally {
         this.setBusy(false);
       }
@@ -575,8 +600,7 @@
     async saveMap() {
       if (!this.dataKey || !this.fileHandle || !this.mapRecord) return false;
       await this.ensureWritePermission(this.fileHandle);
-      this.mapRecord.payload = await this.encryptRows();
-      this.mapRecord.updatedAt = new Date().toISOString();
+      this.mapRecord = MapCrypto.createEnvelope(this.mapRecord.unlockMethods, await this.encryptRows());
       const writable = await this.fileHandle.createWritable();
       await writable.write(JSON.stringify(this.mapRecord, null, 2));
       await writable.close();
@@ -608,7 +632,6 @@
       this.setBusy(true);
       const previousRows = this.rows.map(row => ({ ...row }));
       const previousPayload = this.mapRecord.payload;
-      const previousUpdatedAt = this.mapRecord.updatedAt;
       try {
         const password = await window.goblinPassGenerate(siteId, masterPassword, {
           length: 16,
@@ -625,6 +648,8 @@
           length: 16,
           counter: 1,
           hint: password.slice(0, 5),
+          securityMethod: existing >= 0 ? this.rows[existing].securityMethod || "Master Password" : "Master Password",
+          notes: existing >= 0 ? this.rows[existing].notes || "" : "",
           updated: new Date().toISOString()
         };
         if (existing >= 0) this.rows[existing] = row;
@@ -641,7 +666,6 @@
       } catch (error) {
         this.rows = previousRows;
         this.mapRecord.payload = previousPayload;
-        this.mapRecord.updatedAt = previousUpdatedAt;
         this.renderRows();
         this.setStatus(`generation stopped because the map could not be updated: ${error?.message || error}`, "warning");
       } finally {
@@ -665,7 +689,6 @@
       if (!confirm(`Delete ${label} from the encrypted map?`)) return;
       const previousRows = this.rows.map(item => ({ ...item }));
       const previousPayload = this.mapRecord.payload;
-      const previousUpdatedAt = this.mapRecord.updatedAt;
       this.rows = this.rows.filter(item => item.key !== row.key);
       this.revealedRows.delete(row.key);
       this.renderRows();
@@ -675,7 +698,6 @@
       } catch (error) {
         this.rows = previousRows;
         this.mapRecord.payload = previousPayload;
-        this.mapRecord.updatedAt = previousUpdatedAt;
         this.renderRows();
         this.setStatus(`delete failed: ${error?.message || error}`, "warning");
       }
