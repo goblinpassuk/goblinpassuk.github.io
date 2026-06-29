@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Stateless Gen 3.0 (Beta)</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260627-gen3" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260629-gen3-biometric" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -75,6 +75,10 @@
             <p>Used only to unlock the map. It does not change generated passwords.</p>
           </section>
           <section class="gen3-auth-option">
+            <label class="gen3-check"><input id="gen3UseBiometric" type="checkbox"> Mobile biometric / passkey unlock</label>
+            <p>Use this device's fingerprint, face unlock, or device PIN. Requires a platform passkey with PRF support.</p>
+          </section>
+          <section class="gen3-auth-option">
             <label class="gen3-check"><input id="gen3UseGoogle" type="checkbox"> Google Sign-In unlock</label>
             <p>Sign in with the same Google account on another device to unlock this map.</p>
             <div class="backup-actions">
@@ -90,6 +94,11 @@
           <div id="gen3YubiUnlock" class="gen3-unlock-method" hidden>
             <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
             <button id="gen3UnlockYubiKey" class="primary-button" type="button">Unlock with YubiKey</button>
+          </div>
+          <div id="gen3BiometricUnlock" class="gen3-unlock-method" hidden>
+            <i class="legend-art icon-trusted-device-vector" aria-hidden="true"></i>
+            <p>Verify with the fingerprint, face unlock, or device PIN assigned to this map.</p>
+            <button id="gen3UnlockBiometric" class="primary-button" type="button">Unlock with biometric</button>
           </div>
           <div id="gen3GoogleUnlock" class="gen3-unlock-method" hidden>
             <i class="legend-art icon-google-factor-vector" aria-hidden="true"></i>
@@ -166,6 +175,6 @@
     </footer>
 
     <script src="assets/js/goblinpass-engine.js?v=20260627-gen3"></script>
-    <script src="assets/js/level3.js?v=20260629-gen3-google-map-tools"></script>
+    <script src="assets/js/level3.js?v=20260629-gen3-biometric"></script>
   </body>
 </html>

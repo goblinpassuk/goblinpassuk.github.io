@@ -43,6 +43,7 @@
       $("gen3SaveNow").addEventListener("click", () => this.saveNow());
       $("gen3Lock").addEventListener("click", () => this.lockMap());
       $("gen3UnlockYubiKey").addEventListener("click", () => this.unlockWithYubiKey());
+      $("gen3UnlockBiometric").addEventListener("click", () => this.unlockWithBiometric());
       $("gen3Generate").addEventListener("click", () => this.generate());
       $("gen3CopyPassword").addEventListener("click", () => this.copyPassword());
       $("gen3ToggleMaster").addEventListener("click", () => this.toggleMaster());
@@ -87,9 +88,23 @@
     }
 
     requireWebAuthn() {
-      if (!window.isSecureContext) throw new Error("YubiKey unlock requires HTTPS or localhost.");
+      if (!window.isSecureContext) throw new Error("Passkey unlock requires HTTPS or localhost.");
       if (!navigator.credentials?.create || !navigator.credentials?.get || !window.PublicKeyCredential) {
-        throw new Error("This browser does not support the WebAuthn features required for YubiKey unlock.");
+        throw new Error("This browser does not support the WebAuthn features required for passkey unlock.");
+      }
+    }
+
+    async requirePlatformAuthenticator() {
+      this.requireWebAuthn();
+      if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function") {
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (!available) throw new Error("No mobile biometric or device passkey authenticator is available.");
+      }
+      if (typeof PublicKeyCredential.getClientCapabilities === "function") {
+        const capabilities = await PublicKeyCredential.getClientCapabilities();
+        if (capabilities["extension:prf"] !== true) {
+          throw new Error("This browser does not report the passkey PRF encryption feature required by GoblinPass.");
+        }
       }
     }
 
@@ -138,6 +153,16 @@
         name: "HKDF",
         hash: "SHA-256",
         salt: await this.sha256Bytes("GoblinPass Gen3 YubiKey Wrap Salt v1"),
+        info: new TextEncoder().encode("GoblinPass Gen3 Map Key v1")
+      }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    }
+
+    async deriveBiometricWrapKey(prfOutput) {
+      const material = await crypto.subtle.importKey("raw", prfOutput, "HKDF", false, ["deriveKey"]);
+      return crypto.subtle.deriveKey({
+        name: "HKDF",
+        hash: "SHA-256",
+        salt: await this.sha256Bytes("GoblinPass Gen3 Biometric Wrap Salt v1"),
         info: new TextEncoder().encode("GoblinPass Gen3 Map Key v1")
       }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
     }
@@ -217,6 +242,51 @@
       const output = this.yubiPrfOutput(assertion.getClientExtensionResults?.() || {}, credentialId);
       if (!output || output.byteLength !== 32) throw new Error("The YubiKey did not return a PRF map-unlock secret.");
       return { type: "yubikey", credentialId, wrappedKey: await this.wrapDataKey(dataKey, await this.deriveYubiWrapKey(output)) };
+    }
+
+    async createBiometricMethod(dataKey) {
+      await this.requirePlatformAuthenticator();
+      this.setStatus("register a fingerprint, face unlock, or device passkey for this map.");
+      const salt = await this.sha256Bytes("GoblinPass Gen3 Biometric Map PRF v1");
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: "GoblinPass Gen 3.0 Map", id: this.rpId() },
+          user: { id: crypto.getRandomValues(new Uint8Array(32)), name: "goblinpass-gen3-biometric", displayName: "GoblinPass Gen 3.0 Biometric Map" },
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+            residentKey: "required",
+            requireResidentKey: true,
+            userVerification: "required"
+          },
+          attestation: "none",
+          timeout: 60000,
+          extensions: { prf: { eval: { first: salt } }, hmacCreateSecret: true }
+        }
+      });
+      const credentialId = this.bytesToBase64Url(new Uint8Array(credential.rawId));
+      const registrationResults = credential.getClientExtensionResults?.() || {};
+      if (registrationResults.prf?.enabled !== true) {
+        throw new Error("This device passkey does not support the PRF encryption feature required by GoblinPass.");
+      }
+      let output = this.yubiPrfOutput(registrationResults, credentialId);
+      if (!output) {
+        this.setStatus("verify the new biometric map credential.");
+        const assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: crypto.getRandomValues(new Uint8Array(32)),
+            rpId: this.rpId(),
+            allowCredentials: [{ type: "public-key", id: credential.rawId }],
+            userVerification: "required",
+            timeout: 60000,
+            extensions: { prf: { eval: { first: salt } } }
+          }
+        });
+        output = this.yubiPrfOutput(assertion.getClientExtensionResults?.() || {}, credentialId);
+      }
+      if (!output || output.byteLength !== 32) throw new Error("This device passkey did not return the PRF map-unlock secret.");
+      return { type: "biometric", credentialId, wrappedKey: await this.wrapDataKey(dataKey, await this.deriveBiometricWrapKey(output)) };
     }
 
     async createGoogleMethod(dataKey) {
@@ -318,8 +388,9 @@
     async createMap() {
       if (this.busy) return;
       const useYubiKey = $("gen3UseYubiKey").checked;
+      const useBiometric = $("gen3UseBiometric").checked;
       const useGoogle = $("gen3UseGoogle").checked;
-      if (!useYubiKey && !useGoogle) return this.setStatus("select at least one map unlock method.", "warning");
+      if (!useYubiKey && !useBiometric && !useGoogle) return this.setStatus("select at least one map unlock method.", "warning");
       if (useGoogle && !this.googleUser?.sub) return this.setStatus("sign in with Google before creating the map.", "warning");
 
       this.setBusy(true);
@@ -327,6 +398,7 @@
         const dataKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
         const unlockMethods = [];
         if (useYubiKey) unlockMethods.push(await this.createYubiMethod(dataKey));
+        if (useBiometric) unlockMethods.push(await this.createBiometricMethod(dataKey));
         if (useGoogle) unlockMethods.push(await this.createGoogleMethod(dataKey));
         this.dataKey = dataKey;
         this.rows = [];
@@ -375,13 +447,15 @@
     showUnlockMethods() {
       const methods = this.mapRecord?.unlockMethods || [];
       const hasYubiKey = methods.some(method => method.type === "yubikey");
+      const hasBiometric = methods.some(method => method.type === "biometric");
       const hasGoogle = methods.some(method => method.type === "google");
       $("gen3Unlock").hidden = false;
       $("gen3YubiUnlock").hidden = !hasYubiKey;
+      $("gen3BiometricUnlock").hidden = !hasBiometric;
       $("gen3GoogleUnlock").hidden = !hasGoogle;
       $("gen3Setup").hidden = true;
       if (hasGoogle && window.google?.accounts?.id) this.renderGoogleButtons();
-      if (!hasYubiKey && !hasGoogle) this.setStatus("this map does not contain a supported Gen 3 unlock method.", "warning");
+      if (!hasYubiKey && !hasBiometric && !hasGoogle) this.setStatus("this map does not contain a supported Gen 3 unlock method.", "warning");
     }
 
     async finishUnlock(dataKey, label) {
@@ -418,6 +492,35 @@
         await this.finishUnlock(await this.unwrapDataKey(method.wrappedKey, await this.deriveYubiWrapKey(output)), "YubiKey");
       } catch (error) {
         this.setStatus(error?.name === "NotAllowedError" ? "YubiKey sign-in was cancelled, timed out, or used the wrong key." : error?.message || "YubiKey unlock failed.", "warning");
+      } finally {
+        this.setBusy(false);
+      }
+    }
+
+    async unlockWithBiometric() {
+      if (this.busy) return;
+      const method = this.mapRecord?.unlockMethods.find(item => item.type === "biometric");
+      if (!method) return;
+      this.setBusy(true);
+      try {
+        await this.requirePlatformAuthenticator();
+        this.setStatus("verify with the biometric or device passkey assigned to this map.");
+        const salt = await this.sha256Bytes("GoblinPass Gen3 Biometric Map PRF v1");
+        const credential = await navigator.credentials.get({
+          publicKey: {
+            challenge: crypto.getRandomValues(new Uint8Array(32)),
+            rpId: this.rpId(),
+            allowCredentials: [{ type: "public-key", id: this.base64UrlToBytes(method.credentialId) }],
+            userVerification: "required",
+            timeout: 60000,
+            extensions: { prf: { eval: { first: salt } } }
+          }
+        });
+        const output = this.yubiPrfOutput(credential.getClientExtensionResults?.() || {}, method.credentialId);
+        if (!output || output.byteLength !== 32) throw new Error("This device passkey did not return the PRF map-unlock secret.");
+        await this.finishUnlock(await this.unwrapDataKey(method.wrappedKey, await this.deriveBiometricWrapKey(output)), "mobile biometric / passkey");
+      } catch (error) {
+        this.setStatus(error?.name === "NotAllowedError" ? "Biometric sign-in was cancelled, timed out, or used the wrong passkey." : error?.message || "Biometric map unlock failed.", "warning");
       } finally {
         this.setBusy(false);
       }

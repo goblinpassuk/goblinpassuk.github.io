@@ -3,8 +3,6 @@
 
   const form = document.getElementById("generatorForm");
   const websiteId = document.getElementById("websiteId");
-  const site = document.getElementById("site");
-  const login = document.getElementById("login");
   const passwordLength = document.getElementById("passwordLength");
   const passwordCounter = document.getElementById("passwordCounter");
   const masterPassword = document.getElementById("masterPassword");
@@ -86,7 +84,7 @@
   toggleMaster.addEventListener("click", function () { toggleVisibility(masterPassword, toggleMaster); });
   togglePassword.addEventListener("click", function () { toggleVisibility(generatedPassword, togglePassword); });
   copyPassword.addEventListener("click", copyGeneratedPassword);
-  [websiteId, site, login, passwordLength, passwordCounter, masterPassword].forEach(function (input) {
+  [websiteId, passwordLength, passwordCounter, masterPassword].forEach(function (input) {
     input.addEventListener("input", clearResult);
   });
   window.addEventListener("online", updateConnectionStatus);
