@@ -27,6 +27,7 @@
               <a href="app.html">Stateless Gen 1.0</a>
               <a href="stateless-gen2.html">Stateless Gen 2.0 (Beta)</a>
               <a href="stateless-gen3.html">Stateless Gen 3.0 (Beta)</a>
+              <a href="gen4/index.html">Stateless Gen 4.0</a>
               <a href="checker.html">Password Checker</a>
               <a href="backup-codes.html">Secure Notes</a>
               <a href="goblinpass/offline-id-logbook.html">Offline ID Logbook</a>
@@ -74,25 +75,14 @@
             <p>Used only to unlock the map. It does not change generated passwords.</p>
           </section>
           <section class="gen3-auth-option">
-            <label class="gen3-check"><input id="gen3UseAuthenticator" type="checkbox"> Google Authenticator</label>
-            <p>The setup key is kept in this browser and can be restored manually on another device.</p>
+            <label class="gen3-check"><input id="gen3UseGoogle" type="checkbox"> Google Sign-In unlock</label>
+            <p>Sign in with the same Google account on another device to unlock this map.</p>
             <div class="backup-actions">
-              <button id="gen3PrepareAuthenticator" class="secondary-button" type="button">Prepare setup key</button>
+              <button id="gen3GoogleSetup" class="secondary-button" type="button">Set up Google Sign-In</button>
+              <button id="gen3GoogleSignOut" class="secondary-button" type="button" disabled>Sign out</button>
             </div>
-            <div id="gen3AuthenticatorSetup" class="gen3-authenticator-setup" hidden>
-              <label for="gen3SetupKey">Authenticator setup key</label>
-              <div class="gen3-inline-input">
-                <input id="gen3SetupKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Generate a new key or paste an existing key">
-                <button id="gen3CopySetupKey" class="secondary-button" type="button">Copy</button>
-              </div>
-              <button id="gen3ToggleSetupQr" class="secondary-button gen3-qr-toggle" type="button">Show QR code</button>
-              <div id="gen3SetupQrPanel" class="gen3-setup-qr" hidden>
-                <canvas id="gen3SetupQr" width="246" height="246" aria-label="Google Authenticator setup QR code"></canvas>
-                <p>Scan with Google Authenticator. This QR code contains the setup key.</p>
-              </div>
-              <label for="gen3SetupCode">Current 6-digit code</label>
-              <input id="gen3SetupCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
-            </div>
+            <div id="gen3GoogleSetupButton" class="google-button-area"></div>
+            <p id="gen3GoogleStatus" class="level2-google-status">Google Sign-In: Not signed in</p>
           </section>
         </div>
 
@@ -101,17 +91,11 @@
             <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
             <button id="gen3UnlockYubiKey" class="primary-button" type="button">Unlock with YubiKey</button>
           </div>
-          <div id="gen3TotpUnlock" class="gen3-unlock-method" hidden>
+          <div id="gen3GoogleUnlock" class="gen3-unlock-method" hidden>
             <i class="legend-art icon-google-factor-vector" aria-hidden="true"></i>
-            <input id="gen3UnlockCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Authenticator code">
-            <button id="gen3UnlockAuthenticator" class="primary-button" type="button">Unlock</button>
-            <details class="gen3-restore-key">
-              <summary>Restore setup key</summary>
-              <div class="gen3-inline-input">
-                <input id="gen3RestoreSetupKey" type="text" autocomplete="off" placeholder="Authenticator setup key">
-                <button id="gen3StoreSetupKey" class="secondary-button" type="button">Use key</button>
-              </div>
-            </details>
+            <p>Use the Google account assigned when this map was created.</p>
+            <button id="gen3GoogleUnlockSetup" class="secondary-button" type="button">Sign in with Google</button>
+            <div id="gen3GoogleUnlockButton" class="google-button-area"></div>
           </div>
         </div>
 
@@ -134,6 +118,10 @@
           <div class="gen3-form">
             <label for="gen3SiteId">Website ID</label>
             <input id="gen3SiteId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Website ID">
+            <label for="gen3Site">Site <span>(optional)</span></label>
+            <input id="gen3Site" type="text" autocomplete="off" spellcheck="false" placeholder="example.com">
+            <label for="gen3Login">Login <span>(optional)</span></label>
+            <input id="gen3Login" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Username or email">
             <span class="level2-password-heading">
               <label for="gen3Master">Master Password</label>
               <button id="gen3ToggleMaster" class="level2-inline-toggle" type="button" aria-label="Show master password" aria-pressed="false">Show</button>
@@ -155,10 +143,14 @@
             <i class="legend-art icon-state-file-vector" aria-hidden="true"></i>
             <div><p class="eyebrow">Auto-saved metadata</p><h2>Security Map</h2></div>
           </div>
+          <div class="gen3-map-toolbar">
+            <input id="gen3MapFilter" type="search" autocomplete="off" placeholder="Search map">
+            <button id="gen3ToggleRows" class="secondary-button" type="button" disabled>Show all</button>
+          </div>
           <div class="gen3-table-wrap">
             <table class="gen3-table">
-              <thead><tr><th>Website ID</th><th>Length</th><th>Counter</th><th>Hint</th><th>Updated</th></tr></thead>
-              <tbody id="gen3MapRows"><tr><td colspan="5" class="gen3-empty">Unlock a map to view entries.</td></tr></tbody>
+              <thead><tr><th>Website ID</th><th>Site</th><th>Login</th><th>Length</th><th>Counter</th><th>Hint</th><th>Updated</th><th>Actions</th></tr></thead>
+              <tbody id="gen3MapRows"><tr><td colspan="8" class="gen3-empty">Unlock a map to view entries.</td></tr></tbody>
             </table>
           </div>
         </article>
@@ -174,7 +166,6 @@
     </footer>
 
     <script src="assets/js/goblinpass-engine.js?v=20260627-gen3"></script>
-    <script src="assets/js/qr-v4.js?v=20260627-gen3-qr"></script>
-    <script src="assets/js/level3.js?v=20260627-gen3-polish"></script>
+    <script src="assets/js/level3.js?v=20260629-gen3-google-map-tools"></script>
   </body>
 </html>

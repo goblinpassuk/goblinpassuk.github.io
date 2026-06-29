@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GoblinPass Gen 4.0</title>
+  <meta name="theme-color" content="#07120e">
+  <meta name="application-name" content="GoblinPass Gen 4.0">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="../goblinpass/icon-192.png">
+  <link rel="apple-touch-icon" href="../goblinpass/icon-192.png">
+  <link rel="stylesheet" href="style.css?v=20260629-gen4-3">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="../index.html" aria-label="GoblinPass home">
+        <img src="../goblinpass/icon-192.png" alt="" width="48" height="48">
+        <span><strong>GoblinPass</strong><small>Stateless Gen 4.0</small></span>
+      </a>
+      <div class="header-actions">
+        <a class="secondary-button header-link" href="../goblinpass/offline-id-logbook.html">Offline ID Logbook</a>
+        <button id="installApp" class="secondary-button" type="button" hidden>Install app</button>
+      </div>
+    </header>
+
+    <section class="status-strip" aria-label="Gen 4 status">
+      <span><b class="status-dot"></b> Offline ready</span>
+      <span>Nothing stored</span>
+      <span>Gen 1.0 algorithm</span>
+    </section>
+
+    <section class="workspace" aria-label="Offline password generator">
+      <article class="generator-panel">
+        <header class="panel-heading">
+          <p>Entirely offline</p>
+          <h1>Password Generator</h1>
+        </header>
+
+        <form id="generatorForm" novalidate>
+          <label for="websiteId">Website ID</label>
+          <input id="websiteId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Unique Website ID" required>
+
+          <label for="site">Site <span>optional, not in recipe</span></label>
+          <input id="site" type="text" autocomplete="off" spellcheck="false" placeholder="example.com">
+
+          <label for="login">Login <span>optional, not in recipe</span></label>
+          <input id="login" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Username or email">
+
+          <div class="number-options">
+            <div>
+              <label for="passwordLength">Length</label>
+              <input id="passwordLength" type="number" inputmode="numeric" min="8" max="64" step="1" value="16" required>
+            </div>
+            <div>
+              <label for="passwordCounter">Counter</label>
+              <input id="passwordCounter" type="number" inputmode="numeric" min="1" max="999" step="1" value="1" required>
+            </div>
+          </div>
+
+          <div class="password-label">
+            <label for="masterPassword">Master Password</label>
+            <button id="toggleMaster" class="text-button" type="button" aria-label="Show master password" aria-pressed="false">Show</button>
+          </div>
+          <input id="masterPassword" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Never saved" required>
+
+          <div class="recipe" aria-label="Password recipe">
+            <span>Website ID</span><b>+</b><span>Master Password</span>
+          </div>
+
+          <button class="primary-button" type="submit">Generate password</button>
+        </form>
+        <p id="statusMessage" class="status-message" aria-live="polite">Ready.</p>
+      </article>
+
+      <article id="resultPanel" class="result-panel" aria-labelledby="resultTitle">
+        <header class="panel-heading result-heading">
+          <p>Local transfer</p>
+          <h2 id="resultTitle">Generated Password</h2>
+        </header>
+
+        <div class="password-output">
+          <input id="generatedPassword" type="password" readonly aria-label="Generated password" placeholder="Generate to begin">
+          <button id="togglePassword" class="secondary-button" type="button" disabled aria-label="Show generated password" aria-pressed="false">Show</button>
+          <button id="copyPassword" class="secondary-button" type="button" disabled>Copy</button>
+        </div>
+
+        <div id="qrPanel" class="qr-panel" hidden>
+          <canvas id="passwordQr" width="246" height="246" aria-label="Generated password QR code"></canvas>
+          <p>Scan privately. This QR code contains the generated password.</p>
+        </div>
+        <div id="qrPlaceholder" class="qr-placeholder" aria-hidden="true">
+          <span>QR</span>
+          <p>The password QR code appears here.</p>
+        </div>
+      </article>
+    </section>
+
+    <footer class="app-footer">
+      <span>GoblinPass Gen 4.0</span>
+      <span id="offlineStatus">Checking offline support...</span>
+    </footer>
+  </main>
+
+  <script src="../assets/js/goblinpass-engine.js?v=20260629-gen4"></script>
+  <script src="qr.js?v=20260629-gen4-2"></script>
+  <script src="app.js?v=20260629-gen4-2"></script>
+</body>
+</html>

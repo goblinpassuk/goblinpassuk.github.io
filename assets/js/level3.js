@@ -7,15 +7,19 @@
     constructor() {
       this.fileName = "goblinpass-gen3-map.json";
       this.recordType = "goblinpass-gen3-map";
-      this.totpStorageKey = "goblinpass_gen3_totp_secrets_v1";
+      this.googleClientId = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
+      this.googleScriptPromise = null;
+      this.googleUser = null;
       this.mapRecord = null;
       this.dataKey = null;
       this.rows = [];
       this.fileHandle = null;
-      this.pendingTotpSecret = "";
       this.generatedPassword = "";
       this.masterVisible = false;
       this.busy = false;
+      this.filter = "";
+      this.revealAll = false;
+      this.revealedRows = new Set();
       this.fileSystemSupported = "showOpenFilePicker" in window && "showSaveFilePicker" in window;
       this.bindEvents();
       this.updateUI();
@@ -30,28 +34,25 @@
         const open = $("navLinks")?.classList.toggle("open");
         $("navToggle").setAttribute("aria-expanded", String(Boolean(open)));
       });
-      $("gen3PrepareAuthenticator").addEventListener("click", () => this.prepareAuthenticator());
-      $("gen3CopySetupKey").addEventListener("click", () => this.copySetupKey());
-      $("gen3ToggleSetupQr").addEventListener("click", () => this.toggleSetupQr());
+      $("gen3GoogleSetup").addEventListener("click", () => this.setupGoogleSignIn());
+      $("gen3GoogleUnlockSetup").addEventListener("click", () => this.setupGoogleSignIn());
+      $("gen3GoogleSignOut").addEventListener("click", () => this.googleSignOut());
       $("gen3CreateMap").addEventListener("click", () => this.createMap());
       $("gen3OpenMap").addEventListener("click", () => this.openMap());
       $("gen3SelectSave").addEventListener("click", () => this.selectSaveFile());
       $("gen3SaveNow").addEventListener("click", () => this.saveNow());
       $("gen3Lock").addEventListener("click", () => this.lockMap());
       $("gen3UnlockYubiKey").addEventListener("click", () => this.unlockWithYubiKey());
-      $("gen3UnlockAuthenticator").addEventListener("click", () => this.unlockWithAuthenticator());
-      $("gen3StoreSetupKey").addEventListener("click", () => this.restoreAuthenticatorSetupKey());
       $("gen3Generate").addEventListener("click", () => this.generate());
       $("gen3CopyPassword").addEventListener("click", () => this.copyPassword());
       $("gen3ToggleMaster").addEventListener("click", () => this.toggleMaster());
-      $("gen3UseAuthenticator").addEventListener("change", () => {
-        $("gen3AuthenticatorSetup").hidden = !$("gen3UseAuthenticator").checked;
-        if (!$("gen3UseAuthenticator").checked) this.hideSetupQr();
+      $("gen3MapFilter").addEventListener("input", event => {
+        this.filter = String(event.target.value || "").trim().toLowerCase();
+        this.renderRows();
       });
-      $("gen3SetupKey").addEventListener("input", event => {
-        this.pendingTotpSecret = this.normalizeTotpSecret(event.target.value);
-        if (!$("gen3SetupQrPanel").hidden) this.drawSetupQr();
-      });
+      $("gen3ToggleRows").addEventListener("click", () => this.toggleAllRows());
+      $("gen3MapRows").addEventListener("click", event => this.handleRowAction(event));
+      $("gen3UseGoogle").addEventListener("change", () => this.updateGoogleStatus());
     }
 
     setStatus(message, kind = "info") {
@@ -74,11 +75,15 @@
       $("gen3Lock").disabled = this.busy || (!unlocked && !this.mapRecord);
       $("gen3Generate").disabled = this.busy || !unlocked || !hasSaveFile;
       $("gen3CopyPassword").disabled = !this.generatedPassword;
+      $("gen3MapFilter").disabled = !unlocked;
+      $("gen3ToggleRows").disabled = !unlocked || !this.rows.length;
+      $("gen3ToggleRows").textContent = this.revealAll ? "Hide all" : "Show all";
       $("gen3Setup").hidden = !!this.mapRecord;
       if (!this.mapRecord || unlocked) $("gen3Unlock").hidden = true;
       $("gen3FileStatus").textContent = hasSaveFile
         ? `Auto-save connected: ${this.fileName}`
         : (unlocked ? "Select a save file before generating." : "No save file selected. Generation is locked.");
+      this.updateGoogleStatus();
     }
 
     requireWebAuthn() {
@@ -117,93 +122,13 @@
       return new Uint8Array(await crypto.subtle.digest("SHA-256", input));
     }
 
-    base32Encode(bytes) {
-      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-      let bits = 0;
-      let value = 0;
-      let output = "";
-      new Uint8Array(bytes).forEach(byte => {
-        value = (value << 8) | byte;
-        bits += 8;
-        while (bits >= 5) {
-          output += alphabet[(value >>> (bits - 5)) & 31];
-          bits -= 5;
-        }
-      });
-      if (bits) output += alphabet[(value << (5 - bits)) & 31];
-      return output;
-    }
-
-    base32Decode(value) {
-      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-      const clean = String(value || "").toUpperCase().replace(/[^A-Z2-7]/g, "");
-      let bits = 0;
-      let buffer = 0;
-      const output = [];
-      for (const char of clean) {
-        const index = alphabet.indexOf(char);
-        if (index < 0) continue;
-        buffer = (buffer << 5) | index;
-        bits += 5;
-        if (bits >= 8) {
-          output.push((buffer >>> (bits - 8)) & 255);
-          bits -= 8;
-        }
-      }
-      return new Uint8Array(output);
-    }
-
-    normalizeTotpSecret(value) {
-      return String(value || "").toUpperCase().replace(/[^A-Z2-7]/g, "");
-    }
-
-    async totpCode(secret, timeStep = Math.floor(Date.now() / 30000)) {
-      const counter = new Uint8Array(8);
-      let value = BigInt(timeStep);
-      for (let index = 7; index >= 0; index -= 1) {
-        counter[index] = Number(value & 255n);
-        value >>= 8n;
-      }
-      const key = await crypto.subtle.importKey("raw", this.base32Decode(secret), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
-      const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, counter));
-      const offset = digest[digest.length - 1] & 15;
-      const number = ((digest[offset] & 127) << 24) | (digest[offset + 1] << 16) | (digest[offset + 2] << 8) | digest[offset + 3];
-      return String(number % 1000000).padStart(6, "0");
-    }
-
-    async verifyTotp(secret, code) {
-      const clean = String(code || "").replace(/\D/g, "");
-      if (clean.length !== 6) return false;
-      const step = Math.floor(Date.now() / 30000);
-      for (let drift = -1; drift <= 1; drift += 1) {
-        if (await this.totpCode(secret, step + drift) === clean) return true;
-      }
-      return false;
-    }
-
-    loadTotpSecrets() {
-      try { return JSON.parse(localStorage.getItem(this.totpStorageKey) || "{}"); }
-      catch { return {}; }
-    }
-
-    saveTotpSecret(id, secret) {
-      const secrets = this.loadTotpSecrets();
-      secrets[id] = secret;
-      localStorage.setItem(this.totpStorageKey, JSON.stringify(secrets));
-    }
-
-    async totpSecretId(secret) {
-      const digest = await this.sha256Bytes(this.base32Decode(secret));
-      return this.bytesToBase64Url(digest.slice(0, 12));
-    }
-
-    async deriveTotpWrapKey(secret) {
-      const material = await crypto.subtle.importKey("raw", this.base32Decode(secret), "PBKDF2", false, ["deriveKey"]);
+    async deriveGoogleWrapKey(subject, salt) {
+      const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(subject), "PBKDF2", false, ["deriveKey"]);
       return crypto.subtle.deriveKey({
         name: "PBKDF2",
         hash: "SHA-256",
-        salt: await this.sha256Bytes("GoblinPass Gen3 Authenticator Wrap v1"),
-        iterations: 210000
+        salt,
+        iterations: 240000
       }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
     }
 
@@ -241,7 +166,10 @@
       const parsed = JSON.parse(new TextDecoder().decode(plaintext));
       if (!Array.isArray(parsed.rows)) throw new Error("The decrypted map is invalid.");
       return parsed.rows.map(row => ({
+        key: String(row.key || crypto.randomUUID()),
         id: String(row.id || ""),
+        site: String(row.site || ""),
+        login: String(row.login || ""),
         length: 16,
         counter: 1,
         hint: String(row.hint || ""),
@@ -261,11 +189,7 @@
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
           rp: { name: "GoblinPass Gen 3.0 Map", id: this.rpId() },
-          user: {
-            id: crypto.getRandomValues(new Uint8Array(32)),
-            name: "goblinpass-gen3-map",
-            displayName: "GoblinPass Gen 3.0 Map"
-          },
+          user: { id: crypto.getRandomValues(new Uint8Array(32)), name: "goblinpass-gen3-map", displayName: "GoblinPass Gen 3.0 Map" },
           pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
           authenticatorSelection: {
             authenticatorAttachment: "cross-platform",
@@ -292,102 +216,122 @@
       });
       const output = this.yubiPrfOutput(assertion.getClientExtensionResults?.() || {}, credentialId);
       if (!output || output.byteLength !== 32) throw new Error("The YubiKey did not return a PRF map-unlock secret.");
-      const wrappingKey = await this.deriveYubiWrapKey(output);
-      return { type: "yubikey", credentialId, wrappedKey: await this.wrapDataKey(dataKey, wrappingKey) };
+      return { type: "yubikey", credentialId, wrappedKey: await this.wrapDataKey(dataKey, await this.deriveYubiWrapKey(output)) };
     }
 
-    async prepareAuthenticator() {
-      this.pendingTotpSecret = this.base32Encode(crypto.getRandomValues(new Uint8Array(20)));
-      $("gen3UseAuthenticator").checked = true;
-      $("gen3SetupKey").value = this.pendingTotpSecret.match(/.{1,4}/g).join(" ");
-      $("gen3SetupCode").value = "";
-      $("gen3AuthenticatorSetup").hidden = false;
-      this.setStatus("add the setup key to Google Authenticator, then enter its current code before creating the map.");
+    async createGoogleMethod(dataKey) {
+      if (!this.googleUser?.sub) throw new Error("Sign in with Google before creating the map.");
+      const salt = crypto.getRandomValues(new Uint8Array(24));
+      const subjectHash = this.bytesToBase64Url(await this.sha256Bytes(`GoblinPass Gen3 Google Subject v1|${this.googleUser.sub}`));
+      const wrappingKey = await this.deriveGoogleWrapKey(this.googleUser.sub, salt);
+      return {
+        type: "google",
+        subjectHash,
+        salt: this.bytesToBase64(salt),
+        wrappedKey: await this.wrapDataKey(dataKey, wrappingKey)
+      };
     }
 
-    authenticatorUri(secret) {
-      return `otpauth://totp/GP3?secret=${secret}&issuer=GP`;
+    loadGoogleIdentityScript() {
+      if (window.google?.accounts?.id) return Promise.resolve();
+      if (this.googleScriptPromise) return this.googleScriptPromise;
+      this.googleScriptPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Could not load Google Identity Services."));
+        document.head.appendChild(script);
+      });
+      return this.googleScriptPromise;
     }
 
-    drawSetupQr() {
-      const secret = this.normalizeTotpSecret($("gen3SetupKey").value || this.pendingTotpSecret);
-      if (secret.length < 16) {
-        this.hideSetupQr();
-        this.setStatus("enter or prepare a valid Authenticator setup key before showing its QR code.", "warning");
-        return false;
-      }
-      if (!window.GoblinPassQrV4?.draw) {
-        this.setStatus("the local QR renderer did not load.", "warning");
-        return false;
-      }
+    decodeJwtPayload(token) {
       try {
-        window.GoblinPassQrV4.draw($("gen3SetupQr"), this.authenticatorUri(secret));
-        return true;
-      } catch (error) {
-        this.hideSetupQr();
-        this.setStatus(error?.message || "the Authenticator QR code could not be created.", "warning");
-        return false;
-      }
-    }
-
-    toggleSetupQr() {
-      const panel = $("gen3SetupQrPanel");
-      if (!panel.hidden) {
-        this.hideSetupQr();
-        return;
-      }
-      if (!this.drawSetupQr()) return;
-      panel.hidden = false;
-      $("gen3ToggleSetupQr").textContent = "Hide QR code";
-      this.setStatus("Authenticator QR code ready to scan.", "success");
-    }
-
-    hideSetupQr() {
-      $("gen3SetupQrPanel").hidden = true;
-      $("gen3ToggleSetupQr").textContent = "Show QR code";
-    }
-
-    async copySetupKey() {
-      const secret = this.normalizeTotpSecret($("gen3SetupKey").value || this.pendingTotpSecret);
-      if (!secret) return this.setStatus("enter or prepare an Authenticator setup key first.", "warning");
-      try {
-        await navigator.clipboard.writeText(secret);
-        this.setStatus("Authenticator setup key copied.", "success");
+        const payload = token.split(".")[1] || "";
+        const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const json = decodeURIComponent(atob(normalized).split("").map(char => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`).join(""));
+        return JSON.parse(json);
       } catch {
-        this.setStatus("The setup key could not be copied. Select it manually.", "warning");
+        return null;
       }
+    }
+
+    async handleGoogleCredential(response) {
+      const payload = this.decodeJwtPayload(response?.credential || "");
+      if (!payload?.sub) return this.setStatus("Google Sign-In response could not be read.", "warning");
+      this.googleUser = { sub: payload.sub, email: payload.email || "", name: payload.name || "" };
+      this.updateGoogleStatus();
+      this.setStatus(`signed in with Google as ${this.googleUser.email || this.googleUser.name || "the selected account"}.`, "success");
+      if (this.mapRecord && !this.dataKey && this.mapRecord.unlockMethods.some(method => method.type === "google")) {
+        await this.unlockWithGoogle();
+      }
+    }
+
+    renderGoogleButtons() {
+      if (!window.google?.accounts?.id) return;
+      ["gen3GoogleSetupButton", "gen3GoogleUnlockButton"].forEach(id => {
+        const target = $(id);
+        if (!target || target.closest("[hidden]")) return;
+        target.innerHTML = "";
+        window.google.accounts.id.renderButton(target, {
+          theme: "outline",
+          size: "large",
+          width: Math.max(220, Math.min(340, target.clientWidth || 280))
+        });
+      });
+    }
+
+    async setupGoogleSignIn() {
+      try {
+        await this.loadGoogleIdentityScript();
+        window.google.accounts.id.initialize({
+          client_id: this.googleClientId,
+          callback: response => this.handleGoogleCredential(response),
+          auto_select: false
+        });
+        this.renderGoogleButtons();
+        this.setStatus("choose the Google account that should unlock this map.");
+      } catch (error) {
+        this.setStatus(error?.message || "Google Sign-In could not start.", "warning");
+      }
+    }
+
+    googleSignOut() {
+      this.googleUser = null;
+      if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
+      $("gen3GoogleSetupButton").innerHTML = "";
+      $("gen3GoogleUnlockButton").innerHTML = "";
+      this.updateGoogleStatus();
+      this.setStatus("signed out of Google.");
+    }
+
+    updateGoogleStatus() {
+      const signedIn = !!this.googleUser?.sub;
+      $("gen3GoogleSignOut").disabled = this.busy || !signedIn;
+      $("gen3GoogleStatus").textContent = signedIn
+        ? `Google Sign-In: ${this.googleUser.email || this.googleUser.name || "Signed in"}`
+        : "Google Sign-In: Not signed in";
     }
 
     async createMap() {
       if (this.busy) return;
       const useYubiKey = $("gen3UseYubiKey").checked;
-      const useAuthenticator = $("gen3UseAuthenticator").checked;
-      const authenticatorSecret = this.normalizeTotpSecret($("gen3SetupKey").value || this.pendingTotpSecret);
-      if (!useYubiKey && !useAuthenticator) return this.setStatus("select at least one map unlock method.", "warning");
-      if (useAuthenticator && authenticatorSecret.length < 16) return this.setStatus("enter or prepare a valid Authenticator setup key first.", "warning");
-      if (useAuthenticator && !(await this.verifyTotp(authenticatorSecret, $("gen3SetupCode").value))) {
-        return this.setStatus("the Authenticator code did not match the entered setup key.", "warning");
-      }
+      const useGoogle = $("gen3UseGoogle").checked;
+      if (!useYubiKey && !useGoogle) return this.setStatus("select at least one map unlock method.", "warning");
+      if (useGoogle && !this.googleUser?.sub) return this.setStatus("sign in with Google before creating the map.", "warning");
 
       this.setBusy(true);
       try {
         const dataKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
         const unlockMethods = [];
         if (useYubiKey) unlockMethods.push(await this.createYubiMethod(dataKey));
-        if (useAuthenticator) {
-          const secretId = await this.totpSecretId(authenticatorSecret);
-          const wrappingKey = await this.deriveTotpWrapKey(authenticatorSecret);
-          unlockMethods.push({ type: "totp", secretId, wrappedKey: await this.wrapDataKey(dataKey, wrappingKey) });
-          this.saveTotpSecret(secretId, authenticatorSecret);
-        }
+        if (useGoogle) unlockMethods.push(await this.createGoogleMethod(dataKey));
         this.dataKey = dataKey;
         this.rows = [];
         this.mapRecord = { type: this.recordType, version: 1, updatedAt: new Date().toISOString(), unlockMethods, payload: await this.encryptRows() };
-        this.pendingTotpSecret = "";
-        $("gen3SetupKey").value = "";
-        $("gen3SetupCode").value = "";
-        this.hideSetupQr();
-        $("gen3AuthenticatorSetup").hidden = true;
+        this.resetRevealState();
         this.renderRows();
         this.setStatus("encrypted map created. Select a save file to enable generation.", "success");
       } catch (error) {
@@ -417,6 +361,7 @@
         this.fileName = file.name || this.fileName;
         this.dataKey = null;
         this.rows = [];
+        this.resetRevealState();
         this.showUnlockMethods();
         this.renderRows();
         this.setStatus("choose a configured method to unlock the map.");
@@ -429,17 +374,21 @@
 
     showUnlockMethods() {
       const methods = this.mapRecord?.unlockMethods || [];
+      const hasYubiKey = methods.some(method => method.type === "yubikey");
+      const hasGoogle = methods.some(method => method.type === "google");
       $("gen3Unlock").hidden = false;
-      $("gen3YubiUnlock").hidden = !methods.some(method => method.type === "yubikey");
-      $("gen3TotpUnlock").hidden = !methods.some(method => method.type === "totp");
+      $("gen3YubiUnlock").hidden = !hasYubiKey;
+      $("gen3GoogleUnlock").hidden = !hasGoogle;
       $("gen3Setup").hidden = true;
+      if (hasGoogle && window.google?.accounts?.id) this.renderGoogleButtons();
+      if (!hasYubiKey && !hasGoogle) this.setStatus("this map does not contain a supported Gen 3 unlock method.", "warning");
     }
 
     async finishUnlock(dataKey, label) {
-      const rows = await this.decryptRows(this.mapRecord.payload, dataKey);
+      this.rows = await this.decryptRows(this.mapRecord.payload, dataKey);
       this.dataKey = dataKey;
-      this.rows = rows;
       this.generatedPassword = "";
+      this.resetRevealState();
       this.renderRows();
       this.setStatus(`map unlocked with ${label}.`, "success");
       this.updateUI();
@@ -466,8 +415,7 @@
         });
         const output = this.yubiPrfOutput(credential.getClientExtensionResults?.() || {}, method.credentialId);
         if (!output || output.byteLength !== 32) throw new Error("The YubiKey did not return the map-unlock secret.");
-        const dataKey = await this.unwrapDataKey(method.wrappedKey, await this.deriveYubiWrapKey(output));
-        await this.finishUnlock(dataKey, "YubiKey");
+        await this.finishUnlock(await this.unwrapDataKey(method.wrappedKey, await this.deriveYubiWrapKey(output)), "YubiKey");
       } catch (error) {
         this.setStatus(error?.name === "NotAllowedError" ? "YubiKey sign-in was cancelled, timed out, or used the wrong key." : error?.message || "YubiKey unlock failed.", "warning");
       } finally {
@@ -475,35 +423,21 @@
       }
     }
 
-    async unlockWithAuthenticator() {
-      if (this.busy) return;
-      const method = this.mapRecord?.unlockMethods.find(item => item.type === "totp");
+    async unlockWithGoogle() {
+      if (this.busy || !this.googleUser?.sub) return;
+      const method = this.mapRecord?.unlockMethods.find(item => item.type === "google");
       if (!method) return;
-      const secret = this.loadTotpSecrets()[method.secretId] || "";
-      if (!secret) return this.setStatus("this browser does not have the Authenticator setup key. Restore it below first.", "warning");
-      if (!(await this.verifyTotp(secret, $("gen3UnlockCode").value))) return this.setStatus("Authenticator code is incorrect or expired.", "warning");
       this.setBusy(true);
       try {
-        const dataKey = await this.unwrapDataKey(method.wrappedKey, await this.deriveTotpWrapKey(secret));
-        await this.finishUnlock(dataKey, "Google Authenticator");
-        $("gen3UnlockCode").value = "";
+        const subjectHash = this.bytesToBase64Url(await this.sha256Bytes(`GoblinPass Gen3 Google Subject v1|${this.googleUser.sub}`));
+        if (subjectHash !== method.subjectHash) throw new Error("This Google account is not assigned to this map.");
+        const wrappingKey = await this.deriveGoogleWrapKey(this.googleUser.sub, this.base64ToBytes(method.salt));
+        await this.finishUnlock(await this.unwrapDataKey(method.wrappedKey, wrappingKey), "Google Sign-In");
       } catch (error) {
-        this.setStatus(error?.message || "Authenticator unlock failed.", "warning");
+        this.setStatus(error?.message || "Google map unlock failed.", "warning");
       } finally {
         this.setBusy(false);
       }
-    }
-
-    async restoreAuthenticatorSetupKey() {
-      const method = this.mapRecord?.unlockMethods.find(item => item.type === "totp");
-      if (!method) return;
-      const secret = String($("gen3RestoreSetupKey").value || "").toUpperCase().replace(/[^A-Z2-7]/g, "");
-      if (secret.length < 16 || await this.totpSecretId(secret) !== method.secretId) {
-        return this.setStatus("that setup key does not belong to this map.", "warning");
-      }
-      this.saveTotpSecret(method.secretId, secret);
-      $("gen3RestoreSetupKey").value = "";
-      this.setStatus("Authenticator setup key restored. Enter the current 6-digit code to unlock.", "success");
     }
 
     async ensureWritePermission(handle) {
@@ -563,6 +497,8 @@
     async generate() {
       if (this.busy || !this.dataKey || !this.fileHandle) return;
       const siteId = $("gen3SiteId").value.trim();
+      const site = $("gen3Site").value.trim();
+      const login = $("gen3Login").value.trim();
       const masterPassword = $("gen3Master").value;
       if (!siteId) return this.setStatus("enter a Website ID.", "warning");
       if (!masterPassword) return this.setStatus("enter the Master Password.", "warning");
@@ -576,9 +512,18 @@
           counter: 1,
           selectedKeys: ["lower", "upper", "nums", "symbols"]
         });
-        const id = siteId.toLowerCase();
-        const row = { id, length: 16, counter: 1, hint: password.slice(0, 5), updated: new Date().toISOString() };
-        const existing = this.rows.findIndex(item => item.id.toLowerCase() === id);
+        const normalizedId = siteId.toLowerCase();
+        const existing = this.rows.findIndex(item => item.id.toLowerCase() === normalizedId);
+        const row = {
+          key: existing >= 0 ? this.rows[existing].key : crypto.randomUUID(),
+          id: normalizedId,
+          site,
+          login,
+          length: 16,
+          counter: 1,
+          hint: password.slice(0, 5),
+          updated: new Date().toISOString()
+        };
         if (existing >= 0) this.rows[existing] = row;
         else this.rows.unshift(row);
         await this.saveMap();
@@ -587,6 +532,7 @@
         $("gen3ResultBox").hidden = false;
         $("gen3Result").textContent = `Generated, copied and saved. Hint: ${row.hint}`;
         $("gen3Result").dataset.kind = "success";
+        this.revealedRows.add(row.key);
         this.renderRows();
         this.setStatus("password generated and map file updated.", "success");
       } catch (error) {
@@ -598,6 +544,53 @@
       } finally {
         this.setBusy(false);
       }
+    }
+
+    async handleRowAction(event) {
+      const button = event.target.closest("button[data-row-action]");
+      if (!button || !this.dataKey) return;
+      const row = this.rows.find(item => item.key === button.dataset.rowKey);
+      if (!row) return;
+      if (button.dataset.rowAction === "toggle") {
+        if (this.revealedRows.has(row.key)) this.revealedRows.delete(row.key);
+        else this.revealedRows.add(row.key);
+        this.renderRows();
+        return;
+      }
+      if (button.dataset.rowAction !== "delete") return;
+      const label = this.revealedRows.has(row.key) || this.revealAll ? row.site || row.id : "this hidden entry";
+      if (!confirm(`Delete ${label} from the encrypted map?`)) return;
+      const previousRows = this.rows.map(item => ({ ...item }));
+      const previousPayload = this.mapRecord.payload;
+      const previousUpdatedAt = this.mapRecord.updatedAt;
+      this.rows = this.rows.filter(item => item.key !== row.key);
+      this.revealedRows.delete(row.key);
+      this.renderRows();
+      try {
+        await this.saveMap();
+        this.setStatus("entry deleted and encrypted map updated.", "success");
+      } catch (error) {
+        this.rows = previousRows;
+        this.mapRecord.payload = previousPayload;
+        this.mapRecord.updatedAt = previousUpdatedAt;
+        this.renderRows();
+        this.setStatus(`delete failed: ${error?.message || error}`, "warning");
+      }
+    }
+
+    toggleAllRows() {
+      if (!this.dataKey) return;
+      this.revealAll = !this.revealAll;
+      if (!this.revealAll) this.revealedRows.clear();
+      this.renderRows();
+      this.updateUI();
+    }
+
+    resetRevealState() {
+      this.revealAll = false;
+      this.revealedRows.clear();
+      this.filter = "";
+      if ($("gen3MapFilter")) $("gen3MapFilter").value = "";
     }
 
     async copyPassword() {
@@ -624,6 +617,7 @@
       this.generatedPassword = "";
       $("gen3Master").value = "";
       $("gen3ResultBox").hidden = true;
+      this.resetRevealState();
       this.showUnlockMethods();
       this.renderRows();
       this.setStatus("map locked.");
@@ -632,20 +626,31 @@
 
     renderRows() {
       if (!this.dataKey) {
-        $("gen3MapRows").innerHTML = '<tr><td colspan="5" class="gen3-empty">Unlock a map to view entries.</td></tr>';
+        $("gen3MapRows").innerHTML = '<tr><td colspan="8" class="gen3-empty">Unlock a map to view entries.</td></tr>';
         return;
       }
-      if (!this.rows.length) {
-        $("gen3MapRows").innerHTML = '<tr><td colspan="5" class="gen3-empty">No generations recorded yet.</td></tr>';
+      const filtered = this.rows.filter(row => !this.filter || [row.id, row.site, row.login, row.hint].some(value => String(value).toLowerCase().includes(this.filter)));
+      if (!filtered.length) {
+        $("gen3MapRows").innerHTML = `<tr><td colspan="8" class="gen3-empty">${this.rows.length ? "No matching entries." : "No generations recorded yet."}</td></tr>`;
         return;
       }
-      $("gen3MapRows").innerHTML = this.rows.map(row => `<tr>
-        <td>${this.escapeHtml(row.id)}</td>
-        <td>${row.length}</td>
-        <td>${row.counter}</td>
-        <td>${this.escapeHtml(row.hint)}</td>
-        <td>${this.escapeHtml(new Date(row.updated).toLocaleString())}</td>
-      </tr>`).join("");
+      $("gen3MapRows").innerHTML = filtered.map(row => {
+        const revealed = this.revealAll || this.revealedRows.has(row.key);
+        const updated = row.updated && !Number.isNaN(Date.parse(row.updated)) ? new Date(row.updated).toLocaleString() : "";
+        return `<tr class="${revealed ? "is-revealed" : "is-hidden"}">
+          <td>${revealed ? this.escapeHtml(row.id) : '<span class="gen3-masked">Hidden entry</span>'}</td>
+          <td>${revealed ? this.escapeHtml(row.site || "-") : '<span class="gen3-masked">Hidden</span>'}</td>
+          <td>${revealed ? this.escapeHtml(row.login || "-") : '<span class="gen3-masked">Hidden</span>'}</td>
+          <td>${revealed ? row.length : "-"}</td>
+          <td>${revealed ? row.counter : "-"}</td>
+          <td>${revealed ? this.escapeHtml(row.hint) : '<span class="gen3-masked">Hidden</span>'}</td>
+          <td>${revealed ? this.escapeHtml(updated) : '<span class="gen3-masked">Hidden</span>'}</td>
+          <td><div class="gen3-row-actions">
+            <button type="button" data-row-action="toggle" data-row-key="${this.escapeHtml(row.key)}">${revealed ? "Hide" : "Show"}</button>
+            <button type="button" class="danger" data-row-action="delete" data-row-key="${this.escapeHtml(row.key)}">Delete</button>
+          </div></td>
+        </tr>`;
+      }).join("");
     }
 
     escapeHtml(value) {

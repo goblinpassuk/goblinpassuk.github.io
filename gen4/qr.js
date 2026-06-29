@@ -56,7 +56,7 @@
 
   function dataCodewords(text) {
     const bytes = [...new TextEncoder().encode(text)];
-    if (bytes.length > 78) throw new Error("Authenticator QR data is too long.");
+    if (bytes.length > 78) throw new Error("QR data is too long.");
     const bits = [];
     pushBits(bits, 0b0100, 4);
     pushBits(bits, bytes.length, 8);

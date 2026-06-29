@@ -91,21 +91,10 @@
   accent-color: var(--accent);
 }
 
-.gen3-authenticator-setup,
 .gen3-unlock-method,
 .gen3-form {
   display: grid;
   gap: 9px;
-}
-
-.gen3-authenticator-setup {
-  margin-top: 12px;
-}
-
-.gen3-inline-input {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
 }
 
 .gen3-page input {
@@ -140,16 +129,6 @@
 .gen3-unlock-method .legend-art {
   width: 46px;
   height: 46px;
-}
-
-.gen3-restore-key summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.gen3-restore-key .gen3-inline-input {
-  margin-top: 10px;
 }
 
 .gen3-workspace {
@@ -256,7 +235,6 @@
 }
 
 @media (max-width: 520px) {
-  .gen3-inline-input,
   .gen3-recipe {
     grid-template-columns: 1fr;
   }
@@ -7865,6 +7843,248 @@ input:focus {
   .guide2-panel-row,
   .guide2-generator-shot,
   .content-cards.three-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Final Gen 3 overrides live last so shared tool styles cannot flatten them. */
+.gen3-page .gen3-map-control {
+  border-top: 1px solid rgba(119, 240, 90, 0.16);
+  border-bottom: 1px solid rgba(119, 240, 90, 0.16);
+  background: #08140d;
+  padding-top: 26px;
+  padding-bottom: 26px;
+}
+
+.gen3-page .gen3-workspace {
+  grid-template-columns: minmax(360px, 0.76fr) minmax(600px, 1.24fr);
+  align-items: stretch;
+  gap: 16px;
+}
+
+.gen3-page .backup-tool-card {
+  border-color: rgba(119, 240, 90, 0.28);
+  border-radius: 8px;
+  background: #09170f;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+  padding: 20px;
+}
+
+.gen3-page .gen3-generator,
+.gen3-page .gen3-map-card {
+  height: 100%;
+}
+
+.gen3-page .feature-card-heading {
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.gen3-page .feature-card-heading .legend-art {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+}
+
+.gen3-page .feature-card-heading .eyebrow {
+  margin: 0 0 4px;
+  letter-spacing: 0;
+}
+
+.gen3-page .feature-card-heading h2 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.gen3-page .gen3-form {
+  gap: 7px;
+}
+
+.gen3-page .gen3-form label {
+  margin-top: 7px;
+  margin-bottom: 0;
+  font-size: 0.88rem;
+}
+
+.gen3-page .gen3-form label span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.gen3-page input {
+  min-height: 48px;
+  border-color: rgba(119, 240, 90, 0.32);
+  background: #041009;
+}
+
+.gen3-page button {
+  letter-spacing: 0;
+}
+
+.gen3-page .secondary-button,
+.gen3-page .gen3-row-actions button,
+.gen3-page #gen3CopyPassword {
+  min-height: 42px;
+  border: 1px solid rgba(119, 240, 90, 0.38);
+  border-radius: 7px;
+  background: #07170d;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+  padding: 0 14px;
+}
+
+.gen3-page .secondary-button:hover,
+.gen3-page .secondary-button:focus-visible,
+.gen3-page .gen3-row-actions button:hover,
+.gen3-page .gen3-row-actions button:focus-visible,
+.gen3-page #gen3CopyPassword:hover,
+.gen3-page #gen3CopyPassword:focus-visible {
+  border-color: var(--accent);
+  background: rgba(119, 240, 90, 0.1);
+  outline: none;
+}
+
+.gen3-page .secondary-button:disabled,
+.gen3-page .gen3-row-actions button:disabled,
+.gen3-page #gen3CopyPassword:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.gen3-page #gen3CopyPassword {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.gen3-page .gen3-generate-button {
+  border-radius: 7px;
+  box-shadow: 0 12px 28px rgba(50, 204, 104, 0.18);
+}
+
+.gen3-page .level2-result-box {
+  margin-top: 12px;
+}
+
+.gen3-page .gen3-recipe {
+  margin: 14px 0;
+}
+
+.gen3-page .gen3-recipe span {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+}
+
+.gen3-page .gen3-auth-option,
+.gen3-page .gen3-unlock-method {
+  border-color: rgba(119, 240, 90, 0.28);
+  background: #07170d;
+}
+
+.gen3-page .level2-google-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.gen3-page .google-button-area {
+  min-height: 0;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.gen3-map-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gen3-page .gen3-map-toolbar input {
+  min-height: 42px;
+}
+
+.gen3-page .gen3-table-wrap {
+  border-color: rgba(119, 240, 90, 0.28);
+  background: #041009;
+}
+
+.gen3-page .gen3-table {
+  min-width: 1020px;
+  table-layout: fixed;
+  font-size: 0.84rem;
+}
+
+.gen3-page .gen3-table th,
+.gen3-page .gen3-table td {
+  padding: 10px 9px;
+}
+
+.gen3-page .gen3-table th {
+  background: #102a17;
+  font-size: 0.68rem;
+  letter-spacing: 0;
+}
+
+.gen3-page .gen3-table th:nth-child(1) { width: 15%; }
+.gen3-page .gen3-table th:nth-child(2) { width: 14%; }
+.gen3-page .gen3-table th:nth-child(3) { width: 16%; }
+.gen3-page .gen3-table th:nth-child(4),
+.gen3-page .gen3-table th:nth-child(5) { width: 7%; }
+.gen3-page .gen3-table th:nth-child(6) { width: 10%; }
+.gen3-page .gen3-table th:nth-child(7) { width: 18%; }
+.gen3-page .gen3-table th:nth-child(8) { width: 13%; }
+
+.gen3-page .gen3-table tr.is-hidden td {
+  background: rgba(2, 10, 6, 0.72);
+  color: var(--muted);
+}
+
+.gen3-masked {
+  color: #799183;
+  font-style: italic;
+}
+
+.gen3-row-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.gen3-page .gen3-row-actions button {
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 0.76rem;
+}
+
+.gen3-page .gen3-row-actions button.danger {
+  border-color: rgba(255, 107, 107, 0.48);
+  color: #ffb0b0;
+}
+
+.gen3-page .gen3-row-actions button.danger:hover,
+.gen3-page .gen3-row-actions button.danger:focus-visible {
+  border-color: var(--danger);
+  background: rgba(255, 107, 107, 0.1);
+}
+
+@media (max-width: 1050px) {
+  .gen3-page .gen3-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .gen3-page .feature-card-heading h2 {
+    font-size: 1.65rem;
+  }
+
+  .gen3-map-toolbar {
     grid-template-columns: 1fr;
   }
 }
