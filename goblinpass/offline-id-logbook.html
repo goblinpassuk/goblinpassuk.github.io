@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06120b">
   <title>GoblinPass 1.0 Offline ID Logbook</title>
+  <link rel="manifest" href="offline-id-logbook.webmanifest">
+  <link rel="icon" href="icon-192.png">
   <style>
     :root {
       --bg: #06120b;
@@ -64,23 +67,6 @@
       box-shadow: 0 6px 10px -10px rgba(120, 255, 138, 0.8);
     }
 
-    input[type="checkbox"] {
-      appearance: none;
-      width: 12px;
-      height: 12px;
-      flex: 0 0 12px;
-      margin: 0;
-      border: 1.4px solid rgba(182, 255, 193, 0.8);
-      border-radius: 2px;
-      background: rgba(4, 15, 8, 0.62);
-      cursor: pointer;
-    }
-
-    input[type="checkbox"]:checked {
-      background: var(--green);
-      box-shadow: inset 0 0 0 2px var(--bg);
-    }
-
     .toolbar {
       position: sticky;
       top: 0;
@@ -111,30 +97,6 @@
       color: #06230d;
       background: linear-gradient(180deg, var(--green), var(--green-deep));
       font-weight: 800;
-    }
-
-    .method-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 750;
-    }
-
-    .method-toolbar label {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      min-height: 28px;
-      padding: 4px 8px;
-      border: 1px solid rgba(120, 255, 138, 0.2);
-      border-radius: 999px;
-      background: rgba(2, 14, 6, 0.74);
-      cursor: pointer;
     }
 
     .page {
@@ -307,18 +269,23 @@
     }
 
     .legend-toggle {
+      width: 100%;
+      font: inherit;
+      text-align: left;
       cursor: pointer;
       transition: border-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
     }
 
-    .legend-toggle:hover {
+    .legend-toggle:hover,
+    .legend-toggle:focus-visible {
       border-color: var(--line-strong);
       transform: translateY(-1px);
     }
 
-    .legend-toggle.is-hidden {
-      opacity: 0.42;
+    .legend-toggle[aria-pressed="false"] {
+      opacity: 0.38;
       border-style: dashed;
+      filter: grayscale(0.75);
     }
 
     .icon {
@@ -488,10 +455,37 @@
       min-height: 24px;
       padding: 0;
       border: 0;
+      color: inherit;
       background: transparent;
       box-shadow: none;
       overflow: hidden;
       gap: 3px;
+      cursor: pointer;
+    }
+
+    .method-check .icon {
+      opacity: 0.28;
+      filter: grayscale(0.75);
+      transition: opacity 0.15s ease, filter 0.15s ease, transform 0.15s ease;
+    }
+
+    .method-check:hover .icon,
+    .method-check:focus-visible .icon {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+
+    .method-check.is-selected .icon {
+      opacity: 1;
+      filter: none;
+      box-shadow: 0 0 9px currentColor;
+    }
+
+    body.hide-yubikey .method-check[data-method="yubikey"],
+    body.hide-master .method-check[data-method="master"],
+    body.hide-google .method-check[data-method="google"],
+    body.hide-trusted .method-check[data-method="trusted"] {
+      display: none;
     }
 
     .method-check .icon {
@@ -503,13 +497,6 @@
     .method-check .icon svg {
       width: 22px;
       height: 22px;
-    }
-
-    body.hide-yubikey [data-method="yubikey"]:not(.legend-toggle),
-    body.hide-master [data-method="master"]:not(.legend-toggle),
-    body.hide-google [data-method="google"]:not(.legend-toggle),
-    body.hide-trusted [data-method="trusted"]:not(.legend-toggle) {
-      display: none;
     }
 
     .footer {
@@ -589,16 +576,6 @@
     body.print-light input[type="text"] {
       color: #111811;
       border-bottom-color: #6c746c;
-    }
-
-    body.print-light input[type="checkbox"] {
-      background: #ffffff;
-      border-color: #111811;
-    }
-
-    body.print-light input[type="checkbox"]:checked {
-      background: #111811;
-      box-shadow: inset 0 0 0 2px #ffffff;
     }
 
     body.print-light .method-check {
@@ -823,17 +800,11 @@
   </svg>
 
   <div class="toolbar" aria-label="Template controls">
+    <button type="button" id="installButton" hidden>Install on Desktop</button>
     <button type="button" id="printButton">Print / Save as PDF</button>
     <button type="button" id="addRowButton">Add Row</button>
     <button type="button" id="saveButton">Save</button>
     <button type="button" id="themeButton" aria-pressed="false">Print-friendly Mode</button>
-    <div class="method-toolbar" aria-label="Choose security methods to show">
-      Show methods:
-      <label><input type="checkbox" class="method-toggle" data-toggle-method="yubikey" checked> Yubikey</label>
-      <label><input type="checkbox" class="method-toggle" data-toggle-method="master" checked> Master Password</label>
-      <label><input type="checkbox" class="method-toggle" data-toggle-method="google" checked> Google</label>
-      <label><input type="checkbox" class="method-toggle" data-toggle-method="trusted" checked> Trusted Device</label>
-    </div>
   </div>
 
   <main class="page">
@@ -854,10 +825,10 @@
     <section class="method-key" aria-label="Security method legend">
       <p class="key-title">Security Method Legend</p>
       <div class="key-grid">
-        <div class="key-item legend-toggle" data-method="master" role="button" tabindex="0" aria-pressed="true"><span class="icon master" aria-hidden="true"><svg><use href="#gp-icon-masterpassword"></use></svg></span> MasterPassword</div>
-        <div class="key-item legend-toggle" data-method="google" role="button" tabindex="0" aria-pressed="true"><span class="icon google" aria-hidden="true"><svg><use href="#gp-icon-google"></use></svg></span> Google</div>
-        <div class="key-item legend-toggle" data-method="yubikey" role="button" tabindex="0" aria-pressed="true"><span class="icon yubikey" aria-hidden="true"><svg><use href="#gp-icon-yubikey"></use></svg></span> Yubikey</div>
-        <div class="key-item legend-toggle" data-method="trusted" role="button" tabindex="0" aria-pressed="true"><span class="icon trusted" aria-hidden="true"><svg><use href="#gp-icon-trusted-device"></use></svg></span> Trusted Device</div>
+        <button type="button" class="key-item legend-toggle" data-method="master" aria-pressed="true"><span class="icon master" aria-hidden="true"><svg><use href="#gp-icon-masterpassword"></use></svg></span> MasterPassword</button>
+        <button type="button" class="key-item legend-toggle" data-method="google" aria-pressed="true"><span class="icon google" aria-hidden="true"><svg><use href="#gp-icon-google"></use></svg></span> Google</button>
+        <button type="button" class="key-item legend-toggle" data-method="yubikey" aria-pressed="true"><span class="icon yubikey" aria-hidden="true"><svg><use href="#gp-icon-yubikey"></use></svg></span> Yubikey</button>
+        <button type="button" class="key-item legend-toggle" data-method="trusted" aria-pressed="true"><span class="icon trusted" aria-hidden="true"><svg><use href="#gp-icon-trusted-device"></use></svg></span> Trusted Device</button>
       </div>
     </section>
 
@@ -885,11 +856,11 @@
       <td><input type="text" autocomplete="off" spellcheck="false" aria-label="ID"></td>
       <td><input type="text" autocomplete="off" spellcheck="false" aria-label="Website"></td>
       <td>
-        <div class="method-set" aria-label="Tick the matching security method">
-          <label class="key-item method-check" data-method="yubikey" aria-label="Yubikey"><input type="checkbox"><span class="icon yubikey" aria-hidden="true"><svg><use href="#gp-icon-yubikey"></use></svg></span></label>
-          <label class="key-item method-check" data-method="master" aria-label="Master Password"><input type="checkbox"><span class="icon master" aria-hidden="true"><svg><use href="#gp-icon-masterpassword"></use></svg></span></label>
-          <label class="key-item method-check" data-method="google" aria-label="Google"><input type="checkbox"><span class="icon google" aria-hidden="true"><svg><use href="#gp-icon-google"></use></svg></span></label>
-          <label class="key-item method-check" data-method="trusted" aria-label="Trusted Device"><input type="checkbox"><span class="icon trusted" aria-hidden="true"><svg><use href="#gp-icon-trusted-device"></use></svg></span></label>
+        <div class="method-set" aria-label="Select the matching security method">
+          <button type="button" class="key-item method-check" data-method="yubikey" aria-label="Yubikey" aria-pressed="false"><span class="icon yubikey" aria-hidden="true"><svg><use href="#gp-icon-yubikey"></use></svg></span></button>
+          <button type="button" class="key-item method-check" data-method="master" aria-label="Master Password" aria-pressed="false"><span class="icon master" aria-hidden="true"><svg><use href="#gp-icon-masterpassword"></use></svg></span></button>
+          <button type="button" class="key-item method-check" data-method="google" aria-label="Google" aria-pressed="false"><span class="icon google" aria-hidden="true"><svg><use href="#gp-icon-google"></use></svg></span></button>
+          <button type="button" class="key-item method-check" data-method="trusted" aria-label="Trusted Device" aria-pressed="false"><span class="icon trusted" aria-hidden="true"><svg><use href="#gp-icon-trusted-device"></use></svg></span></button>
         </div>
       </td>
       <td><input class="small-input" type="text" inputmode="numeric" value="16" autocomplete="off" spellcheck="false" aria-label="Length"></td>
@@ -902,42 +873,28 @@
     (() => {
       const tbody = document.querySelector("#logRows");
       const template = document.querySelector("#rowTemplate");
+      const installButton = document.querySelector("#installButton");
       const printButton = document.querySelector("#printButton");
       const addRowButton = document.querySelector("#addRowButton");
       const saveButton = document.querySelector("#saveButton");
       const themeButton = document.querySelector("#themeButton");
       const table = document.querySelector("table");
-      const methodToggles = document.querySelectorAll(".method-toggle");
       const legendToggles = document.querySelectorAll(".legend-toggle");
+      let installPrompt = null;
 
-      function setMethodVisibility(method, visible) {
-        document.body.classList.toggle(`hide-${method}`, !visible);
-        const visibleCount = [...methodToggles].filter((toggle) => toggle.checked).length || 1;
-        document.documentElement.style.setProperty("--method-count", visibleCount);
-        document.querySelectorAll(`.legend-toggle[data-method="${method}"]`).forEach((legend) => {
-          legend.classList.toggle("is-hidden", !visible);
-          legend.setAttribute("aria-pressed", String(visible));
+      function updateMethodVisibility() {
+        let enabledCount = 0;
+        legendToggles.forEach((toggle) => {
+          const enabled = toggle.getAttribute("aria-pressed") === "true";
+          document.body.classList.toggle(`hide-${toggle.dataset.method}`, !enabled);
+          if (enabled) enabledCount += 1;
         });
-      }
-
-      function toggleMethod(method) {
-        const toggle = document.querySelector(`.method-toggle[data-toggle-method="${method}"]`);
-        if (!toggle) {
-          return;
-        }
-
-        toggle.checked = !toggle.checked;
-        setMethodVisibility(method, toggle.checked);
+        document.documentElement.style.setProperty("--method-count", Math.max(1, enabledCount));
       }
 
       function addRow() {
         const row = template.content.firstElementChild.cloneNode(true);
         row.querySelectorAll("input").forEach((input) => {
-          if (input.type === "checkbox") {
-            input.checked = false;
-            return;
-          }
-
           if (input.getAttribute("aria-label") === "Length") {
             input.value = "16";
             return;
@@ -959,28 +916,39 @@
 
       printButton.addEventListener("click", () => window.print());
       addRowButton.addEventListener("click", addRow);
-      methodToggles.forEach((toggle) => {
-        setMethodVisibility(toggle.dataset.toggleMethod, toggle.checked);
-        toggle.addEventListener("change", () => {
-          setMethodVisibility(toggle.dataset.toggleMethod, toggle.checked);
+      legendToggles.forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+          const enabled = toggle.getAttribute("aria-pressed") !== "true";
+          toggle.setAttribute("aria-pressed", String(enabled));
+          updateMethodVisibility();
         });
       });
-      legendToggles.forEach((legend) => {
-        legend.addEventListener("click", () => toggleMethod(legend.dataset.method));
-        legend.addEventListener("keydown", (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            toggleMethod(legend.dataset.method);
-          }
-        });
+      updateMethodVisibility();
+      tbody.addEventListener("click", (event) => {
+        const methodButton = event.target.closest(".method-check");
+        if (!methodButton) return;
+        const selected = methodButton.getAttribute("aria-pressed") !== "true";
+        methodButton.setAttribute("aria-pressed", String(selected));
+        methodButton.classList.toggle("is-selected", selected);
+      });
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        installPrompt = event;
+        installButton.hidden = false;
+      });
+      installButton.addEventListener("click", async () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        await installPrompt.userChoice;
+        installPrompt = null;
+        installButton.hidden = true;
+      });
+      window.addEventListener("appinstalled", () => {
+        installPrompt = null;
+        installButton.hidden = true;
       });
       saveButton.addEventListener("click", () => {
         document.querySelectorAll("input").forEach((input) => {
-          if (input.type === "checkbox") {
-            input.toggleAttribute("checked", input.checked);
-            return;
-          }
-
           input.setAttribute("value", input.value);
         });
 
@@ -988,10 +956,6 @@
           if (header.style.width) {
           header.setAttribute("style", `width: ${header.style.width}`);
           }
-        });
-
-        methodToggles.forEach((toggle) => {
-          setMethodVisibility(toggle.dataset.toggleMethod, toggle.checked);
         });
 
         const source = `<!DOCTYPE html>\n${document.documentElement.outerHTML}`;
@@ -1039,6 +1003,14 @@
           handle.addEventListener("pointercancel", stopResize);
         });
       });
+
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./offline-id-logbook-service-worker.js", {
+            scope: "./offline-id-logbook.html"
+          }).catch(() => {});
+        });
+      }
     })();
   </script>
 </body>
