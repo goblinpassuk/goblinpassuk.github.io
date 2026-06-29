@@ -1,7 +1,8 @@
-const CACHE_NAME = "goblinpass-offline-id-logbook-v2";
+const CACHE_NAME = "goblinpass-offline-id-logbook-v3";
 const APP_FILES = [
-  "./offline-id-logbook.html",
-  "./offline-id-logbook.webmanifest",
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png"
 ];
@@ -35,7 +36,7 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(() => caches.match(event.request).then((cached) => (
-        cached || (event.request.mode === "navigate" ? caches.match("./offline-id-logbook.html") : Response.error())
+        cached || (event.request.mode === "navigate" ? caches.match("./index.html") : Response.error())
       )))
   );
 });

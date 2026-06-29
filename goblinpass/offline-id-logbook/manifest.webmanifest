@@ -1,10 +1,10 @@
 {
-  "id": "./offline-id-logbook.html",
+  "id": "./",
   "name": "GoblinPass Offline ID Logbook",
   "short_name": "ID Logbook",
   "description": "An offline logbook for GoblinPass website IDs and security methods.",
-  "start_url": "./offline-id-logbook.html",
-  "scope": "./offline-id-logbook.html",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#06120b",
   "theme_color": "#06120b",
