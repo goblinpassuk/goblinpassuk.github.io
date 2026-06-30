@@ -271,6 +271,11 @@ input:focus {
 
 .password-output input { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 
+.qr-toggle-button {
+  width: 100%;
+  margin-top: 12px;
+}
+
 .qr-panel,
 .qr-placeholder {
   flex: 1;

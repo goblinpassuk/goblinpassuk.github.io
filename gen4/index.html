@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="../goblinpass/icon-192.png">
   <link rel="apple-touch-icon" href="../goblinpass/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=20260629-gen4-4">
+  <link rel="stylesheet" href="style.css?v=20260630-gen4-qr-toggle">
 </head>
 <body>
   <main class="app-shell">
@@ -79,13 +79,15 @@
           <button id="copyPassword" class="secondary-button" type="button" disabled>Copy</button>
         </div>
 
+        <button id="toggleQr" class="secondary-button qr-toggle-button" type="button" disabled aria-controls="qrPanel" aria-expanded="false">Show QR code</button>
+
         <div id="qrPanel" class="qr-panel" hidden>
           <canvas id="passwordQr" width="246" height="246" aria-label="Generated password QR code"></canvas>
           <p>Scan privately. This QR code contains the generated password.</p>
         </div>
         <div id="qrPlaceholder" class="qr-placeholder" aria-hidden="true">
           <span>QR</span>
-          <p>The password QR code appears here.</p>
+          <p id="qrPlaceholderMessage">Generate a password to enable its QR code.</p>
         </div>
       </article>
     </section>
@@ -98,6 +100,6 @@
 
   <script src="../assets/js/goblinpass-engine.js?v=20260629-gen4"></script>
   <script src="qr.js?v=20260629-gen4-2"></script>
-  <script src="app-v4.js"></script>
+  <script src="app-v4.js?v=20260630-qr-privacy"></script>
 </body>
 </html>

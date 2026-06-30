@@ -97,6 +97,18 @@
   gap: 9px;
 }
 
+.gen3-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.gen3-field {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-width: 0;
+}
+
 .gen3-page input {
   min-width: 0;
   border: 1px solid rgba(119, 240, 90, 0.34);
@@ -187,7 +199,7 @@
 
 .gen3-workspace {
   display: grid;
-  grid-template-columns: minmax(300px, 0.72fr) minmax(520px, 1.28fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -289,6 +301,7 @@
 }
 
 @media (max-width: 520px) {
+  .gen3-form,
   .gen3-recipe {
     grid-template-columns: 1fr;
   }

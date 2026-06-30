@@ -11,9 +11,11 @@
   const generatedPassword = document.getElementById("generatedPassword");
   const togglePassword = document.getElementById("togglePassword");
   const copyPassword = document.getElementById("copyPassword");
+  const toggleQr = document.getElementById("toggleQr");
   const qrCanvas = document.getElementById("passwordQr");
   const qrPanel = document.getElementById("qrPanel");
   const qrPlaceholder = document.getElementById("qrPlaceholder");
+  const qrPlaceholderMessage = document.getElementById("qrPlaceholderMessage");
   const resultStatus = document.getElementById("statusMessage");
   const installButton = document.getElementById("installApp");
   const offlineStatus = document.getElementById("offlineStatus");
@@ -25,8 +27,12 @@
     togglePassword.textContent = "Show";
     togglePassword.disabled = true;
     copyPassword.disabled = true;
+    toggleQr.disabled = true;
+    toggleQr.textContent = "Show QR code";
+    toggleQr.setAttribute("aria-expanded", "false");
     qrPanel.hidden = true;
     qrPlaceholder.hidden = false;
+    qrPlaceholderMessage.textContent = "Generate a password to enable its QR code.";
     resultPanel.classList.remove("has-result");
     resultStatus.textContent = "Nothing is saved. Generate the same password again with the same Website ID and Master Password.";
   }
@@ -52,6 +58,16 @@
     resultStatus.textContent = "Password copied to the clipboard.";
   }
 
+  function toggleQrCode() {
+    if (!generatedPassword.value) return;
+    const shouldShow = qrPanel.hidden;
+    qrPanel.hidden = !shouldShow;
+    qrPlaceholder.hidden = shouldShow;
+    toggleQr.textContent = shouldShow ? "Hide QR code" : "Show QR code";
+    toggleQr.setAttribute("aria-expanded", String(shouldShow));
+    if (!shouldShow) qrPlaceholderMessage.textContent = "QR code hidden for privacy.";
+  }
+
   async function generatePassword(event) {
     event.preventDefault();
     if (!form.reportValidity()) return;
@@ -67,10 +83,14 @@
       togglePassword.disabled = false;
       copyPassword.disabled = false;
       window.GoblinPassQrV4.draw(qrCanvas, password);
-      qrPanel.hidden = false;
-      qrPlaceholder.hidden = true;
+      toggleQr.disabled = false;
+      toggleQr.textContent = "Show QR code";
+      toggleQr.setAttribute("aria-expanded", "false");
+      qrPanel.hidden = true;
+      qrPlaceholder.hidden = false;
+      qrPlaceholderMessage.textContent = "QR code hidden for privacy. Select Show QR code to reveal it.";
       resultPanel.classList.add("has-result");
-      resultStatus.textContent = "Generated locally. Scan the QR code or use Copy.";
+      resultStatus.textContent = "Generated locally. The QR code is hidden until you choose to show it.";
     } catch (error) {
       resultStatus.textContent = error.message || "The password could not be generated.";
     }
@@ -84,6 +104,7 @@
   toggleMaster.addEventListener("click", function () { toggleVisibility(masterPassword, toggleMaster); });
   togglePassword.addEventListener("click", function () { toggleVisibility(generatedPassword, togglePassword); });
   copyPassword.addEventListener("click", copyGeneratedPassword);
+  toggleQr.addEventListener("click", toggleQrCode);
   [websiteId, passwordLength, passwordCounter, masterPassword].forEach(function (input) {
     input.addEventListener("input", clearResult);
   });

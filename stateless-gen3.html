@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Stateless Gen 3.0 (Beta)</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260629-gen3-unlock-ui-2" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260630-gen3-stacked-layout" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -125,17 +125,25 @@
             <div><p class="eyebrow">Stateless Gen 3.0</p><h2>Generate</h2></div>
           </div>
           <div class="gen3-form">
-            <label for="gen3SiteId">Website ID</label>
-            <input id="gen3SiteId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Website ID">
-            <label for="gen3Site">Site <span>(optional)</span></label>
-            <input id="gen3Site" type="text" autocomplete="off" spellcheck="false" placeholder="example.com">
-            <label for="gen3Login">Login <span>(optional)</span></label>
-            <input id="gen3Login" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Username or email">
-            <span class="level2-password-heading">
-              <label for="gen3Master">Master Password</label>
-              <button id="gen3ToggleMaster" class="level2-inline-toggle" type="button" aria-label="Show master password" aria-pressed="false">Show</button>
-            </span>
-            <input id="gen3Master" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Never saved">
+            <div class="gen3-field">
+              <label for="gen3SiteId">Website ID</label>
+              <input id="gen3SiteId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Website ID">
+            </div>
+            <div class="gen3-field">
+              <label for="gen3Site">Site <span>(optional)</span></label>
+              <input id="gen3Site" type="text" autocomplete="off" spellcheck="false" placeholder="example.com">
+            </div>
+            <div class="gen3-field">
+              <label for="gen3Login">Login <span>(optional)</span></label>
+              <input id="gen3Login" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Username or email">
+            </div>
+            <div class="gen3-field">
+              <span class="level2-password-heading">
+                <label for="gen3Master">Master Password</label>
+                <button id="gen3ToggleMaster" class="level2-inline-toggle" type="button" aria-label="Show master password" aria-pressed="false">Show</button>
+              </span>
+              <input id="gen3Master" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Never saved">
+            </div>
           </div>
           <div class="gen3-recipe" aria-label="Password recipe">
             <span>Website ID</span><b>+</b><span>Master Password</span>
