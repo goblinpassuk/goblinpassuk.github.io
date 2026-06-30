@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GoblinPass QR Scanner</title>
+  <meta name="theme-color" content="#07120e">
+  <meta name="application-name" content="GoblinPass QR Scanner">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="../goblinpass/icon-192.png">
+  <link rel="apple-touch-icon" href="../goblinpass/icon-192.png">
+  <link rel="stylesheet" href="style.css?v=20260630-standalone-scanner-2">
+</head>
+<body>
+  <main class="scanner-shell">
+    <header class="scanner-header">
+      <a class="brand" href="../gen4/index.html" aria-label="GoblinPass Gen 4 generator">
+        <img src="../goblinpass/icon-192.png" alt="" width="46" height="46">
+        <span><strong>GoblinPass</strong><small>Private QR Scanner</small></span>
+      </a>
+      <div class="header-actions">
+        <a class="secondary-button generator-link" href="../gen4/index.html">Generator</a>
+        <button id="installScanner" class="primary-button" type="button" hidden>Install</button>
+      </div>
+    </header>
+
+    <section class="privacy-strip" aria-label="Scanner privacy">
+      <span><b class="status-dot"></b> Local scanning</span>
+      <span>Nothing stored</span>
+      <span>Masked by default</span>
+    </section>
+
+    <section class="scanner-card" aria-labelledby="scannerTitle">
+      <header class="card-heading">
+        <p>Phone camera</p>
+        <h1 id="scannerTitle">Scan password QR</h1>
+        <span>Point the rear camera at a QR code created by GoblinPass Gen 4.</span>
+      </header>
+
+      <div class="camera-frame">
+        <video id="cameraPreview" muted playsinline aria-label="Camera preview" hidden></video>
+        <div id="cameraPlaceholder" class="camera-placeholder">
+          <span class="scan-corners" aria-hidden="true"></span>
+          <strong>Camera is off</strong>
+          <small>It starts only when you tap Start camera.</small>
+        </div>
+        <div id="scanGuide" class="scan-guide" aria-hidden="true" hidden></div>
+      </div>
+
+      <div class="camera-actions">
+        <button id="startCamera" class="primary-button" type="button">Start camera</button>
+        <button id="stopCamera" class="secondary-button" type="button" disabled>Stop camera</button>
+        <label class="secondary-button photo-button" for="qrImage">Scan a photo</label>
+        <input id="qrImage" class="visually-hidden" type="file" accept="image/*" capture="environment">
+      </div>
+
+      <p id="scannerStatus" class="scanner-status" aria-live="polite">Ready. Camera access requires HTTPS.</p>
+    </section>
+
+    <section class="password-card" aria-labelledby="passwordTitle">
+      <header class="card-heading compact">
+        <p>Scanned locally</p>
+        <h2 id="passwordTitle">Password</h2>
+      </header>
+
+      <label for="scannedPassword">Scanned password</label>
+      <input id="scannedPassword" type="password" readonly autocomplete="off" aria-describedby="passwordSummary" placeholder="Scan a QR code to begin">
+      <p id="passwordSummary" class="password-summary">No password scanned.</p>
+
+      <div class="password-actions">
+        <button id="togglePassword" class="secondary-button" type="button" disabled aria-pressed="false">Show</button>
+        <button id="copyPassword" class="primary-button" type="button" disabled>Copy</button>
+        <button id="clearPassword" class="secondary-button" type="button" disabled>Clear</button>
+      </div>
+    </section>
+
+    <footer class="scanner-footer">
+      <span>QR contents remain in this page only.</span>
+      <span id="supportStatus">Checking scanner support…</span>
+    </footer>
+  </main>
+
+  <script src="qr-reader.js?v=20260630-standalone-scanner-2"></script>
+  <script src="app.js?v=20260630-standalone-scanner-2"></script>
+</body>
+</html>

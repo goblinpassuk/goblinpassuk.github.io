@@ -168,5 +168,5 @@
     }));
   }
 
-  window.GoblinPassQrV4 = { draw };
+  window.GoblinPassQrV4 = { draw, matrix };
 })();

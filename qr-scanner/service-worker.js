@@ -1,13 +1,11 @@
-const CACHE_NAME = "goblinpass-gen4-v11";
+const CACHE_NAME = "goblinpass-qr-scanner-v2";
 const APP_FILES = [
   "./",
   "./index.html",
   "./style.css",
-  "./layout-fix.css",
-  "./app-v4.js",
-  "./qr.js",
+  "./app.js",
+  "./qr-reader.js",
   "./manifest.webmanifest",
-  "../assets/js/goblinpass-engine.js",
   "../goblinpass/icon-192.png",
   "../goblinpass/icon-512.png"
 ];
@@ -19,7 +17,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith("goblinpass-qr-scanner-") && key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -29,23 +27,16 @@ self.addEventListener("fetch", event => {
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        }
+        if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
         return response;
-      }).catch(async () => (
-        await caches.match(event.request, { ignoreSearch: true })
-        || await caches.match("./index.html")
-      ))
+      }).catch(async () => await caches.match(event.request, { ignoreSearch: true }) || caches.match("./index.html"))
     );
     return;
   }
   event.respondWith(
     fetch(event.request).then(response => {
       if (response.ok && new URL(event.request.url).origin === self.location.origin) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
       }
       return response;
     }).catch(() => caches.match(event.request, { ignoreSearch: true }))

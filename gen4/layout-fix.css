@@ -1,0 +1,150 @@
+/* Loaded separately so older installed-app caches cannot reuse pre-controls CSS. */
+.header-actions {
+  flex-wrap: wrap;
+}
+
+.character-options {
+  display: block;
+  min-inline-size: 0;
+  width: 100%;
+  margin: 14px 0 4px;
+  border: 0;
+  padding: 0;
+}
+
+.character-options legend {
+  display: block;
+  width: 100%;
+  margin: 0 0 9px;
+  padding: 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  width: 100%;
+}
+
+.character-grid label {
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #030b06;
+  color: var(--text);
+  cursor: pointer;
+  padding: 10px 12px;
+  transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.character-grid label:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.character-grid label:has(input:checked) {
+  border-color: rgba(109, 240, 94, 0.68);
+  background: linear-gradient(135deg, rgba(109, 240, 94, 0.12), rgba(109, 240, 94, 0.04));
+}
+
+.character-grid input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  display: grid;
+  flex: 0 0 20px;
+  place-content: center;
+  margin: 0;
+  border: 2px solid #4e7057;
+  border-radius: 5px;
+  background: #07120b;
+  box-shadow: none;
+  padding: 0;
+}
+
+.character-grid input[type="checkbox"]::before {
+  width: 10px;
+  height: 10px;
+  background: #041007;
+  clip-path: polygon(14% 44%, 0 59%, 38% 100%, 100% 18%, 84% 4%, 37% 72%);
+  content: "";
+  transform: scale(0);
+  transition: transform 100ms ease;
+}
+
+.character-grid input[type="checkbox"]:checked {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+.character-grid input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+.character-grid input[type="checkbox"]:focus-visible {
+  outline: 3px solid rgba(109, 240, 94, 0.22);
+  outline-offset: 3px;
+}
+
+.character-grid span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .header-link {
+    width: 100%;
+    min-height: 42px;
+    white-space: normal;
+  }
+
+  #installApp {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 390px) {
+  .character-grid {
+    gap: 7px;
+  }
+
+  .character-grid label {
+    min-height: 48px;
+    padding: 8px 9px;
+  }
+
+  .header-actions {
+    grid-template-columns: 1fr;
+  }
+
+  #installApp {
+    grid-column: auto;
+  }
+}

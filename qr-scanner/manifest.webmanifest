@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "GoblinPass QR Scanner",
+  "short_name": "GP Scanner",
+  "description": "Private, local QR scanning for GoblinPass passwords.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#040b07",
+  "theme_color": "#07120e",
+  "icons": [
+    { "src": "../goblinpass/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "../goblinpass/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
