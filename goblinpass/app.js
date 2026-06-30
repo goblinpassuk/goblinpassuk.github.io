@@ -23,6 +23,7 @@ const TRUSTED_DEVICE_KEY = "goblinpass_trusted_device_key_v1";
 const YUBIKEY_CREDENTIAL_KEY = "goblinpass_yubikey_credential_id_v1";
 const YUBIKEY_MODE_KEY = "goblinpass_yubikey_mode_v2";
 const YUBIKEY_CAPABILITY_KEY = "goblinpass_yubikey_capability_v1";
+const MASTER_DEVICE_UNLOCK_KEY = "goblinpass_master_device_unlock_v1";
 const GOOGLE_CLIENT_ID = "908605927082-sne248f74g829ek1kh1mh11gumjj411m.apps.googleusercontent.com";
 const PRIVATE_BROWSING_YUBIKEY_WARNING = "YubiKey mode may not work in private/incognito browsing because the registered credential cannot be reused. Please use normal browser mode.";
 const MOBILE_YUBIKEY_PRF_WARNING = "Mobile browsers may register a YubiKey but fail to reuse it for WebAuthn PRF. If PRF mode fails on this phone, use a desktop browser in normal mode.";
@@ -879,6 +880,115 @@ function updateYubiKeyUi() {
   else if (mode === "gate") setYubiKeyMessage(yubiKeyStatusText("YubiKey touch unlock only is active. This mode does not change the generated password."), "info");
   else if (cap.prfAvailable) setYubiKeyMessage(yubiKeyStatusText("Last YubiKey authentication returned a real PRF password ingredient."), "success");
   else setYubiKeyMessage("Generate to open the credential selector. Choose the same YubiKey credential used for the original password.", "info");
+}
+
+function getMasterDeviceRecord() {
+  try {
+    const record = JSON.parse(localStorage.getItem(MASTER_DEVICE_UNLOCK_KEY) || "null");
+    return record?.credentialId && record?.prfSalt && record?.keySalt && record?.iv && record?.ciphertext ? record : null;
+  } catch {
+    return null;
+  }
+}
+
+function masterDevicePrfOutput(credential) {
+  const results = credential.getClientExtensionResults?.() || {};
+  const output = results.prf?.results?.first;
+  if (!output) throw new Error("This device or browser did not return a passkey PRF secret.");
+  return new Uint8Array(output);
+}
+
+async function deriveMasterDeviceKey(prfOutput, keySalt) {
+  const material = await crypto.subtle.importKey("raw", prfOutput, "HKDF", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({
+    name: "HKDF",
+    hash: "SHA-256",
+    salt: keySalt,
+    info: new TextEncoder().encode("GoblinPass master password device unlock v1")
+  }, material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+
+async function requestMasterDevicePrf(record) {
+  const credential = await navigator.credentials.get({
+    publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rpId: webAuthnRpId(),
+      allowCredentials: [{ type: "public-key", id: base64UrlToBytes(record.credentialId) }],
+      userVerification: "required",
+      extensions: { prf: { eval: { first: base64UrlToBytes(record.prfSalt) } } },
+      timeout: 60000
+    }
+  });
+  return masterDevicePrfOutput(credential);
+}
+
+function updateMasterDeviceUi(message = "") {
+  const ready = !!getMasterDeviceRecord();
+  if ($("unlockMasterWithDevice")) $("unlockMasterWithDevice").classList.toggle("hidden", !ready || !isMasterPasswordEnabled());
+  if ($("deviceUnlockStatus")) $("deviceUnlockStatus").textContent = ready ? "Device unlock: Ready on this browser" : "Device unlock: Not set up";
+  if ($("forgetMasterDevice")) $("forgetMasterDevice").disabled = !ready;
+  if ($("masterDeviceMessage")) {
+    $("masterDeviceMessage").textContent = message;
+    $("masterDeviceMessage").classList.toggle("hidden", !message);
+  }
+}
+
+async function saveMasterWithDevice() {
+  const masterPassword = $("master").value;
+  if (!masterPassword) throw new Error("Enter the master password first.");
+  if (!window.isSecureContext || !navigator.credentials?.create || !navigator.credentials?.get) {
+    throw new Error("Device unlock needs HTTPS and a browser with passkey support.");
+  }
+  const prfSalt = crypto.getRandomValues(new Uint8Array(32));
+  const userId = crypto.getRandomValues(new Uint8Array(32));
+  const created = await navigator.credentials.create({
+    publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { name: "GoblinPass", id: webAuthnRpId() },
+      user: { id: userId, name: "goblinpass-device-unlock", displayName: "GoblinPass device unlock" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", userVerification: "required" },
+      attestation: "none",
+      extensions: { prf: {} },
+      timeout: 60000
+    }
+  });
+  if (created.getClientExtensionResults?.().prf?.enabled !== true) {
+    throw new Error("This device's passkey provider does not support secure PRF unlock. Your master password was not saved.");
+  }
+  const record = { credentialId: bytesToBase64Url(new Uint8Array(created.rawId)), prfSalt: bytesToBase64Url(prfSalt) };
+  const prfOutput = await requestMasterDevicePrf(record);
+  const keySalt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveMasterDeviceKey(prfOutput, keySalt);
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(masterPassword));
+  localStorage.setItem(MASTER_DEVICE_UNLOCK_KEY, JSON.stringify({
+    version: 1,
+    ...record,
+    keySalt: bytesToBase64Url(keySalt),
+    iv: bytesToBase64Url(iv),
+    ciphertext: bytesToBase64Url(new Uint8Array(ciphertext))
+  }));
+  updateMasterDeviceUi("Master password protected with device unlock.");
+}
+
+async function unlockMasterWithDevice() {
+  const record = getMasterDeviceRecord();
+  if (!record) throw new Error("Device unlock is not set up in this browser.");
+  const prfOutput = await requestMasterDevicePrf(record);
+  const key = await deriveMasterDeviceKey(prfOutput, base64UrlToBytes(record.keySalt));
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64UrlToBytes(record.iv) },
+    key,
+    base64UrlToBytes(record.ciphertext)
+  );
+  $("master").value = new TextDecoder().decode(plaintext);
+  updateMasterDeviceUi("Master password unlocked for this session.");
+}
+
+function forgetMasterDevice() {
+  localStorage.removeItem(MASTER_DEVICE_UNLOCK_KEY);
+  updateMasterDeviceUi("Saved device unlock removed from this browser.");
 }
 
 function webAuthnPrfSupported() {
@@ -2132,6 +2242,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applyMasterPasswordSetting();
   updateTrustedDeviceStatus();
   updateGoogleStatus();
+  updateMasterDeviceUi();
   $("defaultPasswordStyle").value = getDefaultPasswordStyle();
   $("passwordStyle").value = getDefaultPasswordStyle();
   $("saveWebsiteIds").checked = loadSettings().saveWebsiteIds !== false;
@@ -2165,6 +2276,15 @@ document.addEventListener("DOMContentLoaded", () => {
     $("master").type = visible ? "text" : "password";
     $("toggleMaster").textContent = visible ? "Hide" : "Show";
   };
+  $("unlockMasterWithDevice").onclick = async () => {
+    try { await unlockMasterWithDevice(); }
+    catch (error) { updateMasterDeviceUi(error?.name === "NotAllowedError" ? "Device unlock was cancelled." : error.message); }
+  };
+  $("saveMasterWithDevice").onclick = async () => {
+    try { await saveMasterWithDevice(); }
+    catch (error) { updateMasterDeviceUi(error?.name === "NotAllowedError" ? "Device setup was cancelled." : error.message); }
+  };
+  $("forgetMasterDevice").onclick = forgetMasterDevice;
   $("securityKey").onclick = openSecurityInputMethod;
   $("securityKey").oninput = () => {
     if (getSecurityInputMethod() === "normal") securityKeyMemory = "";
@@ -2214,6 +2334,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     saveSettings({ useMasterPassword: enabled });
     applyMasterPasswordSetting();
+    updateMasterDeviceUi();
   };
   document.querySelectorAll("[data-page-target]").forEach(button => {
     button.onclick = () => {

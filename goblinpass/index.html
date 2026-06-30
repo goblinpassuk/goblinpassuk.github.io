@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07120e">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="style.css?v=20260610-master-toggle">
+  <link rel="stylesheet" href="style.css?v=20260630-device-unlock">
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -31,7 +31,7 @@
     <section id="generatorPage" class="page-section">
     <section class="card">
       <label>Website ID</label>
-      <input id="siteId" type="text" placeholder="Unique ID" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input id="siteId" name="goblinpass-website-id" type="text" placeholder="Unique ID" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
 
       <label>Site (optional)</label>
       <input id="site" type="text" placeholder="example.com" autocomplete="off" autocapitalize="none" spellcheck="false">
@@ -47,9 +47,11 @@
       <div id="masterPasswordGroup">
         <label>Master Password</label>
         <div class="input-row">
-          <input id="master" type="password" placeholder="Never saved" autocomplete="off" autocapitalize="none" spellcheck="false">
+          <input id="master" name="goblinpass-master-secret" type="password" placeholder="Never saved" autocomplete="new-password" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
           <button id="toggleMaster" class="icon-btn" type="button" aria-label="Show master password">Show</button>
         </div>
+        <button id="unlockMasterWithDevice" class="full-width-button hidden" type="button">Unlock with device</button>
+        <p id="masterDeviceMessage" class="muted hidden" aria-live="polite"></p>
       </div>
 
       <div id="securityKeyBox" class="security-key-box hidden" data-entry-mode="keyboard">
@@ -199,6 +201,14 @@
             </label>
             <p class="muted">Default on. Turning this off removes the master password from the password recipe.</p>
             <p id="masterPasswordWarning" class="notice hidden">Warning: without a master password, recovery depends on the remaining enabled factors. Only use this if you intentionally want Google Factor or other security methods to replace the master password.</p>
+            <div id="deviceUnlockSettings">
+              <p id="deviceUnlockStatus" class="status-line">Device unlock: Not set up</p>
+              <div class="settings-actions">
+                <button id="saveMasterWithDevice" type="button">Save with device unlock</button>
+                <button id="forgetMasterDevice" type="button">Forget device unlock</button>
+              </div>
+              <p class="muted">Uses Windows Hello, Face ID, fingerprint, or your device PIN. Only an encrypted copy is kept in this browser.</p>
+            </div>
             <label class="setting-row">
               <input id="enableSecurityKey" type="checkbox">
               Enable Additional Secret
@@ -280,7 +290,7 @@
     </section>
   </main>
 
-  <script src="app.js?v=20260627-yubikey-chooser-restore"></script>
+  <script src="app.js?v=20260630-device-unlock"></script>
     <footer class="site-footer"><p class="footer-attribution">GoblinPass &copy; 2026 Carl Hatton &middot; <a href="https://github.com/goblinpassuk/goblinpassuk.github.io/blob/main/LICENSE">License</a></p></footer>
 </body>
 </html>
