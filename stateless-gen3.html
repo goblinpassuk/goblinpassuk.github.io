@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Stateless Gen 3.0 (Beta)</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260630-gen3-stacked-layout-2" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260630-gen3-file-protection" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -70,6 +70,14 @@
         </div>
 
         <div id="gen3Setup" class="gen3-auth-grid">
+          <section class="gen3-auth-option gen3-passphrase-option">
+            <h3>File passphrase</h3>
+            <p>At least 12 characters. This encrypts the complete map file before it is saved.</p>
+            <label for="gen3NewFilePassphrase">Passphrase</label>
+            <input id="gen3NewFilePassphrase" type="password" autocomplete="new-password" placeholder="12 or more characters">
+            <label for="gen3ConfirmFilePassphrase">Confirm passphrase</label>
+            <input id="gen3ConfirmFilePassphrase" type="password" autocomplete="new-password" placeholder="Enter it again">
+          </section>
           <section class="gen3-auth-option">
             <label class="gen3-check"><input id="gen3UseYubiKey" type="checkbox"> YubiKey unlock</label>
             <p>Used only to unlock the map. It does not change generated passwords.</p>
@@ -90,6 +98,34 @@
           </section>
         </div>
 
+        <section id="gen3FileUnlock" class="gen3-file-protection" aria-labelledby="gen3-file-unlock-title" hidden>
+          <div>
+            <p class="eyebrow">Protected file</p>
+            <h3 id="gen3-file-unlock-title">Enter the file passphrase</h3>
+            <p>The outer file must be decrypted before its configured map-unlock methods can be shown.</p>
+          </div>
+          <div class="gen3-file-protection-form">
+            <label for="gen3FilePassphrase">File passphrase</label>
+            <input id="gen3FilePassphrase" type="password" autocomplete="current-password" placeholder="File passphrase">
+            <button id="gen3DecryptFile" class="primary-button" type="button">Decrypt file</button>
+          </div>
+        </section>
+
+        <section id="gen3ProtectExisting" class="gen3-file-protection" aria-labelledby="gen3-protect-existing-title" hidden>
+          <div>
+            <p class="eyebrow">Existing Gen 3 file</p>
+            <h3 id="gen3-protect-existing-title">Add complete-file protection</h3>
+            <p>Set a passphrase now. After the map is unlocked and saved, its complete envelope will be encrypted.</p>
+          </div>
+          <div class="gen3-file-protection-form">
+            <label for="gen3ExistingFilePassphrase">New file passphrase</label>
+            <input id="gen3ExistingFilePassphrase" type="password" autocomplete="new-password" placeholder="12 or more characters">
+            <label for="gen3ExistingFilePassphraseConfirm">Confirm passphrase</label>
+            <input id="gen3ExistingFilePassphraseConfirm" type="password" autocomplete="new-password" placeholder="Enter it again">
+            <button id="gen3ProtectExistingButton" class="primary-button" type="button">Set file passphrase</button>
+          </div>
+        </section>
+
         <div id="gen3Unlock" class="gen3-unlock" hidden>
           <div id="gen3YubiUnlock" class="gen3-unlock-method" hidden>
             <i class="legend-art icon-yubikey-vector" aria-hidden="true"></i>
@@ -109,7 +145,7 @@
         </div>
 
         <div class="backup-actions gen3-map-actions">
-          <button id="gen3CreateMap" class="primary-button" type="button">Create encrypted map</button>
+          <button id="gen3CreateMap" class="primary-button" type="button">Create protected map</button>
           <button id="gen3OpenMap" class="secondary-button" type="button">Open map</button>
           <button id="gen3SelectSave" class="secondary-button" type="button" disabled>Select save file</button>
           <button id="gen3SaveNow" class="secondary-button" type="button" disabled>Save now</button>
@@ -183,7 +219,7 @@
     </footer>
 
     <script src="assets/js/goblinpass-engine.js?v=20260627-gen3"></script>
-    <script src="assets/js/gen3-map-crypto.js?v=20260629-gpass3"></script>
-    <script src="assets/js/level3.js?v=20260629-gpass3"></script>
+    <script src="assets/js/gen3-map-crypto.js?v=20260630-file-protection"></script>
+    <script src="assets/js/level3.js?v=20260630-file-protection"></script>
   </body>
 </html>

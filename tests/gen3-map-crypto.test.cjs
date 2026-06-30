@@ -66,6 +66,27 @@ function toBase64(bytes) {
   assert.equal(restored[0].hint, sample.passwordHint);
   assert.equal(restored[0].notes, sample.notes);
 
+  const filePassphrase = "correct horse battery staple";
+  const protectedResult = await MapCrypto.createProtectedEnvelope(envelope, filePassphrase);
+  const protectedExport = JSON.stringify(protectedResult.envelope);
+  assert.equal(MapCrypto.isProtectedEnvelope(protectedResult.envelope), true);
+  assert.deepEqual(Object.keys(protectedResult.envelope), ["magic", "type", "version", "encryption", "kdf", "payload"]);
+  assert.equal(protectedExport.includes("unlockMethods"), false);
+  assert.equal(protectedExport.includes("credentialId"), false);
+  assert.equal(protectedExport.includes("safe-account-hash"), false);
+  Object.values(sample).forEach(value => assert.equal(protectedExport.includes(value), false));
+
+  const openedProtected = await MapCrypto.openProtectedEnvelope(protectedResult.envelope, filePassphrase);
+  assert.deepEqual(openedProtected.record, envelope);
+  await assert.rejects(
+    MapCrypto.openProtectedEnvelope(protectedResult.envelope, "wrong passphrase"),
+    /incorrect or the protected map is damaged/
+  );
+
+  const resavedProtected = await MapCrypto.protectEnvelope(openedProtected.record, openedProtected.key, openedProtected.salt);
+  assert.notEqual(resavedProtected.payload.iv, protectedResult.envelope.payload.iv);
+  assert.deepEqual((await MapCrypto.openProtectedEnvelope(resavedProtected, filePassphrase)).record, envelope);
+
   const secondPayload = await MapCrypto.encryptPayload(dataKey, payloadObject);
   assert.notEqual(secondPayload.iv, payload.iv);
   assert.notEqual(secondPayload.data, payload.data);

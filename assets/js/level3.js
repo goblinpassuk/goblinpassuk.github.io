@@ -12,6 +12,9 @@
       this.googleScriptPromise = null;
       this.googleUser = null;
       this.mapRecord = null;
+      this.protectedFileRecord = null;
+      this.protectionKey = null;
+      this.protectionSalt = null;
       this.dataKey = null;
       this.rows = [];
       this.fileHandle = null;
@@ -42,6 +45,8 @@
       $("gen3GoogleSignOut").addEventListener("click", () => this.googleSignOut());
       $("gen3CreateMap").addEventListener("click", () => this.createMap());
       $("gen3OpenMap").addEventListener("click", () => this.openMap());
+      $("gen3DecryptFile").addEventListener("click", () => this.unlockProtectedFile());
+      $("gen3ProtectExistingButton").addEventListener("click", () => this.protectExistingFile());
       $("gen3SelectSave").addEventListener("click", () => this.selectSaveFile());
       $("gen3SaveNow").addEventListener("click", () => this.saveNow());
       $("gen3Lock").addEventListener("click", () => this.lockMap());
@@ -57,6 +62,12 @@
       $("gen3ToggleRows").addEventListener("click", () => this.toggleAllRows());
       $("gen3MapRows").addEventListener("click", event => this.handleRowAction(event));
       $("gen3UseGoogle").addEventListener("change", () => this.updateGoogleStatus());
+      $("gen3FilePassphrase").addEventListener("keydown", event => {
+        if (event.key === "Enter") this.unlockProtectedFile();
+      });
+      $("gen3ExistingFilePassphraseConfirm").addEventListener("keydown", event => {
+        if (event.key === "Enter") this.protectExistingFile();
+      });
     }
 
     setStatus(message, kind = "info") {
@@ -72,18 +83,19 @@
     updateUI() {
       const unlocked = !!this.dataKey;
       const hasSaveFile = !!this.fileHandle;
-      $("gen3CreateMap").disabled = this.busy || !this.fileSystemSupported || !!this.mapRecord;
-      $("gen3CreateMap").textContent = this.legacyImportPending ? "Encrypt imported map" : "Create encrypted map";
+      const hasLoadedFile = !!this.mapRecord || !!this.protectedFileRecord;
+      $("gen3CreateMap").disabled = this.busy || !this.fileSystemSupported || hasLoadedFile;
+      $("gen3CreateMap").textContent = this.legacyImportPending ? "Protect imported map" : "Create protected map";
       $("gen3OpenMap").disabled = this.busy || !this.fileSystemSupported;
       $("gen3SelectSave").disabled = this.busy || !unlocked || !this.fileSystemSupported;
       $("gen3SaveNow").disabled = this.busy || !unlocked || !hasSaveFile;
-      $("gen3Lock").disabled = this.busy || (!unlocked && !this.mapRecord);
+      $("gen3Lock").disabled = this.busy || !unlocked || !this.protectedFileRecord;
       $("gen3Generate").disabled = this.busy || !unlocked || !hasSaveFile;
       $("gen3CopyPassword").disabled = !this.generatedPassword;
       $("gen3MapFilter").disabled = !unlocked;
       $("gen3ToggleRows").disabled = !unlocked || !this.rows.length;
       $("gen3ToggleRows").textContent = this.revealAll ? "Hide all" : "Show all";
-      $("gen3Setup").hidden = !!this.mapRecord;
+      $("gen3Setup").hidden = hasLoadedFile;
       if (!this.mapRecord || unlocked) $("gen3Unlock").hidden = true;
       $("gen3FileStatus").textContent = this.legacyImportPending
         ? "Legacy plaintext map loaded. Choose unlock methods, then encrypt and save it."
@@ -91,6 +103,27 @@
         ? `Auto-save connected: ${this.fileName}`
         : (unlocked ? "Select a save file before generating." : "No save file selected. Generation is locked.");
       this.updateGoogleStatus();
+    }
+
+    validatedPassphrase(passphrase, confirmation) {
+      if (passphrase.length < 12) throw new Error("The file passphrase must contain at least 12 characters.");
+      if (passphrase !== confirmation) throw new Error("The file passphrases do not match.");
+      return passphrase;
+    }
+
+    async createProtectionContext(passphrase) {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      return { key: await MapCrypto.deriveProtectionKey(passphrase, salt), salt };
+    }
+
+    clearFilePassphraseInputs() {
+      [
+        "gen3NewFilePassphrase",
+        "gen3ConfirmFilePassphrase",
+        "gen3FilePassphrase",
+        "gen3ExistingFilePassphrase",
+        "gen3ExistingFilePassphraseConfirm"
+      ].forEach(id => { if ($(id)) $(id).value = ""; });
     }
 
     requireWebAuthn() {
@@ -389,11 +422,18 @@
       const useYubiKey = $("gen3UseYubiKey").checked;
       const useBiometric = $("gen3UseBiometric").checked;
       const useGoogle = $("gen3UseGoogle").checked;
+      let filePassphrase;
+      try {
+        filePassphrase = this.validatedPassphrase($("gen3NewFilePassphrase").value, $("gen3ConfirmFilePassphrase").value);
+      } catch (error) {
+        return this.setStatus(error.message, "warning");
+      }
       if (!useYubiKey && !useBiometric && !useGoogle) return this.setStatus("select at least one map unlock method.", "warning");
       if (useGoogle && !this.googleUser?.sub) return this.setStatus("sign in with Google before creating the map.", "warning");
 
       this.setBusy(true);
       try {
+        const protection = await this.createProtectionContext(filePassphrase);
         const importedRows = this.legacyImportPending ? this.rows.map(row => ({ ...row })) : [];
         const migratingPlaintext = this.legacyImportPending;
         const dataKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
@@ -404,11 +444,15 @@
         this.dataKey = dataKey;
         this.rows = importedRows;
         this.mapRecord = MapCrypto.createEnvelope(unlockMethods, await this.encryptRows());
+        this.protectedFileRecord = null;
+        this.protectionKey = protection.key;
+        this.protectionSalt = protection.salt;
         this.legacyImportPending = false;
         this.legacyEncrypted = false;
+        this.clearFilePassphraseInputs();
         this.resetRevealState();
         this.renderRows();
-        this.setStatus(migratingPlaintext ? "legacy map encrypted. Save now to replace the plaintext file." : "encrypted map created. Select a save file to enable generation.", "success");
+        this.setStatus(migratingPlaintext ? "legacy map protected. Save now to replace the plaintext file." : "protected map created. Select a save file to enable generation.", "success");
       } catch (error) {
         this.setStatus(error?.message || "map creation failed.", "warning");
       } finally {
@@ -417,6 +461,7 @@
     }
 
     validateRecord(record) {
+      if (MapCrypto.isProtectedEnvelope(record)) return { kind: "protected", record: MapCrypto.validateProtectedEnvelope(record) };
       if (record?.magic === MapCrypto.MAGIC) return { kind: "encrypted", record: MapCrypto.validateEnvelope(record) };
       if (MapCrypto.isLegacyEncrypted(record)) return { kind: "legacy-encrypted", record };
       const rows = MapCrypto.restoreLegacyRows(record);
@@ -435,7 +480,13 @@
         const imported = this.validateRecord(JSON.parse(await file.text()));
         this.fileHandle = handle;
         this.fileName = file.name || this.fileName;
+        this.protectedFileRecord = null;
+        this.protectionKey = null;
+        this.protectionSalt = null;
         this.dataKey = null;
+        this.clearFilePassphraseInputs();
+        $("gen3FileUnlock").hidden = true;
+        $("gen3ProtectExisting").hidden = true;
         this.resetRevealState();
         if (imported.kind === "legacy-plaintext") {
           this.mapRecord = null;
@@ -449,22 +500,88 @@
           this.updateUI();
           return;
         }
+        if (imported.kind === "protected") {
+          this.protectedFileRecord = imported.record;
+          this.mapRecord = null;
+          this.rows = [];
+          this.legacyImportPending = false;
+          this.legacyEncrypted = false;
+          $("gen3Unlock").hidden = true;
+          $("gen3ProtectExisting").hidden = true;
+          $("gen3FileUnlock").hidden = false;
+          this.renderRows();
+          this.setStatus("enter the file passphrase to decrypt the protected map.");
+          this.updateUI();
+          $("gen3FilePassphrase").focus();
+          return;
+        }
         this.mapRecord = imported.record;
         this.rows = [];
         this.legacyImportPending = false;
         this.legacyEncrypted = imported.kind === "legacy-encrypted";
         this.resetRevealState();
-        this.showUnlockMethods();
+        $("gen3Unlock").hidden = true;
+        $("gen3FileUnlock").hidden = true;
+        $("gen3ProtectExisting").hidden = false;
         this.renderRows();
-        this.setStatus("choose a configured method to unlock the map.");
+        this.setStatus("set a file passphrase to upgrade this existing map.");
         this.updateUI();
+        $("gen3ExistingFilePassphrase").focus();
       } catch (error) {
         if (error?.name === "AbortError") return;
         this.setStatus(error?.message || "map opening failed.", "warning");
       }
     }
 
+    async unlockProtectedFile() {
+      if (this.busy || !this.protectedFileRecord || this.mapRecord) return;
+      const passphrase = $("gen3FilePassphrase").value;
+      if (!passphrase) return this.setStatus("enter the file passphrase.", "warning");
+      this.setBusy(true);
+      try {
+        const opened = await MapCrypto.openProtectedEnvelope(this.protectedFileRecord, passphrase);
+        this.mapRecord = opened.record;
+        this.protectionKey = opened.key;
+        this.protectionSalt = opened.salt;
+        $("gen3FilePassphrase").value = "";
+        $("gen3FileUnlock").hidden = true;
+        this.showUnlockMethods();
+        this.setStatus("file decrypted. Choose a configured method to unlock the Security Map.", "success");
+      } catch (error) {
+        this.setStatus(error?.message || "the protected file could not be decrypted.", "warning");
+      } finally {
+        this.setBusy(false);
+      }
+    }
+
+    async protectExistingFile() {
+      if (this.busy || !this.mapRecord || this.protectionKey) return;
+      let passphrase;
+      try {
+        passphrase = this.validatedPassphrase($("gen3ExistingFilePassphrase").value, $("gen3ExistingFilePassphraseConfirm").value);
+      } catch (error) {
+        return this.setStatus(error.message, "warning");
+      }
+      this.setBusy(true);
+      try {
+        const protection = await this.createProtectionContext(passphrase);
+        this.protectionKey = protection.key;
+        this.protectionSalt = protection.salt;
+        $("gen3ExistingFilePassphrase").value = "";
+        $("gen3ExistingFilePassphraseConfirm").value = "";
+        $("gen3ProtectExisting").hidden = true;
+        this.showUnlockMethods();
+        this.setStatus("file passphrase set. Choose a configured method, then save to finish the upgrade.", "success");
+      } catch (error) {
+        this.setStatus(error?.message || "file protection could not be configured.", "warning");
+      } finally {
+        this.setBusy(false);
+      }
+    }
+
     showUnlockMethods() {
+      $("gen3FileUnlock").hidden = true;
+      $("gen3ProtectExisting").hidden = true;
       const methods = this.mapRecord?.unlockMethods || [];
       const hasYubiKey = methods.some(method => method.type === "yubikey");
       const hasBiometric = methods.some(method => method.type === "biometric");
@@ -599,11 +716,14 @@
 
     async saveMap() {
       if (!this.dataKey || !this.fileHandle || !this.mapRecord) return false;
+      if (!this.protectionKey || !this.protectionSalt) throw new Error("Set the file passphrase before saving this map.");
       await this.ensureWritePermission(this.fileHandle);
       this.mapRecord = MapCrypto.createEnvelope(this.mapRecord.unlockMethods, await this.encryptRows());
+      const protectedRecord = await MapCrypto.protectEnvelope(this.mapRecord, this.protectionKey, this.protectionSalt);
       const writable = await this.fileHandle.createWritable();
-      await writable.write(JSON.stringify(this.mapRecord, null, 2));
+      await writable.write(JSON.stringify(protectedRecord, null, 2));
       await writable.close();
+      this.protectedFileRecord = protectedRecord;
       $("gen3FileStatus").textContent = `Auto-save connected: ${this.fileName} - last saved ${new Date().toLocaleTimeString()}`;
       return true;
     }
@@ -613,7 +733,7 @@
       this.setBusy(true);
       try {
         await this.saveMap();
-        this.setStatus("encrypted map saved.", "success");
+        this.setStatus("complete protected map saved.", "success");
       } catch (error) {
         this.setStatus(error?.message || "map save failed.", "warning");
       } finally {
@@ -737,16 +857,23 @@
     }
 
     lockMap() {
+      if (!this.protectedFileRecord) return this.setStatus("save the protected file before locking it.", "warning");
       this.dataKey = null;
+      this.mapRecord = null;
+      this.protectionKey = null;
+      this.protectionSalt = null;
       this.rows = [];
       this.generatedPassword = "";
       $("gen3Master").value = "";
       $("gen3ResultBox").hidden = true;
+      $("gen3Unlock").hidden = true;
+      $("gen3ProtectExisting").hidden = true;
+      $("gen3FileUnlock").hidden = false;
       this.resetRevealState();
-      this.showUnlockMethods();
       this.renderRows();
-      this.setStatus("map locked.");
+      this.setStatus("protected file locked. Enter its passphrase to continue.");
       this.updateUI();
+      $("gen3FilePassphrase").focus();
     }
 
     renderRows() {

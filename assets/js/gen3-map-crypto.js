@@ -11,6 +11,11 @@
   const VERSION = 1;
   const ENCRYPTION = "AES-GCM";
   const KDF = "HKDF-SHA256";
+  const PROTECTED_MAGIC = "GPASS3-LOCKED";
+  const PROTECTED_TYPE = "goblinpass-gen3-protected-map";
+  const PROTECTED_VERSION = 1;
+  const PROTECTED_KDF = "PBKDF2-SHA256";
+  const PROTECTED_ITERATIONS = 600000;
   const UNLOCK_TYPES = new Set(["google", "yubikey", "biometric"]);
 
   function bytesToBase64(bytes) {
@@ -51,6 +56,82 @@
     }
     if (!validCipherBlock(record.payload)) throw new Error("This GoblinPass Security Map has an invalid encrypted payload.");
     return record;
+  }
+
+  function protectedAdditionalData() {
+    return new TextEncoder().encode(`${PROTECTED_MAGIC}|${PROTECTED_VERSION}|${PROTECTED_KDF}|${PROTECTED_ITERATIONS}`);
+  }
+
+  function validateProtectedEnvelope(record) {
+    if (!record || record.magic !== PROTECTED_MAGIC || record.type !== PROTECTED_TYPE || record.version !== PROTECTED_VERSION) {
+      throw new Error("This is not a protected GoblinPass Gen 3.0 map file.");
+    }
+    if (record.encryption !== ENCRYPTION || record.kdf?.name !== PROTECTED_KDF || record.kdf?.iterations !== PROTECTED_ITERATIONS) {
+      throw new Error("This protected GoblinPass map uses an unsupported encryption format.");
+    }
+    try {
+      if (base64ToBytes(record.kdf.salt).byteLength !== 16) throw new Error();
+    } catch {
+      throw new Error("This protected GoblinPass map has an invalid encryption salt.");
+    }
+    if (!validCipherBlock(record.payload)) throw new Error("This protected GoblinPass map has an invalid encrypted payload.");
+    return record;
+  }
+
+  function isProtectedEnvelope(record) {
+    return Boolean(record && record.magic === PROTECTED_MAGIC);
+  }
+
+  async function deriveProtectionKey(passphrase, salt) {
+    if (typeof passphrase !== "string" || !passphrase.length) throw new Error("Enter the file passphrase.");
+    const saltBytes = typeof salt === "string" ? base64ToBytes(salt) : new Uint8Array(salt);
+    if (saltBytes.byteLength !== 16) throw new Error("The protected map encryption salt is invalid.");
+    const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(passphrase), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: saltBytes,
+      iterations: PROTECTED_ITERATIONS
+    }, material, { name: ENCRYPTION, length: 256 }, false, ["encrypt", "decrypt"]);
+  }
+
+  async function protectEnvelope(record, protectionKey, salt) {
+    validateEnvelope(record);
+    const saltBytes = typeof salt === "string" ? base64ToBytes(salt) : new Uint8Array(salt);
+    if (saltBytes.byteLength !== 16) throw new Error("The protected map encryption salt is invalid.");
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plaintext = new TextEncoder().encode(JSON.stringify(record));
+    const data = await crypto.subtle.encrypt({ name: ENCRYPTION, iv, additionalData: protectedAdditionalData() }, protectionKey, plaintext);
+    return validateProtectedEnvelope({
+      magic: PROTECTED_MAGIC,
+      type: PROTECTED_TYPE,
+      version: PROTECTED_VERSION,
+      encryption: ENCRYPTION,
+      kdf: { name: PROTECTED_KDF, iterations: PROTECTED_ITERATIONS, salt: bytesToBase64(saltBytes) },
+      payload: { iv: bytesToBase64(iv), data: bytesToBase64(data) }
+    });
+  }
+
+  async function createProtectedEnvelope(record, passphrase) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await deriveProtectionKey(passphrase, salt);
+    return { envelope: await protectEnvelope(record, key, salt), key, salt };
+  }
+
+  async function openProtectedEnvelope(record, passphrase) {
+    const validated = validateProtectedEnvelope(record);
+    const salt = base64ToBytes(validated.kdf.salt);
+    const key = await deriveProtectionKey(passphrase, salt);
+    try {
+      const plaintext = await crypto.subtle.decrypt({
+        name: ENCRYPTION,
+        iv: base64ToBytes(validated.payload.iv),
+        additionalData: protectedAdditionalData()
+      }, key, base64ToBytes(validated.payload.data));
+      return { record: validateEnvelope(JSON.parse(new TextDecoder().decode(plaintext))), key, salt };
+    } catch {
+      throw new Error("The file passphrase is incorrect or the protected map is damaged.");
+    }
   }
 
   function createEnvelope(unlockMethods, payload) {
@@ -147,14 +228,25 @@
     VERSION,
     ENCRYPTION,
     KDF,
+    PROTECTED_MAGIC,
+    PROTECTED_TYPE,
+    PROTECTED_VERSION,
+    PROTECTED_KDF,
+    PROTECTED_ITERATIONS,
     buildPayload,
+    createProtectedEnvelope,
     createEnvelope,
     decryptPayload,
+    deriveProtectionKey,
     encryptPayload,
     isLegacyEncrypted,
+    isProtectedEnvelope,
     normalizeLegacyUnlockMethods,
+    openProtectedEnvelope,
+    protectEnvelope,
     restoreLegacyRows,
     restoreRows,
-    validateEnvelope
+    validateEnvelope,
+    validateProtectedEnvelope
   };
 });

@@ -8053,6 +8053,59 @@ input:focus {
   background: #07170d;
 }
 
+.gen3-page .gen3-passphrase-option {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.gen3-page .gen3-passphrase-option h3,
+.gen3-page .gen3-file-protection h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.gen3-page .gen3-passphrase-option label,
+.gen3-page .gen3-file-protection-form label {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.gen3-page .gen3-passphrase-option input,
+.gen3-page .gen3-file-protection-form input {
+  min-height: 42px;
+}
+
+.gen3-page .gen3-file-protection {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(300px, 1.2fr);
+  gap: 18px;
+  align-items: start;
+  border: 1px solid rgba(119, 240, 90, 0.28);
+  border-radius: 8px;
+  background: #07170d;
+  padding: 18px;
+}
+
+.gen3-page .gen3-file-protection p:not(.eyebrow) {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.gen3-page .gen3-file-protection-form {
+  display: grid;
+  gap: 8px;
+}
+
+.gen3-page .gen3-file-protection-form .primary-button {
+  min-height: 46px;
+  margin-top: 4px;
+}
+
 .gen3-page .level2-google-status {
   margin: 10px 0 0;
   color: var(--muted);
@@ -8152,6 +8205,10 @@ input:focus {
   }
 
   .gen3-map-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .gen3-page .gen3-file-protection {
     grid-template-columns: 1fr;
   }
 }
