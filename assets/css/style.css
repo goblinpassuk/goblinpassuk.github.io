@@ -7924,8 +7924,8 @@ input:focus {
 }
 
 .gen3-page .gen3-workspace {
-  grid-template-columns: minmax(360px, 0.76fr) minmax(600px, 1.24fr);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: 16px;
 }
 
@@ -7939,7 +7939,7 @@ input:focus {
 
 .gen3-page .gen3-generator,
 .gen3-page .gen3-map-card {
-  height: 100%;
+  width: 100%;
 }
 
 .gen3-page .feature-card-heading {
