@@ -44,18 +44,30 @@
     button.setAttribute("aria-pressed", String(shouldShow));
   }
 
-  async function copyGeneratedPassword() {
-    if (!generatedPassword.value) return;
+  async function writeGeneratedPasswordToClipboard() {
+    if (!generatedPassword.value) return false;
     try {
       await navigator.clipboard.writeText(generatedPassword.value);
+      return true;
     } catch (error) {
-      generatedPassword.type = "text";
-      generatedPassword.select();
-      document.execCommand("copy");
-      generatedPassword.setSelectionRange(0, 0);
-      generatedPassword.type = "password";
+      try {
+        generatedPassword.type = "text";
+        generatedPassword.select();
+        return document.execCommand("copy");
+      } catch {
+        return false;
+      } finally {
+        generatedPassword.setSelectionRange(0, 0);
+        generatedPassword.type = "password";
+      }
     }
-    resultStatus.textContent = "Password copied to the clipboard.";
+  }
+
+  async function copyGeneratedPassword() {
+    const copied = await writeGeneratedPasswordToClipboard();
+    resultStatus.textContent = copied
+      ? "Password copied to the clipboard."
+      : "Clipboard access was blocked. Select the password and copy it manually.";
   }
 
   function toggleQrCode() {
@@ -90,7 +102,10 @@
       qrPlaceholder.hidden = false;
       qrPlaceholderMessage.textContent = "QR code hidden for privacy. Select Show QR code to reveal it.";
       resultPanel.classList.add("has-result");
-      resultStatus.textContent = "Generated locally. The QR code is hidden until you choose to show it.";
+      const copied = await writeGeneratedPasswordToClipboard();
+      resultStatus.textContent = copied
+        ? "Generated locally and copied to the clipboard. The QR code remains hidden."
+        : "Generated locally, but automatic copying was blocked. Use Copy to try again.";
     } catch (error) {
       resultStatus.textContent = error.message || "The password could not be generated.";
     }
