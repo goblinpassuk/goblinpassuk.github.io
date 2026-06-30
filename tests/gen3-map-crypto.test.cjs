@@ -25,6 +25,9 @@ function toBase64(bytes) {
     id: sample.id,
     site: sample.website,
     login: sample.username,
+    length: 16,
+    counter: 1,
+    selectedKeys: ["lower", "upper", "nums"],
     hint: sample.passwordHint,
     notes: sample.notes,
     securityMethod: "Master Password"
@@ -56,15 +59,23 @@ function toBase64(bytes) {
   const unwrappedKey = await crypto.subtle.importKey("raw", unwrappedRaw, { name: "AES-GCM" }, false, ["decrypt"]);
   const decrypted = await MapCrypto.decryptPayload(unwrappedKey, imported.payload);
   assert.deepEqual(Object.keys(decrypted), ["schema", "updatedAt", "settings", "entries"]);
-  assert.deepEqual(Object.keys(decrypted.entries[0]), ["id", "website", "username", "securityMethod", "passwordHint", "notes"]);
+  assert.deepEqual(Object.keys(decrypted.entries[0]), ["id", "website", "username", "length", "counter", "selectedKeys", "securityMethod", "passwordHint", "notes"]);
   const restored = MapCrypto.restoreRows(decrypted);
 
   assert.equal(restored.length, 1);
   assert.equal(restored[0].id, sample.id);
   assert.equal(restored[0].site, sample.website);
   assert.equal(restored[0].login, sample.username);
+  assert.deepEqual(restored[0].selectedKeys, ["lower", "upper", "nums"]);
   assert.equal(restored[0].hint, sample.passwordHint);
   assert.equal(restored[0].notes, sample.notes);
+
+  const restoredOlderEntry = MapCrypto.restoreRows({
+    schema: 1,
+    settings: {},
+    entries: [{ id: "older-entry", website: "", username: "", securityMethod: "Master Password", passwordHint: "", notes: "" }]
+  });
+  assert.deepEqual(restoredOlderEntry[0].selectedKeys, ["lower", "upper", "nums", "symbols"]);
 
   const filePassphrase = "correct horse battery staple";
   const protectedResult = await MapCrypto.createProtectedEnvelope(envelope, filePassphrase);

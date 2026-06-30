@@ -126,6 +126,15 @@
       ].forEach(id => { if ($(id)) $(id).value = ""; });
     }
 
+    selectedCharacterKeys() {
+      return [
+        ["gen3UseLower", "lower"],
+        ["gen3UseUpper", "upper"],
+        ["gen3UseNumbers", "nums"],
+        ["gen3UseSymbols", "symbols"]
+      ].filter(([id]) => $(id).checked).map(([, key]) => key);
+    }
+
     requireWebAuthn() {
       if (!window.isSecureContext) throw new Error("Passkey unlock requires HTTPS or localhost.");
       if (!navigator.credentials?.create || !navigator.credentials?.get || !window.PublicKeyCredential) {
@@ -747,8 +756,10 @@
       const site = $("gen3Site").value.trim();
       const login = $("gen3Login").value.trim();
       const masterPassword = $("gen3Master").value;
+      const selectedKeys = this.selectedCharacterKeys();
       if (!siteId) return this.setStatus("enter a Website ID.", "warning");
       if (!masterPassword) return this.setStatus("enter the Master Password.", "warning");
+      if (!selectedKeys.length) return this.setStatus("select at least one password character group.", "warning");
       this.setBusy(true);
       const previousRows = this.rows.map(row => ({ ...row }));
       const previousPayload = this.mapRecord.payload;
@@ -756,7 +767,7 @@
         const password = await window.goblinPassGenerate(siteId, masterPassword, {
           length: 16,
           counter: 1,
-          selectedKeys: ["lower", "upper", "nums", "symbols"]
+          selectedKeys
         });
         const normalizedId = siteId.toLowerCase();
         const existing = this.rows.findIndex(item => item.id.toLowerCase() === normalizedId);
@@ -768,6 +779,7 @@
           length: 16,
           counter: 1,
           hint: password.slice(0, 5),
+          selectedKeys: [...selectedKeys],
           securityMethod: existing >= 0 ? this.rows[existing].securityMethod || "Master Password" : "Master Password",
           notes: existing >= 0 ? this.rows[existing].notes || "" : "",
           updated: new Date().toISOString()

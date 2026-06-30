@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GoblinPass - Stateless Gen 3.0 (Beta)</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=20260630-gen3-file-protection" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20260630-gen3-character-options" />
     <meta name="author" content="Carl Hatton">
     <meta name="copyright" content="Carl Hatton">
     <meta name="application-name" content="GoblinPass">
@@ -181,6 +181,15 @@
               <input id="gen3Master" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Never saved">
             </div>
           </div>
+          <fieldset class="gen3-character-options">
+            <legend>Password characters</legend>
+            <div class="gen3-character-grid">
+              <label><input id="gen3UseLower" type="checkbox" checked> <span>a-z</span></label>
+              <label><input id="gen3UseUpper" type="checkbox" checked> <span>A-Z</span></label>
+              <label><input id="gen3UseNumbers" type="checkbox" checked> <span>0-9</span></label>
+              <label><input id="gen3UseSymbols" type="checkbox" checked> <span>%!@</span></label>
+            </div>
+          </fieldset>
           <div class="gen3-recipe" aria-label="Password recipe">
             <span>Website ID</span><b>+</b><span>Master Password</span>
           </div>
@@ -219,7 +228,7 @@
     </footer>
 
     <script src="assets/js/goblinpass-engine.js?v=20260627-gen3"></script>
-    <script src="assets/js/gen3-map-crypto.js?v=20260630-file-protection"></script>
-    <script src="assets/js/level3.js?v=20260630-file-protection"></script>
+    <script src="assets/js/gen3-map-crypto.js?v=20260630-character-options"></script>
+    <script src="assets/js/level3.js?v=20260630-character-options"></script>
   </body>
 </html>

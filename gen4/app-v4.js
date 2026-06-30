@@ -63,6 +63,18 @@
     }
   }
 
+  function beginGestureClipboardWrite(passwordPromise) {
+    if (!navigator.clipboard?.write || typeof window.ClipboardItem !== "function") return null;
+    try {
+      const passwordBlob = passwordPromise.then(password => new Blob([password], { type: "text/plain" }));
+      return navigator.clipboard.write([
+        new window.ClipboardItem({ "text/plain": passwordBlob })
+      ]).then(() => true).catch(() => false);
+    } catch {
+      return null;
+    }
+  }
+
   async function copyGeneratedPassword() {
     const copied = await writeGeneratedPasswordToClipboard();
     resultStatus.textContent = copied
@@ -84,11 +96,13 @@
     event.preventDefault();
     if (!form.reportValidity()) return;
     try {
-      const password = await window.goblinPassGenerate(websiteId.value, masterPassword.value, {
+      const passwordPromise = window.goblinPassGenerate(websiteId.value, masterPassword.value, {
         length: passwordLength.value,
         counter: passwordCounter.value,
         selectedKeys: ["lower", "upper", "nums", "symbols"]
       });
+      const gestureClipboardWrite = beginGestureClipboardWrite(passwordPromise);
+      const password = await passwordPromise;
       generatedPassword.value = password;
       generatedPassword.type = "password";
       togglePassword.textContent = "Show";
@@ -102,7 +116,8 @@
       qrPlaceholder.hidden = false;
       qrPlaceholderMessage.textContent = "QR code hidden for privacy. Select Show QR code to reveal it.";
       resultPanel.classList.add("has-result");
-      const copied = await writeGeneratedPasswordToClipboard();
+      let copied = gestureClipboardWrite ? await gestureClipboardWrite : false;
+      if (!copied) copied = await writeGeneratedPasswordToClipboard();
       resultStatus.textContent = copied
         ? "Generated locally and copied to the clipboard. The QR code remains hidden."
         : "Generated locally, but automatic copying was blocked. Use Copy to try again.";

@@ -8047,6 +8047,56 @@ input:focus {
   place-items: center;
 }
 
+.gen3-page .gen3-character-options {
+  min-width: 0;
+  margin: 16px 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.gen3-page .gen3-character-options legend {
+  margin-bottom: 9px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+.gen3-page .gen3-character-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.gen3-page .gen3-character-grid label {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid rgba(119, 240, 90, 0.34);
+  border-radius: 8px;
+  background: #041009;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 900;
+  padding: 10px;
+}
+
+.gen3-page .gen3-character-grid label:has(input:checked) {
+  border-color: rgba(119, 240, 90, 0.7);
+  background: rgba(119, 240, 90, 0.08);
+}
+
+.gen3-page .gen3-character-grid input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
 .gen3-page .gen3-auth-option,
 .gen3-page .gen3-unlock-method {
   border-color: rgba(119, 240, 90, 0.28);
@@ -8210,5 +8260,9 @@ input:focus {
 
   .gen3-page .gen3-file-protection {
     grid-template-columns: 1fr;
+  }
+
+  .gen3-page .gen3-character-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

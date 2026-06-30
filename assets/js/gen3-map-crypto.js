@@ -17,6 +17,7 @@
   const PROTECTED_KDF = "PBKDF2-SHA256";
   const PROTECTED_ITERATIONS = 600000;
   const UNLOCK_TYPES = new Set(["google", "yubikey", "biometric"]);
+  const CHARACTER_KEYS = ["lower", "upper", "nums", "symbols"];
 
   function bytesToBase64(bytes) {
     let binary = "";
@@ -146,6 +147,12 @@
     });
   }
 
+  function normalizeCharacterKeys(value) {
+    if (!Array.isArray(value)) return [...CHARACTER_KEYS];
+    const selected = CHARACTER_KEYS.filter(key => value.includes(key));
+    return selected.length ? selected : [...CHARACTER_KEYS];
+  }
+
   function buildPayload(rows, settings = {}) {
     return {
       schema: 1,
@@ -155,6 +162,9 @@
         id: String(row.id || ""),
         website: String(row.website ?? row.site ?? ""),
         username: String(row.username ?? row.login ?? ""),
+        length: Number(row.length) || 16,
+        counter: Number(row.counter) || 1,
+        selectedKeys: normalizeCharacterKeys(row.selectedKeys),
         securityMethod: String(row.securityMethod || "Master Password"),
         passwordHint: String(row.passwordHint ?? row.hint ?? ""),
         notes: String(row.notes || "")
@@ -172,8 +182,9 @@
       id: String(entry?.id || ""),
       site: String(entry?.website || ""),
       login: String(entry?.username || ""),
-      length: 16,
-      counter: 1,
+      length: Number(entry?.length) || 16,
+      counter: Number(entry?.counter) || 1,
+      selectedKeys: normalizeCharacterKeys(entry?.selectedKeys),
       hint: String(entry?.passwordHint || ""),
       securityMethod: String(entry?.securityMethod || ""),
       notes: String(entry?.notes || ""),
@@ -192,6 +203,7 @@
       login: String(entry?.username ?? entry?.login ?? ""),
       length: Number(entry?.length) || 16,
       counter: Number(entry?.counter) || 1,
+      selectedKeys: normalizeCharacterKeys(entry?.selectedKeys),
       hint: String(entry?.passwordHint ?? entry?.hint ?? ""),
       securityMethod: String(entry?.securityMethod || "Master Password"),
       notes: String(entry?.notes || ""),
