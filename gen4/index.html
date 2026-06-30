@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="../goblinpass/icon-192.png">
   <link rel="apple-touch-icon" href="../goblinpass/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=20260630-gen4-qr-toggle">
+  <link rel="stylesheet" href="style.css?v=20260630-gen4-character-options">
 </head>
 <body>
   <main class="app-shell">
@@ -58,6 +58,16 @@
           </div>
           <input id="masterPassword" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Never saved" required>
 
+          <fieldset class="character-options">
+            <legend>Password characters</legend>
+            <div class="character-grid">
+              <label><input id="useLower" type="checkbox" checked> <span>a-z</span></label>
+              <label><input id="useUpper" type="checkbox" checked> <span>A-Z</span></label>
+              <label><input id="useNumbers" type="checkbox" checked> <span>0-9</span></label>
+              <label><input id="useSymbols" type="checkbox" checked> <span>%!@</span></label>
+            </div>
+          </fieldset>
+
           <div class="recipe" aria-label="Password recipe">
             <span>Website ID</span><b>+</b><span>Master Password</span>
           </div>
@@ -100,6 +110,6 @@
 
   <script src="../assets/js/goblinpass-engine.js?v=20260629-gen4"></script>
   <script src="qr.js?v=20260629-gen4-2"></script>
-  <script src="app-v4.js?v=20260630-desktop-copy"></script>
+  <script src="app-v4.js?v=20260630-character-options"></script>
 </body>
 </html>

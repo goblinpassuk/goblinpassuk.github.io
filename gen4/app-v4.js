@@ -6,6 +6,10 @@
   const passwordLength = document.getElementById("passwordLength");
   const passwordCounter = document.getElementById("passwordCounter");
   const masterPassword = document.getElementById("masterPassword");
+  const useLower = document.getElementById("useLower");
+  const useUpper = document.getElementById("useUpper");
+  const useNumbers = document.getElementById("useNumbers");
+  const useSymbols = document.getElementById("useSymbols");
   const toggleMaster = document.getElementById("toggleMaster");
   const resultPanel = document.getElementById("resultPanel");
   const generatedPassword = document.getElementById("generatedPassword");
@@ -92,14 +96,28 @@
     if (!shouldShow) qrPlaceholderMessage.textContent = "QR code hidden for privacy.";
   }
 
+  function selectedCharacterKeys() {
+    return [
+      [useLower, "lower"],
+      [useUpper, "upper"],
+      [useNumbers, "nums"],
+      [useSymbols, "symbols"]
+    ].filter(([input]) => input.checked).map(([, key]) => key);
+  }
+
   async function generatePassword(event) {
     event.preventDefault();
     if (!form.reportValidity()) return;
+    const selectedKeys = selectedCharacterKeys();
+    if (!selectedKeys.length) {
+      resultStatus.textContent = "Select at least one password character group.";
+      return;
+    }
     try {
       const passwordPromise = window.goblinPassGenerate(websiteId.value, masterPassword.value, {
         length: passwordLength.value,
         counter: passwordCounter.value,
-        selectedKeys: ["lower", "upper", "nums", "symbols"]
+        selectedKeys
       });
       const gestureClipboardWrite = beginGestureClipboardWrite(passwordPromise);
       const password = await passwordPromise;
@@ -135,7 +153,7 @@
   togglePassword.addEventListener("click", function () { toggleVisibility(generatedPassword, togglePassword); });
   copyPassword.addEventListener("click", copyGeneratedPassword);
   toggleQr.addEventListener("click", toggleQrCode);
-  [websiteId, passwordLength, passwordCounter, masterPassword].forEach(function (input) {
+  [websiteId, passwordLength, passwordCounter, masterPassword, useLower, useUpper, useNumbers, useSymbols].forEach(function (input) {
     input.addEventListener("input", clearResult);
   });
   window.addEventListener("online", updateConnectionStatus);
