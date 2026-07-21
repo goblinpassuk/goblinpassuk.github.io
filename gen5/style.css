@@ -36,6 +36,11 @@
 .security-details { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 12px; color: var(--muted); font-size: .78rem; }
 .security-details summary { width: fit-content; color: var(--text); cursor: pointer; font-weight: 800; }
 .security-details p { max-width: 850px; margin: 10px 0 0; line-height: 1.55; }
+.passkey-list { grid-column: 1 / -1; display: grid; gap: 7px; }
+.passkey-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; color: var(--muted); font-size: .78rem; }
+.passkey-item button { min-height: 34px; }
+.clipboard-setting { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .78rem; }
+.clipboard-setting select { border: 1px solid var(--line); border-radius: 6px; background: #030b06; color: var(--text); padding: 7px; }
 
 .support-notice {
   display: grid;
@@ -85,6 +90,24 @@
 .gate-status[data-kind="success"] { color: #bafab4; }
 .gate-home-link { display: inline-block; margin-top: 10px; color: var(--muted); font-size: .78rem; text-underline-offset: 4px; }
 .noscript-message { margin: 24px; color: var(--warning); text-align: center; }
+
+.backup-dialog {
+  width: min(500px, calc(100% - 28px));
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+.backup-dialog::backdrop { background: rgba(0, 0, 0, .78); backdrop-filter: blur(4px); }
+.backup-dialog h2 { margin: 0 0 8px; }
+.backup-dialog p { color: var(--muted); font-size: .84rem; line-height: 1.5; }
+.backup-dialog label { display: block; margin: 18px 0 8px; }
+.backup-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.backup-qr { display: block; width: min(340px, 100%); height: auto; margin: 20px auto 0; background: #fff; image-rendering: pixelated; }
+.backup-qr-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.backup-qr-controls span { color: var(--muted); font-size: .78rem; font-weight: 800; }
 
 @media (max-width: 760px) {
   .vault-card { grid-template-columns: 1fr; padding: 18px; }

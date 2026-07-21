@@ -1,0 +1,20 @@
+{
+  "name": "goblinpass-gen5",
+  "version": "5.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild ././src/main.ts --bundle --outfile=./dist/app.js --format=iife --target=es2022 --minify --legal-comments=none",
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild ././tests/*.test.ts --bundle --platform=node --format=esm --outdir=./.test-dist && node --test ./.test-dist/*.test.js",
+    "verify": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.2.0",
+    "qrcode-generator": "1.4.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.8",
+    "typescript": "5.8.3"
+  }
+}

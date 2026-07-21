@@ -1,8 +1,7 @@
-const CACHE_NAME = "goblinpass-gen5-v2";
+const CACHE_NAME = "goblinpass-gen5-v4";
 const APP_FILES = [
-  "./", "./index.html", "./style.css", "./secure-vault.js", "./app-v5.js", "./manifest.webmanifest",
-  "../gen4/style.css", "../gen4/layout-fix.css", "../gen4/qr.js",
-  "../assets/js/goblinpass-engine.js", "../goblinpass/icon-192.png", "../goblinpass/icon-512.png"
+  "./", "./index.html", "./base.css", "./layout.css", "./style.css", "./dist/app.js", "./manifest.webmanifest",
+  "./icons/icon-192.png", "./icons/icon-512.png"
 ];
 
 self.addEventListener("install", event => {

@@ -30,24 +30,34 @@ function generateQr() {
     return;
   }
 
-  if (typeof QRCode === 'undefined') {
+  if (typeof qrcode === 'undefined') {
     showToast('QR library could not load. Check your connection.');
     return;
   }
 
-  qrContainer.innerHTML = '';
+  qrContainer.replaceChildren();
   try {
-    new QRCode(qrContainer, {
-      text,
-      width: 280,
-      height: 280,
-      colorDark: '#171a16',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
+    const code = qrcode(0, 'M');
+    code.addData(text, 'Byte');
+    code.make();
+    const modules = code.getModuleCount();
+    const scale = Math.max(1, Math.floor(280 / modules));
+    const canvas = document.createElement('canvas');
+    canvas.width = modules * scale;
+    canvas.height = modules * scale;
+    const context = canvas.getContext('2d', { alpha: false });
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#171a16';
+    for (let row = 0; row < modules; row += 1) {
+      for (let column = 0; column < modules; column += 1) {
+        if (code.isDark(row, column)) context.fillRect(column * scale, row * scale, scale, scale);
+      }
+    }
+    qrContainer.append(canvas);
   } catch {
     showToast('That note is too large for one QR code');
-    qrContainer.innerHTML = '';
+    qrContainer.replaceChildren();
     return;
   }
   qrStage.classList.remove('empty');
@@ -80,7 +90,7 @@ function downloadQr() {
 function clearAll() {
   input.value = '';
   updateCount();
-  qrContainer.innerHTML = '';
+  qrContainer.replaceChildren();
   qrStage.classList.add('empty');
   emptyState.hidden = false;
   status.textContent = 'Waiting for a note';

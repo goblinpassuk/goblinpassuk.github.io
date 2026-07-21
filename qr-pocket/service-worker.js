@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qr-pocket-v3';
+const CACHE_NAME = 'qr-pocket-v4';
 const APP_FILES = [
   './',
   './index.html',
@@ -10,7 +10,8 @@ const APP_FILES = [
   './scanner.js',
   './manifest.webmanifest',
   './icons/app-icon.svg',
-  './vendor/scanner-engine.js'
+  './vendor/scanner-engine.js',
+  './vendor/qrcode-generator.js'
 ];
 
 self.addEventListener('install', event => {

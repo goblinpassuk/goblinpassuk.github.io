@@ -7,19 +7,20 @@
   <meta name="theme-color" content="#07120e">
   <meta name="application-name" content="GoblinPass Gen 5.0">
   <meta name="description" content="Offline deterministic password generation with a Windows Hello protected master password.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; require-trusted-types-for 'script'; trusted-types 'none'">
+  <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="../goblinpass/icon-192.png">
-  <link rel="apple-touch-icon" href="../goblinpass/icon-192.png">
-  <link rel="stylesheet" href="../gen4/style.css?v=20260721-gen5-base">
-  <link rel="stylesheet" href="../gen4/layout-fix.css?v=20260721-gen5-base">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="base.css?v=20260721-gen5-base">
+  <link rel="stylesheet" href="layout.css?v=20260721-gen5-base">
   <link rel="stylesheet" href="style.css?v=20260721-gen5-2">
 </head>
 <body>
   <section id="appGate" class="app-gate" aria-labelledby="gateTitle">
     <div class="gate-card">
       <a class="gate-brand" href="../index.html" aria-label="GoblinPass home">
-        <img src="../goblinpass/icon-192.png" alt="" width="64" height="64">
+        <img src="icons/icon-192.png" alt="" width="64" height="64">
         <span>GoblinPass 5.0</span>
       </a>
       <p class="eyebrow">Protected app</p>
@@ -36,7 +37,7 @@
   <main id="appShell" class="app-shell" hidden>
     <header class="app-header">
       <a class="brand" href="../index.html" aria-label="GoblinPass home">
-        <img src="../goblinpass/icon-192.png" alt="" width="48" height="48">
+        <img src="icons/icon-192.png" alt="" width="48" height="48">
         <span><strong>GoblinPass</strong><small>Secure Unlock Gen 5.0</small></span>
       </a>
       <div class="header-actions">
@@ -48,7 +49,7 @@
     <section class="status-strip" aria-label="Gen 5 status">
       <span><b class="status-dot"></b> Offline ready</span>
       <span id="vaultBadge">Checking secure unlock…</span>
-      <span>Gen 1.0 algorithm</span>
+      <span>GP5-PWD-1 algorithm</span>
     </section>
 
     <section id="supportNotice" class="support-notice" hidden role="status">
@@ -66,12 +67,24 @@
         <button id="protectMaster" class="primary-button compact-button" type="button">Protect with Windows Hello</button>
         <button id="unlockMaster" class="primary-button compact-button" type="button" hidden>Unlock master password</button>
         <button id="lockMaster" class="secondary-button compact-button" type="button" hidden>Lock now</button>
+        <button id="addPasskey" class="secondary-button compact-button" type="button" hidden>Add recovery passkey</button>
+        <button id="exportBackup" class="secondary-button compact-button" type="button" hidden>Export encrypted backup</button>
+        <button id="importBackup" class="secondary-button compact-button" type="button">Import encrypted backup</button>
+        <input id="backupFile" type="file" accept=".gpb,application/vnd.goblinpass.backup,text/plain" hidden>
         <button id="forgetMaster" class="danger-button compact-button" type="button" hidden>Remove saved password</button>
       </div>
       <p id="vaultStatus" class="vault-status" aria-live="polite">Checking this device…</p>
+      <div id="passkeyList" class="passkey-list" aria-label="Registered passkeys"></div>
+      <label class="clipboard-setting" for="clipboardTimeout">Clear copied passwords after
+        <select id="clipboardTimeout">
+          <option value="15">15 seconds</option>
+          <option value="30" selected>30 seconds</option>
+          <option value="60">60 seconds</option>
+        </select>
+      </label>
       <details class="security-details">
         <summary>How secure storage works</summary>
-        <p>Your master password is encrypted with AES-GCM. The encryption key is derived from a WebAuthn PRF secret that is released only after device verification. Only encrypted data, random salts, and the passkey identifier are stored in this browser.</p>
+        <p>Your master password is encrypted by a random AES-256-GCM data key. Each registered passkey independently wraps that key using an HKDF-SHA-256 key derived from a WebAuthn PRF output released only after device verification. The complete record is authenticated before decryption.</p>
         <p>Windows Hello may use your face, fingerprint, or device PIN. Clearing site data or deleting the passkey removes access to the saved copy, so keep the original master password somewhere safe.</p>
       </details>
     </section>
@@ -90,11 +103,11 @@
           <div class="number-options">
             <div>
               <label for="passwordLength">Length</label>
-              <input id="passwordLength" type="number" inputmode="numeric" min="8" max="64" step="1" value="16" required>
+              <input id="passwordLength" type="number" inputmode="numeric" min="12" max="64" step="1" value="16" required>
             </div>
             <div>
               <label for="passwordCounter">Counter</label>
-              <input id="passwordCounter" type="number" inputmode="numeric" min="1" max="999" step="1" value="1" required>
+              <input id="passwordCounter" type="number" inputmode="numeric" min="1" max="999999" step="1" value="1" required>
             </div>
           </div>
 
@@ -102,7 +115,7 @@
             <label for="masterPassword">Master Password</label>
             <button id="toggleMaster" class="text-button" type="button" aria-label="Show master password" aria-pressed="false">Show</button>
           </div>
-          <input id="masterPassword" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Enter to use or protect" required>
+          <input id="masterPassword" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false" placeholder="Enter to use or protect" required>
 
           <fieldset class="character-options">
             <legend>Password characters</legend>
@@ -118,7 +131,7 @@
             <span>Website ID</span><b>+</b><span>Master Password</span>
           </div>
 
-          <button class="primary-button" type="submit">Generate &amp; copy</button>
+          <button id="generatePassword" class="primary-button" type="submit" disabled>Generate &amp; copy</button>
         </form>
         <p id="statusMessage" class="status-message" aria-live="polite">Ready.</p>
       </article>
@@ -153,9 +166,23 @@
     </footer>
   </main>
 
-  <script src="../assets/js/goblinpass-engine.js?v=20260721-gen5"></script>
-  <script src="../gen4/qr.js?v=20260721-gen5"></script>
-  <script src="secure-vault.js?v=20260721-gen5-2"></script>
-  <script src="app-v5.js?v=20260721-gen5-2"></script>
+  <dialog id="backupDialog" class="backup-dialog" aria-labelledby="backupDialogTitle">
+    <h2 id="backupDialogTitle">Encrypted recovery backup</h2>
+    <p>Use a strong backup passphrase that is different from your master password. Argon2id protects the exported file.</p>
+    <label for="backupPassphrase">Backup passphrase</label>
+    <input id="backupPassphrase" type="password" autocomplete="new-password" minlength="16" required>
+    <canvas id="backupQrCanvas" class="backup-qr" hidden aria-label="Encrypted backup QR code"></canvas>
+    <div id="backupQrControls" class="backup-qr-controls" hidden>
+      <button id="backupQrPrevious" class="secondary-button" type="button">Previous</button>
+      <span id="backupQrLabel"></span>
+      <button id="backupQrNext" class="secondary-button" type="button">Next</button>
+    </div>
+    <div class="backup-dialog-actions">
+      <button id="backupCancel" class="secondary-button" type="button">Close</button>
+      <button id="backupConfirm" class="primary-button" type="button">Continue</button>
+    </div>
+  </dialog>
+
+  <script src="dist/app.js?v=20260721-gen5-secure-4" integrity="sha384-afh9Ys5dyWTRLxxPW/6M7txsrC5cf0Qw0YBGLxiylkZCBg4EKfZxC79somyDJyx4" crossorigin="anonymous" defer></script>
 </body>
 </html>
