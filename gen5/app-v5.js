@@ -31,6 +31,12 @@
   const supportNotice = $("supportNotice");
   const installButton = $("installApp");
   const offlineStatus = $("offlineStatus");
+  const appShell = $("appShell");
+  const appGate = $("appGate");
+  const gateTitle = $("gateTitle");
+  const gateDescription = $("gateDescription");
+  const gateUnlock = $("gateUnlock");
+  const gateStatus = $("gateStatus");
   const vault = window.GoblinPassSecureVault;
 
   let savedRecord = null;
@@ -45,6 +51,38 @@
     vaultStatus.textContent = message;
     if (kind) vaultStatus.dataset.kind = kind;
     else delete vaultStatus.dataset.kind;
+  }
+
+  function setGateMessage(message, kind) {
+    gateStatus.textContent = message || "";
+    if (kind) gateStatus.dataset.kind = kind;
+    else delete gateStatus.dataset.kind;
+  }
+
+  function openApp() {
+    appGate.hidden = true;
+    appShell.hidden = false;
+    appShell.inert = false;
+  }
+
+  function showAppGate() {
+    appShell.hidden = true;
+    appShell.inert = true;
+    appGate.hidden = false;
+    gateUnlock.disabled = busy || !available;
+    if (!available) {
+      gateTitle.textContent = "Secure access unavailable";
+      gateDescription.textContent = "GoblinPass 5.0 requires Windows Hello or another biometric-capable platform authenticator with WebAuthn PRF support.";
+      gateUnlock.textContent = "Windows Hello required";
+    } else if (savedRecord) {
+      gateTitle.textContent = "Unlock GoblinPass 5.0";
+      gateDescription.textContent = "Verify with Windows Hello, your device biometrics, or its secure device PIN before the app can open.";
+      gateUnlock.textContent = busy ? "Waiting for Windows Hello…" : "Unlock with Windows Hello";
+    } else {
+      gateTitle.textContent = "Set up protected access";
+      gateDescription.textContent = "No protected vault exists yet. Continue once to enter your master password and create Windows Hello access.";
+      gateUnlock.textContent = "Continue to secure setup";
+    }
   }
 
   function describeCredentialError(error) {
@@ -69,9 +107,9 @@
     toggleMaster.disabled = hasSavedPassword && !unlocked;
 
     if (!hasSavedPassword) {
-      vaultBadge.textContent = available ? "Vault ready to set up" : "Manual entry only";
+      vaultBadge.textContent = available ? "Vault ready to set up" : "Secure access unavailable";
       vaultDescription.textContent = "Enter your master password, then protect it with Windows Hello or this device's biometric/passkey unlock.";
-      masterPassword.placeholder = "Enter to use or protect";
+      masterPassword.placeholder = "Enter to protect with Windows Hello";
     } else if (unlocked) {
       vaultBadge.textContent = "Vault unlocked";
       vaultDescription.textContent = "Your decrypted master password is available only for this session and will lock after five minutes.";
@@ -115,6 +153,8 @@
     clearResult("Vault locked. Unlock it before generating another password.");
     setVaultMessage(message || "Locked. Your master password remains encrypted in local storage.", "success");
     updateVaultUi();
+    setGateMessage(message || "App locked. Verify again to reopen it.", "success");
+    showAppGate();
   }
 
   async function protectEnteredMaster() {
@@ -144,20 +184,36 @@
     if (busy || !savedRecord) return false;
     busy = true;
     updateVaultUi();
+    showAppGate();
     setVaultMessage("Waiting for Windows Hello…");
+    setGateMessage("Waiting for Windows Hello…");
     try {
       masterPassword.value = await vault.unlock(savedRecord);
       unlocked = true;
       resetLockTimer();
       setVaultMessage("Unlocked for five minutes. Lock now when you are finished.", "success");
+      setGateMessage("Identity verified.", "success");
       return true;
     } catch (error) {
       setVaultMessage(describeCredentialError(error), "error");
+      setGateMessage(describeCredentialError(error), "error");
       return false;
     } finally {
       busy = false;
       updateVaultUi();
+      if (!unlocked) showAppGate();
     }
+  }
+
+  async function enterFromGate() {
+    if (busy || !available) return;
+    if (!savedRecord) {
+      setGateMessage("Create Windows Hello protection before using the generator.");
+      openApp();
+      masterPassword.focus();
+      return;
+    }
+    if (await unlockVault()) openApp();
   }
 
   async function forgetSavedMaster() {
@@ -170,13 +226,17 @@
       savedRecord = null;
       unlocked = false;
       masterPassword.value = "";
-      clearResult("Saved master password removed. You can continue with manual entry.");
+      clearResult("Saved master password removed. Set up Windows Hello again to use Gen 5.0.");
       setVaultMessage("Encrypted master password removed from this browser. No plaintext copy was stored.", "success");
     } catch (error) {
       setVaultMessage(describeCredentialError(error), "error");
     } finally {
       busy = false;
       updateVaultUi();
+      if (!savedRecord) {
+        setGateMessage("Protected access was removed. Set it up again to use Gen 5.0.", "success");
+        showAppGate();
+      }
     }
   }
 
@@ -224,6 +284,12 @@
 
   async function generatePassword(event) {
     event.preventDefault();
+    if (!savedRecord) {
+      resultStatus.textContent = "Protect your master password with Windows Hello before using Gen 5.0.";
+      setVaultMessage("Windows Hello protected access is required before generation.", "warning");
+      masterPassword.focus();
+      return;
+    }
     if (savedRecord && !unlocked && !(await unlockVault())) return;
     if (!form.reportValidity()) return;
     const selectedKeys = selectedCharacterKeys();
@@ -282,7 +348,7 @@
     available = support.available;
     supportNotice.hidden = available;
     if (!available) {
-      supportNotice.querySelector("span").textContent = `${support.reason} You can still generate with manual entry; GoblinPass will not save it.`;
+      supportNotice.querySelector("span").textContent = `${support.reason} Gen 5.0 will remain locked.`;
       setVaultMessage(support.reason, "warning");
     }
     try {
@@ -295,9 +361,11 @@
       setVaultMessage(error.message, "error");
     }
     updateVaultUi();
+    showAppGate();
   }
 
   form.addEventListener("submit", generatePassword);
+  gateUnlock.addEventListener("click", enterFromGate);
   protectMaster.addEventListener("click", protectEnteredMaster);
   unlockMaster.addEventListener("click", unlockVault);
   lockMaster.addEventListener("click", () => lockVault());
@@ -312,6 +380,9 @@
   masterPassword.addEventListener("input", () => clearResult());
   document.addEventListener("pointerdown", () => { if (unlocked) resetLockTimer(); }, { passive: true });
   document.addEventListener("keydown", () => { if (unlocked) resetLockTimer(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && unlocked) lockVault("App locked when it left the screen.");
+  });
   window.addEventListener("online", updateConnectionStatus);
   window.addEventListener("offline", updateConnectionStatus);
   window.addEventListener("beforeinstallprompt", event => {

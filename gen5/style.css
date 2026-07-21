@@ -53,9 +53,47 @@
 #masterPassword:read-only { cursor: default; }
 .panel-heading h2 { font-size: 2rem; line-height: 1.08; }
 
+.app-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(109, 240, 94, .12), transparent 34rem),
+    var(--bg);
+}
+
+.gate-card {
+  width: min(460px, 100%);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  text-align: center;
+}
+
+.gate-brand { display: inline-grid; justify-items: center; gap: 10px; margin-bottom: 28px; color: var(--text); text-decoration: none; font-weight: 900; }
+.gate-brand img { border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 0 26px rgba(109, 240, 94, .16); }
+.gate-card .eyebrow { margin: 0 0 8px; color: var(--green); font-size: .7rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.gate-card h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.45rem); line-height: 1.08; }
+.gate-card > p:not(.eyebrow) { color: var(--muted); line-height: 1.55; }
+.gate-button { width: 100%; margin-top: 12px; }
+.gate-button:disabled { cursor: wait; opacity: .55; }
+.gate-status { min-height: 24px; margin: 14px 0 0; font-size: .8rem; }
+.gate-status[data-kind="error"] { color: #ffadb2; }
+.gate-status[data-kind="success"] { color: #bafab4; }
+.gate-home-link { display: inline-block; margin-top: 10px; color: var(--muted); font-size: .78rem; text-underline-offset: 4px; }
+.noscript-message { margin: 24px; color: var(--warning); text-align: center; }
+
 @media (max-width: 760px) {
   .vault-card { grid-template-columns: 1fr; padding: 18px; }
   .vault-actions { justify-content: stretch; }
   .vault-actions button { flex: 1 1 190px; }
   .panel-heading h2 { font-size: 1.65rem; }
+}
+
+@media (max-width: 430px) {
+  .app-gate { padding: 14px; }
+  .gate-card { padding: 24px 18px; }
 }

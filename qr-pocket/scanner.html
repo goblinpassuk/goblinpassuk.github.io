@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171a16">
+  <meta name="description" content="Scan any QR code using your camera or an image.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+  <title>QR Scanner — QR Pocket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/scanner-engine.js" defer></script>
+  <script src="scanner.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body class="tool-page scanner-page">
+  <nav class="tool-nav dark-nav">
+    <a class="back-link" href="index.html" aria-label="Back to app chooser">← <span>QR Pocket</span></a>
+    <a class="switch-link" href="notes.html">Notes to QR <span>↗</span></a>
+  </nav>
+
+  <main class="tool-shell scanner-shell">
+    <header class="tool-heading scanner-heading">
+      <p class="eyebrow">02 / POINT &amp; READ</p>
+      <h1>QR Scanner</h1>
+      <p>Point your camera at a QR code, or choose an image containing one.</p>
+    </header>
+
+    <section class="scanner-layout">
+      <div class="camera-card">
+        <div id="reader"></div>
+        <div class="camera-placeholder" id="camera-placeholder">
+          <div class="viewfinder" aria-hidden="true"><span></span></div>
+          <p id="camera-message">Camera is ready when you are</p>
+          <button class="lime-button" id="start-button" type="button">Start camera</button>
+        </div>
+        <button class="stop-button hidden" id="stop-button" type="button">Stop camera</button>
+      </div>
+
+      <aside class="scan-side">
+        <div class="upload-block">
+          <p class="side-label">OR USE AN IMAGE</p>
+          <label class="upload-button" for="file-input"><span>Choose QR image</span><b>＋</b></label>
+          <input id="file-input" type="file" accept="image/*" hidden>
+          <p>JPG, PNG, WEBP and camera photos</p>
+        </div>
+
+        <div class="result-block" id="result-block" aria-live="polite">
+          <div class="result-header"><span>Scan result</span><span class="result-dot"></span></div>
+          <div class="result-empty" id="result-empty">Your result will appear here after a successful scan.</div>
+          <div class="result-content hidden" id="result-content">
+            <p id="result-text"></p>
+            <div class="result-actions">
+              <button class="copy-result-button" id="copy-result" type="button">Copy to clipboard</button>
+              <a id="open-result" href="#" target="_blank" rel="noopener noreferrer">Open link ↗</a>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+    <p class="privacy-note scanner-privacy"><span>●</span> Scanning happens entirely in your browser.</p>
+  </main>
+  <div class="toast dark-toast" id="toast" role="status"></div>
+</body>
+</html>

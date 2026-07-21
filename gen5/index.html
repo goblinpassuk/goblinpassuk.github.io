@@ -13,10 +13,27 @@
   <link rel="apple-touch-icon" href="../goblinpass/icon-192.png">
   <link rel="stylesheet" href="../gen4/style.css?v=20260721-gen5-base">
   <link rel="stylesheet" href="../gen4/layout-fix.css?v=20260721-gen5-base">
-  <link rel="stylesheet" href="style.css?v=20260721-gen5-1">
+  <link rel="stylesheet" href="style.css?v=20260721-gen5-2">
 </head>
 <body>
-  <main class="app-shell">
+  <section id="appGate" class="app-gate" aria-labelledby="gateTitle">
+    <div class="gate-card">
+      <a class="gate-brand" href="../index.html" aria-label="GoblinPass home">
+        <img src="../goblinpass/icon-192.png" alt="" width="64" height="64">
+        <span>GoblinPass 5.0</span>
+      </a>
+      <p class="eyebrow">Protected app</p>
+      <h1 id="gateTitle">Checking secure access…</h1>
+      <p id="gateDescription">GoblinPass is checking for your Windows Hello protected vault.</p>
+      <button id="gateUnlock" class="primary-button gate-button" type="button" disabled>Checking…</button>
+      <p id="gateStatus" class="gate-status" aria-live="polite"></p>
+      <a class="gate-home-link" href="../index.html">Return to GoblinPass home</a>
+    </div>
+  </section>
+
+  <noscript><p class="noscript-message">GoblinPass 5.0 requires JavaScript and Windows Hello compatible browser features.</p></noscript>
+
+  <main id="appShell" class="app-shell" hidden>
     <header class="app-header">
       <a class="brand" href="../index.html" aria-label="GoblinPass home">
         <img src="../goblinpass/icon-192.png" alt="" width="48" height="48">
@@ -36,7 +53,7 @@
 
     <section id="supportNotice" class="support-notice" hidden role="status">
       <strong>Secure unlock is unavailable in this browser.</strong>
-      <span>You can still generate passwords, but GoblinPass will not store your master password without WebAuthn PRF and a secure HTTPS connection.</span>
+      <span>Gen 5.0 remains locked without WebAuthn PRF, a user-verifying platform authenticator, and a secure HTTPS connection.</span>
     </section>
 
     <section class="vault-card" aria-labelledby="vaultTitle">
@@ -138,7 +155,7 @@
 
   <script src="../assets/js/goblinpass-engine.js?v=20260721-gen5"></script>
   <script src="../gen4/qr.js?v=20260721-gen5"></script>
-  <script src="secure-vault.js?v=20260721-gen5-1"></script>
-  <script src="app-v5.js?v=20260721-gen5-1"></script>
+  <script src="secure-vault.js?v=20260721-gen5-2"></script>
+  <script src="app-v5.js?v=20260721-gen5-2"></script>
 </body>
 </html>

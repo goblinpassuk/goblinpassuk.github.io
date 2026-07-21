@@ -1,0 +1,30 @@
+{
+  "name": "QR Pocket",
+  "short_name": "QR Pocket",
+  "description": "Create QR codes from notes and scan any QR code privately in your browser.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f2ea",
+  "theme_color": "#171a16",
+  "icons": [
+    {
+      "src": "icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Notes to QR",
+      "short_name": "Create QR",
+      "url": "./notes.html"
+    },
+    {
+      "name": "QR Scanner",
+      "short_name": "Scan QR",
+      "url": "./scanner.html"
+    }
+  ]
+}

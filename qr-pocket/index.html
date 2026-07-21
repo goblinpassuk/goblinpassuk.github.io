@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f2ea">
+  <meta name="description" content="Create QR codes from notes and scan QR codes privately in your browser.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+  <title>QR Pocket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body class="home-page">
+  <main class="home-shell">
+    <a class="site-return" href="../index.html">← GoblinPass Web Tools</a>
+    <header class="home-header">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <p class="eyebrow">QR POCKET</p>
+      <h1>Move text.<br><em>Skip the fuss.</em></h1>
+      <p class="lede">A tiny pair of tools for moving notes between screens and reading any QR code you come across.</p>
+    </header>
+
+    <section class="app-grid" aria-label="Choose an app">
+      <a class="app-card generator-card" href="notes.html">
+        <div class="card-topline"><span>01</span><span class="arrow">↗</span></div>
+        <div class="card-art note-art" aria-hidden="true">
+          <div class="paper-lines"><i></i><i></i><i></i><i></i></div>
+          <div class="mini-qr"></div>
+        </div>
+        <div>
+          <p class="card-label">WRITE &amp; SHARE</p>
+          <h2>Notes to QR</h2>
+          <p>Type or paste a note, then turn it into a scannable code in an instant.</p>
+        </div>
+      </a>
+
+      <a class="app-card scanner-card" href="scanner.html">
+        <div class="card-topline"><span>02</span><span class="arrow">↗</span></div>
+        <div class="card-art scan-art" aria-hidden="true">
+          <div class="scan-corners"></div>
+          <div class="scan-beam"></div>
+          <div class="scan-dot"></div>
+        </div>
+        <div>
+          <p class="card-label">POINT &amp; READ</p>
+          <h2>QR Scanner</h2>
+          <p>Use your camera or choose an image to read any standard QR code.</p>
+        </div>
+      </a>
+    </section>
+
+    <footer class="home-footer"><span>Private by design</span><span>Nothing is uploaded</span></footer>
+  </main>
+</body>
+</html>

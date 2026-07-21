@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f2ea">
+  <meta name="description" content="Turn notes into QR codes and copy them between devices.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+  <title>Notes to QR — QR Pocket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <script src="notes.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body class="tool-page notes-page">
+  <nav class="tool-nav">
+    <a class="back-link" href="index.html" aria-label="Back to app chooser">← <span>QR Pocket</span></a>
+    <a class="switch-link" href="scanner.html">Open scanner <span>↗</span></a>
+  </nav>
+
+  <main class="tool-shell notes-shell">
+    <header class="tool-heading">
+      <p class="eyebrow">01 / WRITE &amp; SHARE</p>
+      <h1>Notes to QR</h1>
+      <p>Whatever you type becomes a QR code. Scan it with another device to move the note across.</p>
+    </header>
+
+    <section class="workspace notes-workspace">
+      <div class="panel input-panel">
+        <div class="panel-heading">
+          <label for="note-input">Your note</label>
+          <span id="char-count">0 / 1,500</span>
+        </div>
+        <textarea id="note-input" maxlength="1500" spellcheck="true" placeholder="Type or paste something here…" autofocus></textarea>
+        <div class="input-actions">
+          <button class="text-button" id="clear-button" type="button">Clear</button>
+          <button class="primary-button" id="generate-button" type="button">Generate QR <span>→</span></button>
+        </div>
+      </div>
+
+      <div class="panel output-panel" aria-live="polite">
+        <div class="panel-heading">
+          <span>QR code</span>
+          <span id="qr-status">Waiting for a note</span>
+        </div>
+        <div class="qr-stage empty" id="qr-stage">
+          <div id="qrcode"></div>
+          <div class="empty-state" id="empty-state">
+            <div class="empty-qr" aria-hidden="true"></div>
+            <p>Your code will appear here</p>
+          </div>
+        </div>
+        <div class="output-actions">
+          <button class="secondary-button" id="download-button" type="button" disabled>Download QR</button>
+          <button class="primary-button copy-button" id="copy-button" type="button" disabled>Copy note</button>
+        </div>
+      </div>
+    </section>
+    <p class="privacy-note"><span>●</span> Your note stays on this device. It is never sent anywhere.</p>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>
