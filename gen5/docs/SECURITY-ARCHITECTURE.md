@@ -2,7 +2,7 @@
 
 ## Security objective
 
-GoblinPass deterministically derives site passwords without storing generated passwords. A local encrypted vault preserves the master password and the stable generator profile salt. Opening the application requires a user-verifying WebAuthn platform passkey with PRF support.
+GoblinPass reproduces the Gen 4 `GPIDV2` deterministic passwords without storing generated passwords. A local encrypted vault preserves the master password. Opening the application requires a user-verifying WebAuthn platform passkey with PRF support.
 
 The design protects confidentiality and integrity against stolen IndexedDB data, casual local access, cross-site attacks, and a lost passkey when recovery was configured. It cannot protect secrets from a compromised browser process, privileged malicious extension, compromised operating system, hostile accessibility software, hardware keylogger, or an attacker observing the screen after unlock.
 
@@ -29,9 +29,9 @@ flowchart TD
   C --> D["Wrapped random vault data key"]
   D --> E["Vault AES-256-GCM payload"]
   E --> F["Master password bytes"]
-  F --> G["Argon2id\n64 MiB, t=3, p=1, 256-bit profile salt"]
-  G --> H["Non-extractable HMAC-SHA-256 generator root key"]
-  H --> I["Versioned deterministic site-password stream"]
+  F --> G["Owned in-memory master buffer while unlocked"]
+  G --> H["Gen 4-compatible GPIDV2 SHA-256 derivation"]
+  H --> I["Same password as Gen 4 for identical inputs"]
 
   J["Independent backup passphrase"] --> K["Argon2id\n64 MiB, t=3, p=1, 256-bit salt"]
   K --> L["Backup AES-256-GCM key"]
@@ -59,8 +59,8 @@ sequenceDiagram
   App->>App: Validate type, origin, crossOrigin, challenge and credential ID
   App->>App: HKDF PRF result into KEK; decrypt wrapped vault key
   App->>App: AES-GCM verify/decrypt payload
-  App->>App: Argon2id master into non-extractable generator key
-  App->>App: Wipe byte buffers and open UI
+  App->>App: Copy master into the locked-lifecycle generator session
+  App->>App: Wipe temporary buffers and open UI
 ```
 
 The assertion is not sent to a server. Local challenge validation prevents implementation confusion and replay within the application, while possession of the fresh PRF result is the effective local decryption capability. XSS would still be able to initiate a ceremony and use its result after user consent, which is why CSP, Trusted Types, dependency pinning, and code review are primary controls.

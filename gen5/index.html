@@ -49,7 +49,7 @@
     <section class="status-strip" aria-label="Gen 5 status">
       <span><b class="status-dot"></b> Offline ready</span>
       <span id="vaultBadge">Checking secure unlock…</span>
-      <span>GP5-PWD-1 algorithm</span>
+      <span>Gen 4-compatible GPIDV2 algorithm</span>
     </section>
 
     <section id="supportNotice" class="support-notice" hidden role="status">
@@ -103,11 +103,11 @@
           <div class="number-options">
             <div>
               <label for="passwordLength">Length</label>
-              <input id="passwordLength" type="number" inputmode="numeric" min="12" max="64" step="1" value="16" required>
+              <input id="passwordLength" type="number" inputmode="numeric" min="8" max="64" step="1" value="16" required>
             </div>
             <div>
               <label for="passwordCounter">Counter</label>
-              <input id="passwordCounter" type="number" inputmode="numeric" min="1" max="999999" step="1" value="1" required>
+              <input id="passwordCounter" type="number" inputmode="numeric" min="1" max="999" step="1" value="1" required>
             </div>
           </div>
 
@@ -183,6 +183,6 @@
     </div>
   </dialog>
 
-  <script src="dist/app.js?v=20260721-gen5-secure-4" integrity="sha384-afh9Ys5dyWTRLxxPW/6M7txsrC5cf0Qw0YBGLxiylkZCBg4EKfZxC79somyDJyx4" crossorigin="anonymous" defer></script>
+  <script src="dist/app.js?v=20260721-gen5-secure-5" integrity="sha384-9y2zAj00A32nc2m/d7T2XeZbSv64t6E0v429IQZi0Db1DRaqjSoYiYtIjNPUXEt4" crossorigin="anonymous" defer></script>
 </body>
 </html>

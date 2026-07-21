@@ -9,7 +9,7 @@ test("Argon2id backup round-trips and rejects tampering", { timeout: 30_000 }, a
     schema: 1 as const,
     masterPassword: base64url(utf8("correct horse battery staple")),
     profileSalt: base64url(new Uint8Array(32).fill(7)),
-    generatorVersion: "GP5-PWD-1" as const
+    generatorVersion: "GP4-GPIDV2" as const
   };
   const encoded = await createBackup(payload, utf8("separate backup passphrase 2026"));
   assert.deepEqual(await openBackup(encoded, utf8("separate backup passphrase 2026")), payload);

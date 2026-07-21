@@ -1,102 +1,105 @@
-import { deriveArgon2id, fromBase64url, importHmacKey, utf8, wipe } from "./crypto.js";
+import { decodeUtf8, sha256, utf8, wipe } from "./crypto.js";
 import type { GeneratorOptions } from "./types.js";
 
-const VERSION = "GP5-PWD-1";
-const SETS = {
-  lower: "abcdefghijklmnopqrstuvwxyz",
-  upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-  numbers: "0123456789",
-  symbols: "%!@#$_-"
-} as const;
+export const GENERATOR_VERSION = "GP4-GPIDV2" as const;
+
+const CHARACTER_SETS = [
+  { key: "lower", chars: "abcdefghijklmnopqrstuvwxyz" },
+  { key: "upper", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" },
+  { key: "nums", chars: "0123456789" },
+  { key: "symbols", chars: "%!@#$_-" }
+] as const;
+
+type CharacterSet = (typeof CHARACTER_SETS)[number];
+
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = utf8(value);
+  try {
+    const digest = await sha256(bytes);
+    try { return Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join(""); }
+    finally { wipe(digest); }
+  } finally { wipe(bytes); }
+}
+
+async function characterFromSet(seed: string, set: CharacterSet, round: number): Promise<string> {
+  const hash = await sha256Hex(`${seed}|required|${set.key}|${round}`);
+  return set.chars[Number.parseInt(hash.slice(0, 8), 16) % set.chars.length]!;
+}
+
+async function deterministicSetOrder(sets: CharacterSet[], seed: string, round: number): Promise<CharacterSet[]> {
+  const scored = await Promise.all(sets.map(async set => ({
+    value: set,
+    score: await sha256Hex(`${seed}|set-order|${round}|${set.key}`)
+  })));
+  return scored.sort((left, right) => left.score.localeCompare(right.score)).map(item => item.value);
+}
+
+async function deterministicShuffle(characters: string[], seed: string): Promise<string> {
+  const scored = await Promise.all(characters.map(async (character, index) => ({
+    value: character,
+    score: await sha256Hex(`${seed}|shuffle|${index}|${character}`)
+  })));
+  return scored.sort((left, right) => left.score.localeCompare(right.score)).map(item => item.value).join("");
+}
 
 export class GeneratorSession {
-  #rootKey: CryptoKey | null;
-  private constructor(rootKey: CryptoKey) { this.#rootKey = rootKey; }
+  #masterPassword: Uint8Array | null;
 
-  static async create(masterPassword: Uint8Array, profileSaltBase64url: string): Promise<GeneratorSession> {
-    const profileSalt = fromBase64url(profileSaltBase64url);
-    let hardened: Uint8Array | undefined;
-    try {
-      hardened = await deriveArgon2id(masterPassword, profileSalt);
-      return new GeneratorSession(await importHmacKey(hardened));
-    } finally {
-      wipe(masterPassword, profileSalt, hardened);
-    }
+  private constructor(masterPassword: Uint8Array) {
+    this.#masterPassword = masterPassword.slice();
+  }
+
+  static create(masterPassword: Uint8Array): GeneratorSession {
+    if (masterPassword.length === 0 || masterPassword.length > 4_096) throw new RangeError("Invalid master password length.");
+    return new GeneratorSession(masterPassword);
   }
 
   async generate(siteId: string, options: GeneratorOptions): Promise<string> {
-    if (!this.#rootKey) throw new DOMException("Generator session is locked.", "InvalidStateError");
-    const normalizedSite = siteId.normalize("NFKC").trim().toLowerCase();
+    if (!this.#masterPassword) throw new DOMException("Generator session is locked.", "InvalidStateError");
+    const normalizedSite = siteId.trim().toLowerCase();
     const siteBytes = utf8(normalizedSite);
     if (!normalizedSite || siteBytes.length > 512) {
       wipe(siteBytes);
       throw new Error("Website ID must contain 1–512 UTF-8 bytes.");
     }
     wipe(siteBytes);
+
     const length = Math.trunc(options.length);
     const counter = Math.trunc(options.counter);
-    if (length < 12 || length > 64 || counter < 1 || counter > 999_999) throw new RangeError("Invalid password options.");
-    const selected = [
-      options.lower ? SETS.lower : "", options.upper ? SETS.upper : "",
-      options.numbers ? SETS.numbers : "", options.symbols ? SETS.symbols : ""
+    if (length < 8 || length > 64 || counter < 1 || counter > 999) throw new RangeError("Invalid password options.");
+    const selectedKeys = [
+      options.lower ? "lower" : "",
+      options.upper ? "upper" : "",
+      options.numbers ? "nums" : "",
+      options.symbols ? "symbols" : ""
     ].filter(Boolean);
-    if (selected.length === 0 || length < selected.length) throw new Error("Select a valid character set.");
-    const alphabet = selected.join("");
-    const recipe = utf8(JSON.stringify({ v: VERSION, site: normalizedSite, counter, sets: selected }));
-    const stream = new DeterministicStream(this.#rootKey, recipe);
-    try {
-      const characters: string[] = [];
-      for (const set of selected) characters.push(set[await stream.index(set.length)]!);
-      while (characters.length < length) characters.push(alphabet[await stream.index(alphabet.length)]!);
-      for (let index = characters.length - 1; index > 0; index -= 1) {
-        const swap = await stream.index(index + 1);
-        [characters[index], characters[swap]] = [characters[swap]!, characters[index]!];
+    const sets = CHARACTER_SETS.filter(set => selectedKeys.includes(set.key));
+    if (sets.length === 0) throw new Error("Select at least one password character group.");
+
+    const masterPassword = decodeUtf8(this.#masterPassword);
+    const optionKey = sets.map(set => set.key).join(",");
+    const seed = `GPIDV2|${normalizedSite}|${counter}|${masterPassword}|${optionKey}`;
+    const output: string[] = [];
+    const minimumPerSet = Math.max(1, Math.min(2, Math.floor(length / sets.length)));
+    for (const set of sets) {
+      for (let round = 0; round < minimumPerSet && output.length < length; round += 1) {
+        output.push(await characterFromSet(seed, set, round));
       }
-      return characters.join("");
-    } finally {
-      wipe(recipe);
-      stream.destroy();
     }
-  }
-
-  destroy(): void { this.#rootKey = null; }
-}
-
-class DeterministicStream {
-  #key: CryptoKey | null;
-  #context: Uint8Array;
-  #block = new Uint8Array(0);
-  #offset = 0;
-  #counter = 0;
-  constructor(key: CryptoKey, context: Uint8Array) { this.#key = key; this.#context = context.slice(); }
-
-  async #refill(): Promise<void> {
-    if (!this.#key) throw new Error("Destroyed stream.");
-    const input = new Uint8Array(this.#context.length + 4);
-    input.set(this.#context);
-    new DataView(input.buffer).setUint32(this.#context.length, this.#counter, false);
-    this.#counter += 1;
-    wipe(this.#block);
-    this.#block = new Uint8Array(await crypto.subtle.sign("HMAC", this.#key, input));
-    this.#offset = 0;
-    wipe(input);
-  }
-
-  async #uint32(): Promise<number> {
-    if (this.#offset + 4 > this.#block.length) await this.#refill();
-    const value = new DataView(this.#block.buffer, this.#block.byteOffset + this.#offset, 4).getUint32(0, false);
-    this.#offset += 4;
-    return value;
-  }
-
-  async index(range: number): Promise<number> {
-    if (!Number.isSafeInteger(range) || range < 1 || range > 0xffff) throw new RangeError("Invalid deterministic range.");
-    const limit = 0x1_0000_0000 - (0x1_0000_0000 % range);
-    for (;;) {
-      const candidate = await this.#uint32();
-      if (candidate < limit) return candidate % range;
+    let round = 0;
+    while (output.length < length) {
+      const orderedSets = await deterministicSetOrder(sets, seed, round);
+      for (const set of orderedSets) {
+        if (output.length >= length) break;
+        output.push(await characterFromSet(seed, set, minimumPerSet + round));
+      }
+      round += 1;
     }
+    return deterministicShuffle(output, seed);
   }
 
-  destroy(): void { wipe(this.#context, this.#block); this.#key = null; this.#counter = 0; this.#offset = 0; }
+  destroy(): void {
+    wipe(this.#masterPassword ?? undefined);
+    this.#masterPassword = null;
+  }
 }

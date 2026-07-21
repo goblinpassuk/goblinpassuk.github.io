@@ -61,7 +61,7 @@ export interface BackupPayload {
   schema: 1;
   masterPassword: string;
   profileSalt: string;
-  generatorVersion: "GP5-PWD-1";
+  generatorVersion: "GP4-GPIDV2";
 }
 
 export interface GeneratorOptions {

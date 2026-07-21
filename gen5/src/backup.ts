@@ -78,7 +78,7 @@ export async function openBackup(encoded: string, passphrase: Uint8Array): Promi
     const profileSalt = fromBase64url(payload.profileSalt);
     const masterPassword = fromBase64url(payload.masterPassword);
     try {
-      if (payload.format !== "goblinpass-recovery-payload" || payload.schema !== 1 || payload.generatorVersion !== "GP5-PWD-1" ||
+      if (payload.format !== "goblinpass-recovery-payload" || payload.schema !== 1 || payload.generatorVersion !== "GP4-GPIDV2" ||
           profileSalt.length !== 32 || masterPassword.length < 12 || masterPassword.length > 4_096) {
         throw new DOMException("Backup payload is invalid.", "DataError");
       }

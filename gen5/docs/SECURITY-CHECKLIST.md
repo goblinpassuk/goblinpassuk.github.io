@@ -32,11 +32,11 @@
 - [ ] Last-passkey removal is rejected.
 - [ ] Backup export/import works using a different passphrase; wrong passwords and bit flips fail closed.
 - [ ] Legacy migration preserves the old record on every failure and deletes it only after the new atomic commit.
-- [ ] Deterministic vectors match on current Chrome, Edge, Firefox and Safari where WebAuthn PRF is supported.
+- [ ] Every supported Gen 4 input vector produces the identical Gen 5 `GPIDV2` password on current Chrome, Edge, Firefox, and Safari where WebAuthn PRF is supported.
 
 ## User guidance
 
 - [ ] Explain that Windows Hello PIN may satisfy user verification when biometrics are unavailable.
 - [ ] Warn that privileged extensions, malware, devtools, screen capture and clipboard history defeat browser-level controls.
 - [ ] Require a tested backup before destructive credential removal.
-- [ ] Show algorithm version and normalized Website ID before password rotation.
+- [ ] Show the `GP4-GPIDV2` algorithm version and explain that Website IDs are trimmed/lowercased but not Unicode-normalized.

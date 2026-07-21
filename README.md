@@ -15,12 +15,12 @@ GoblinPass does not aim to be a cloud password manager. The password generator i
 
 ## Secure Unlock Gen 5.0
 
-Gen 5.0 is a versioned deterministic generator behind protected app access. Its local master-password vault must be configured before generation is enabled. A random AES-256-GCM data key encrypts the master password; each resident, user-verified passkey independently wraps that key using HKDF-SHA-256 over a WebAuthn PRF result. Windows Hello or another compatible platform passkey is required every time the app opens.
+Gen 5.0 preserves the Gen 4 `GPIDV2` password algorithm exactly behind protected app access, so the same Website ID, master password, counter, length, and character selections produce the same password. Its local master-password vault must be configured before generation is enabled. A random AES-256-GCM data key encrypts the master password; each resident, user-verified passkey independently wraps that key using HKDF-SHA-256 over a WebAuthn PRF result. Windows Hello or another compatible platform passkey is required every time the app opens.
 
 - The plaintext master password is never written to browser storage.
 - IndexedDB stores only the authenticated encrypted record, random salts, 96-bit IVs, credential identifiers, format versions, revisions, and timestamps.
 - There is no weaker storage fallback when WebAuthn PRF is unavailable.
-- Argon2id hardens the generator root key and encrypted recovery backups; generated passwords are never stored.
+- Argon2id hardens encrypted recovery backups; generated passwords are never stored.
 - The app locks after five minutes, on blur, hide, freeze, unload, detected sleep, cross-tab vault changes, or **Lock now**.
 - Multiple passkeys, atomic rotation, encrypted file/QR recovery, timed clipboard clearing, CSP/Trusted Types, and tamper detection are included.
 - Production deployment must serve only Gen 5 on a dedicated HTTPS origin with the headers in `gen5/_headers`; a shared-origin `/gen5/` path is not sufficient isolation.

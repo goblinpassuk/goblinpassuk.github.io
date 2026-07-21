@@ -1,7 +1,7 @@
 import { backupQrParts, createBackup, downloadBackup, drawBackupQr, openBackup } from "./backup.js";
 import { SecureClipboard } from "./clipboard.js";
 import { base64url, fromBase64url, utf8, wipe } from "./crypto.js";
-import { GeneratorSession } from "./generator.js";
+import { GENERATOR_VERSION, GeneratorSession } from "./generator.js";
 import { SecurityLifecycle } from "./lifecycle.js";
 import { VaultStorage } from "./storage.js";
 import type { BackupPayload, GeneratorOptions, VaultRecordV2 } from "./types.js";
@@ -200,7 +200,7 @@ function lock(reason = "Vault locked."): void {
 async function startGenerator(vault: UnlockedVault): Promise<void> {
   const masterBytes = vault.takeMasterPassword();
   try {
-    generator = await GeneratorSession.create(masterBytes, vault.record.profileSalt);
+    generator = GeneratorSession.create(masterBytes);
   } finally {
     wipe(masterBytes);
   }
@@ -216,7 +216,7 @@ async function unlock(): Promise<boolean> {
   showGate("Waiting for platform verification…");
   try {
     await startGenerator(await secureVault.unlock(vaultRecord));
-    message(vaultStatus, "Unlocked. The master password was converted to a non-extractable generator key and wiped from application buffers.", "success");
+    message(vaultStatus, "Unlocked. The Gen 4-compatible generator is available only in memory until the app locks.", "success");
     return true;
   } catch (error) {
     showGate(error instanceof Error ? error.message : "Unlock failed.");
@@ -230,7 +230,7 @@ async function unlock(): Promise<boolean> {
 
 async function setup(): Promise<void> {
   if (busy || !available || vaultRecord) return;
-  const masterBytes = utf8(masterPassword.value.normalize("NFKC"));
+  const masterBytes = utf8(masterPassword.value);
   masterPassword.value = "";
   if (masterBytes.length < 12) {
     wipe(masterBytes);
@@ -360,7 +360,7 @@ async function confirmBackup(): Promise<void> {
       try {
         const payload: BackupPayload = {
           format: "goblinpass-recovery-payload", schema: 1, masterPassword: base64url(master),
-          profileSalt: vaultRecord.profileSalt, generatorVersion: "GP5-PWD-1"
+          profileSalt: vaultRecord.profileSalt, generatorVersion: GENERATOR_VERSION
         };
         const encoded = await createBackup(payload, passphrase);
         downloadBackup(encoded);

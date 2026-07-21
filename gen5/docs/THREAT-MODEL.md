@@ -2,7 +2,7 @@
 
 ## Assets
 
-Master password, generated passwords, generator root key, vault data key, passkey PRF outputs, recovery payload, backup passphrase, site identifiers, clipboard contents, and the integrity/availability of the deterministic algorithm.
+Master password, generated passwords, in-memory generator session, vault data key, passkey PRF outputs, recovery payload, backup passphrase, site identifiers, clipboard contents, and the integrity/availability of the deterministic algorithm.
 
 ## Adversaries
 
@@ -47,4 +47,4 @@ Remote web attacker, malicious site, network attacker, dependency publisher comp
 | Cache persistence | Service worker caches only public immutable application assets, never vault responses or secrets. Old Gen 5 caches are scoped and removed. Browser HTTP caches never contain secret POST responses because none exist. |
 | Malicious service worker | A previously compromised worker controls the origin until replaced. Versioned cache, update-on-navigation, SRI and deployment integrity help; users may need to clear site data after an incident. |
 | Rollback | A copied older valid vault can be restored because there is no trusted monotonic server counter. Revision control prevents concurrent-tab lost updates, not offline rollback. Display last-updated metadata and rely on recovery discipline. |
-| Unicode confusion | Website IDs are NFKC-normalized, trimmed and lowercased before UTF-8 encoding. Visually confusable identifiers remain possible; UI should show the normalized recipe and test vectors pin behavior. |
+| Unicode confusion | For exact Gen 4 compatibility, Website IDs are trimmed and lowercased but are not Unicode-normalized; master-password code points remain unchanged. Visually equivalent Unicode strings can intentionally produce different passwords. Compatibility vectors pin this behavior. |
