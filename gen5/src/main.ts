@@ -85,7 +85,7 @@ function finishDeferredLock(authenticatorCeremony = false): void {
   if (!deferredLockReason) return;
   const reason = deferredLockReason;
   deferredLockReason = "";
-  if (authenticatorCeremony && reason === "window lost focus" && document.hasFocus()) {
+  if (authenticatorCeremony && reason === "window lost focus" && document.visibilityState === "visible") {
     lifecycle.arm();
     return;
   }

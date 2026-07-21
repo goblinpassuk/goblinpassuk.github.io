@@ -84,6 +84,8 @@ stateDiagram-v2
 
 Locking drops references to non-extractable `CryptoKey` objects, overwrites application-owned byte arrays, clears password and output fields, hides QR output, and cancels clipboard timers. JavaScript and garbage-collected runtimes cannot guarantee physical-memory erasure.
 
+Native WebAuthn and biometric prompts can emit `window.blur` while the document remains visible, particularly on mobile browsers. A blur captured during an active authenticator ceremony is ignored only when `visibilityState` is still `visible`, after which lifecycle monitoring is re-armed. A Home/app switch also emits `visibilitychange` to `hidden`; that stronger event is preserved and locks immediately after the ceremony.
+
 ## Credential lifecycle
 
 - Registration requires a resident platform credential and user verification.

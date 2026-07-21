@@ -1,4 +1,4 @@
-const CACHE_NAME = "goblinpass-gen5-v5";
+const CACHE_NAME = "goblinpass-gen5-v6";
 const APP_FILES = [
   "./", "./index.html", "./base.css", "./layout.css", "./style.css", "./dist/app.js", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png"
