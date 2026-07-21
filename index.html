@@ -30,6 +30,7 @@
               <a href="stateless-gen2.html">Stateless Gen 2.0 (Beta)</a>
               <a href="stateless-gen3.html">Stateless Gen 3.0 (Beta)</a>
               <a href="gen4/index.html">Stateless Gen 4.0</a>
+              <a href="gen5/index.html">Secure Unlock Gen 5.0</a>
               <a href="checker.html">Password Checker</a>
               <a href="backup-codes.html">Secure Notes</a>
               <a href="goblinpass/offline-id-logbook/">Offline ID Logbook</a>
@@ -74,15 +75,15 @@
         <div class="home-refresh-copy">
           <p class="eyebrow">Local-first password tools</p>
           <h1 id="home-title">GoblinPass</h1>
-          <p class="hero-subtitle">Stateless password generation, encrypted local notes, and a Security Map beta built around unlock methods you control.</p>
+          <p class="hero-subtitle">Stateless password generation with secure local storage protected by the unlock methods you control.</p>
           <p>
-            Start with YubiKey today. Windows Hello passkeys and biometric routes
-            are shown as planned paths, so the site is ready to grow without
-            hiding what is still experimental.
+            Gen 5.0 can encrypt your master password on this device and unlock it
+            with Windows Hello, biometrics, or the device PIN. Generated passwords
+            are still recreated locally and are never saved.
           </p>
           <div class="hero-actions" aria-label="Primary actions">
-            <a class="demo-link" href="stateless-gen2.html">Open Stateless Gen 2.0</a>
-            <a class="demo-link secondary-link" href="backup-codes.html">Open Secure Notes</a>
+            <a class="demo-link" href="gen5/index.html">Open Secure Unlock Gen 5.0</a>
+            <a class="demo-link secondary-link" href="gen4/index.html">Open Stateless Gen 4.0</a>
           </div>
         </div>
         <div class="home-hero-visual" aria-label="GoblinPass generation flow">
@@ -155,6 +156,16 @@
       </section>
 
       <section class="section home-tool-grid" aria-label="GoblinPass tools">
+        <article class="backup-tool-card gen2-choice-card gen2-choice-card-active">
+          <div class="gen2-choice-card-top">
+            <span class="gen2-choice-mark windows-hello" aria-hidden="true"></span>
+            <span class="gen2-choice-status ready">New</span>
+          </div>
+          <h2>Secure Unlock Gen 5.0</h2>
+          <p>Encrypt your master password locally and unlock it with Windows Hello or your device's biometric/passkey verification.</p>
+          <a class="primary-button" href="gen5/index.html">Open Gen 5.0</a>
+        </article>
+
         <article class="backup-tool-card gen2-choice-card gen2-choice-card-active">
           <div class="gen2-choice-card-top">
             <i class="legend-art icon-state-file-vector" aria-hidden="true"></i>

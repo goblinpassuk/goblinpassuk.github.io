@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GoblinPass Gen 5.0</title>
+  <meta name="theme-color" content="#07120e">
+  <meta name="application-name" content="GoblinPass Gen 5.0">
+  <meta name="description" content="Offline deterministic password generation with a Windows Hello protected master password.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="../goblinpass/icon-192.png">
+  <link rel="apple-touch-icon" href="../goblinpass/icon-192.png">
+  <link rel="stylesheet" href="../gen4/style.css?v=20260721-gen5-base">
+  <link rel="stylesheet" href="../gen4/layout-fix.css?v=20260721-gen5-base">
+  <link rel="stylesheet" href="style.css?v=20260721-gen5-1">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="../index.html" aria-label="GoblinPass home">
+        <img src="../goblinpass/icon-192.png" alt="" width="48" height="48">
+        <span><strong>GoblinPass</strong><small>Secure Unlock Gen 5.0</small></span>
+      </a>
+      <div class="header-actions">
+        <a class="secondary-button header-link" href="../gen4/">Open Gen 4.0</a>
+        <button id="installApp" class="secondary-button" type="button" hidden>Install app</button>
+      </div>
+    </header>
+
+    <section class="status-strip" aria-label="Gen 5 status">
+      <span><b class="status-dot"></b> Offline ready</span>
+      <span id="vaultBadge">Checking secure unlock…</span>
+      <span>Gen 1.0 algorithm</span>
+    </section>
+
+    <section id="supportNotice" class="support-notice" hidden role="status">
+      <strong>Secure unlock is unavailable in this browser.</strong>
+      <span>You can still generate passwords, but GoblinPass will not store your master password without WebAuthn PRF and a secure HTTPS connection.</span>
+    </section>
+
+    <section class="vault-card" aria-labelledby="vaultTitle">
+      <div>
+        <p class="eyebrow">Encrypted on this device</p>
+        <h1 id="vaultTitle">Master Password Vault</h1>
+        <p id="vaultDescription">Enter your master password, then protect it with Windows Hello or this device's biometric/passkey unlock.</p>
+      </div>
+      <div class="vault-actions">
+        <button id="protectMaster" class="primary-button compact-button" type="button">Protect with Windows Hello</button>
+        <button id="unlockMaster" class="primary-button compact-button" type="button" hidden>Unlock master password</button>
+        <button id="lockMaster" class="secondary-button compact-button" type="button" hidden>Lock now</button>
+        <button id="forgetMaster" class="danger-button compact-button" type="button" hidden>Remove saved password</button>
+      </div>
+      <p id="vaultStatus" class="vault-status" aria-live="polite">Checking this device…</p>
+      <details class="security-details">
+        <summary>How secure storage works</summary>
+        <p>Your master password is encrypted with AES-GCM. The encryption key is derived from a WebAuthn PRF secret that is released only after device verification. Only encrypted data, random salts, and the passkey identifier are stored in this browser.</p>
+        <p>Windows Hello may use your face, fingerprint, or device PIN. Clearing site data or deleting the passkey removes access to the saved copy, so keep the original master password somewhere safe.</p>
+      </details>
+    </section>
+
+    <section class="workspace" aria-label="Offline password generator">
+      <article class="generator-panel">
+        <header class="panel-heading">
+          <p>Entirely offline</p>
+          <h2>Password Generator</h2>
+        </header>
+
+        <form id="generatorForm" novalidate>
+          <label for="websiteId">Website ID</label>
+          <input id="websiteId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Unique Website ID" required>
+
+          <div class="number-options">
+            <div>
+              <label for="passwordLength">Length</label>
+              <input id="passwordLength" type="number" inputmode="numeric" min="8" max="64" step="1" value="16" required>
+            </div>
+            <div>
+              <label for="passwordCounter">Counter</label>
+              <input id="passwordCounter" type="number" inputmode="numeric" min="1" max="999" step="1" value="1" required>
+            </div>
+          </div>
+
+          <div class="password-label">
+            <label for="masterPassword">Master Password</label>
+            <button id="toggleMaster" class="text-button" type="button" aria-label="Show master password" aria-pressed="false">Show</button>
+          </div>
+          <input id="masterPassword" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Enter to use or protect" required>
+
+          <fieldset class="character-options">
+            <legend>Password characters</legend>
+            <div class="character-grid">
+              <label><input id="useLower" type="checkbox" checked> <span>a-z</span></label>
+              <label><input id="useUpper" type="checkbox" checked> <span>A-Z</span></label>
+              <label><input id="useNumbers" type="checkbox" checked> <span>0-9</span></label>
+              <label><input id="useSymbols" type="checkbox" checked> <span>%!@</span></label>
+            </div>
+          </fieldset>
+
+          <div class="recipe" aria-label="Password recipe">
+            <span>Website ID</span><b>+</b><span>Master Password</span>
+          </div>
+
+          <button class="primary-button" type="submit">Generate &amp; copy</button>
+        </form>
+        <p id="statusMessage" class="status-message" aria-live="polite">Ready.</p>
+      </article>
+
+      <article id="resultPanel" class="result-panel" aria-labelledby="resultTitle">
+        <header class="panel-heading result-heading">
+          <p>Local transfer</p>
+          <h2 id="resultTitle">Generated Password</h2>
+        </header>
+
+        <div class="password-output">
+          <input id="generatedPassword" type="password" readonly aria-label="Generated password" placeholder="Generate to begin">
+          <button id="togglePassword" class="secondary-button" type="button" disabled aria-label="Show generated password" aria-pressed="false">Show</button>
+          <button id="copyPassword" class="secondary-button" type="button" disabled>Copy</button>
+        </div>
+
+        <button id="toggleQr" class="secondary-button qr-toggle-button" type="button" disabled aria-controls="qrPanel" aria-expanded="false">Show QR code</button>
+        <div id="qrPanel" class="qr-panel" hidden>
+          <canvas id="passwordQr" width="246" height="246" aria-label="Generated password QR code"></canvas>
+          <p>Scan privately. This QR code contains the generated password.</p>
+        </div>
+        <div id="qrPlaceholder" class="qr-placeholder" aria-hidden="true">
+          <span>QR</span>
+          <p id="qrPlaceholderMessage">Generate a password to enable its QR code.</p>
+        </div>
+      </article>
+    </section>
+
+    <footer class="app-footer">
+      <span>GoblinPass Gen 5.0</span>
+      <span id="offlineStatus">Checking offline support…</span>
+    </footer>
+  </main>
+
+  <script src="../assets/js/goblinpass-engine.js?v=20260721-gen5"></script>
+  <script src="../gen4/qr.js?v=20260721-gen5"></script>
+  <script src="secure-vault.js?v=20260721-gen5-1"></script>
+  <script src="app-v5.js?v=20260721-gen5-1"></script>
+</body>
+</html>

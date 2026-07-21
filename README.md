@@ -13,6 +13,16 @@ Website ID + Master Password + Unlock Factor + Optional Factors
 
 GoblinPass does not aim to be a cloud password manager. The password generator is designed so the same inputs recreate the same password, while avoiding storage of the generated password itself.
 
+## Secure Unlock Gen 5.0
+
+Gen 5.0 keeps the Gen 4 deterministic generator and adds optional local master-password storage. The saved value is encrypted with AES-256-GCM using a key derived from a WebAuthn PRF secret. Windows Hello or another user-verifying platform passkey is required to release that secret and decrypt the master password.
+
+- The plaintext master password is never written to browser storage.
+- The encrypted record, random salts, IV, and credential identifier are stored in IndexedDB.
+- There is no weaker storage fallback when WebAuthn PRF is unavailable.
+- The unlocked value is cleared after five minutes or when the user selects **Lock now**.
+- Clearing site data or deleting the matching passkey removes access to the saved copy.
+
 ## Current Focus
 
 The most important part of the project is **Stateless Gen 2.0 (Beta)**:
@@ -31,6 +41,7 @@ The most important part of the project is **Stateless Gen 2.0 (Beta)**:
 Main pages in the current site:
 
 - `index.html` - homepage and overview.
+- `gen5/index.html` - Gen 5.0 generator with Windows Hello/passkey protected master-password storage.
 - `app.html` - Stateless Gen 1.0, the original generator.
 - `stateless-gen2.html` - Stateless Gen 2.0 unlock-method chooser.
 - `stateless-gen2-yubikey.html` - current Gen 2.0 YubiKey/security-key beta.
@@ -283,4 +294,3 @@ Copyright (c) 2026 Carl Hatton.
 GoblinPass is created and maintained by Carl Hatton.
 
 See `LICENSE` for the full license terms.
-

@@ -1,0 +1,61 @@
+.vault-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 24px;
+  align-items: center;
+  margin-bottom: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(109, 240, 94, 0.08), rgba(9, 21, 14, 0.96) 48%);
+  box-shadow: var(--shadow);
+  padding: 20px 22px;
+}
+
+.vault-card .eyebrow { margin: 0 0 4px; color: var(--green); font-size: .7rem; font-weight: 900; text-transform: uppercase; }
+.vault-card h1 { margin: 0; font-size: 1.42rem; }
+.vault-card > div > p:last-child { max-width: 670px; margin: 8px 0 0; color: var(--muted); font-size: .84rem; line-height: 1.55; }
+.vault-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.compact-button { min-height: 42px; }
+
+.danger-button {
+  min-height: 46px;
+  border: 1px solid #824048;
+  border-radius: 7px;
+  background: #210b0d;
+  color: #ffb7bc;
+  cursor: pointer;
+  font-weight: 900;
+  padding: 0 16px;
+}
+
+.danger-button:hover, .danger-button:focus-visible { border-color: var(--red); outline: none; }
+.vault-status { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .8rem; }
+.vault-status[data-kind="success"] { color: #bafab4; }
+.vault-status[data-kind="warning"] { color: var(--warning); }
+.vault-status[data-kind="error"] { color: #ffadb2; }
+.security-details { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 12px; color: var(--muted); font-size: .78rem; }
+.security-details summary { width: fit-content; color: var(--text); cursor: pointer; font-weight: 800; }
+.security-details p { max-width: 850px; margin: 10px 0 0; line-height: 1.55; }
+
+.support-notice {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 16px;
+  border: 1px solid #6e5a22;
+  border-radius: 8px;
+  background: #1b1608;
+  color: var(--warning);
+  padding: 14px 16px;
+}
+.support-notice span { color: #d5c68f; font-size: .82rem; line-height: 1.5; }
+
+#masterPassword[data-vault-state="locked"] { border-color: var(--line-strong); color: var(--muted); }
+#masterPassword:read-only { cursor: default; }
+.panel-heading h2 { font-size: 2rem; line-height: 1.08; }
+
+@media (max-width: 760px) {
+  .vault-card { grid-template-columns: 1fr; padding: 18px; }
+  .vault-actions { justify-content: stretch; }
+  .vault-actions button { flex: 1 1 190px; }
+  .panel-heading h2 { font-size: 1.65rem; }
+}
